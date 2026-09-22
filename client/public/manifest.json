@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "PIKI Delivery",
+  "short_name": "PIKI",
+  "description": "Pide. Recibe. Disfruta. PIKI Delivery, cerca de ti.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#FFD72E",
+  "theme_color": "#FFD72E",
+  "lang": "es",
+  "categories": ["food", "shopping", "lifestyle"],
+  "icons": [
+    { "src": "/piki-delivery-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/piki-delivery-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Explorar restaurantes", "url": "/#restaurantes", "icons": [{ "src": "/piki-delivery-192.png", "sizes": "192x192" }] }
+  ]
+}

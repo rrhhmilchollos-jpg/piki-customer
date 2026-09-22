@@ -1,0 +1,318 @@
+import { trpc } from "@/lib/trpc";
+import AccountHub from "@/components/AccountHub";
+import { InstallAppBanner } from "@/components/InstallAppBanner";
+import { MapView } from "@/components/Map";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { PikiSplash } from "@/components/PikiSplash";
+import { useAuth } from "@/_core/hooks/useAuth";
+import QRCode from "qrcode";
+import type { MenuItem, Restaurant } from "../../../server/catalog";
+import {
+  ArrowLeft,
+  Heart,
+  ArrowRight,
+  Bike,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Clock3,
+  Coffee,
+  CreditCard,
+  Flame,
+  Home as HomeIcon,
+  Leaf,
+  MapPin,
+  Menu,
+  Minus,
+  Navigation,
+  PackageCheck,
+  Pizza,
+  Plus,
+  Salad,
+  Search,
+  ShoppingBag,
+  Sparkles,
+  Star,
+  Store,
+  Utensils,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+
+type CartLine = { item: MenuItem; quantity: number };
+type TrackingStage = "confirmed" | "preparing" | "onway";
+type TrackingOrder = { id: string; restaurant: string; eta: string; stage: TrackingStage };
+const demoRoute = [{ latitude: 38.9922, longitude: -0.5213 }, { latitude: 38.9916, longitude: -0.5204 }, { latitude: 38.9909, longitude: -0.5194 }, { latitude: 38.9902, longitude: -0.5184 }, { latitude: 38.9896, longitude: -0.5175 }];
+
+const categories = [
+  { label: "Todos", icon: Sparkles, hue: "bg-[#ffe9df] text-[#bd4f2e]" },
+  { label: "Mediterránea", icon: Utensils, hue: "bg-[#e6f0df] text-[#3a633d]" },
+  { label: "Hamburguesas", icon: Flame, hue: "bg-[#ffe8cf] text-[#a44b24]" },
+  { label: "Pizza", icon: Pizza, hue: "bg-[#fae0de] text-[#a44639]" },
+  { label: "Vegana", icon: Leaf, hue: "bg-[#e1f0dd] text-[#4f753c]" },
+  { label: "Japonesa", icon: Salad, hue: "bg-[#dcebef] text-[#245866]" },
+  { label: "Desayuno", icon: Coffee, hue: "bg-[#f6ead4] text-[#9a692b]" },
+];
+
+const money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
+
+function SectionTitle({ eyebrow, title, action }: { eyebrow?: string; title: string; action?: string }) {
+  return (
+    <div className="mb-5 flex items-end justify-between gap-4">
+      <div>
+        {eyebrow && <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em] text-[#dc5c35]">{eyebrow}</p>}
+        <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-[#171715] sm:text-4xl">{title}</h2>
+      </div>
+      {action && (
+        <button className="group hidden items-center gap-1 text-sm font-bold text-[#171715] sm:flex" onClick={() => document.getElementById("restaurantes")?.scrollIntoView({ behavior: "smooth" })}>
+          {action} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function QuantityControl({ quantity, onChange }: { quantity: number; onChange: (quantity: number) => void }) {
+  return (
+    <div className="flex items-center gap-1 rounded-full border border-[#e7ddd1] bg-white p-1 shadow-sm">
+      <button aria-label="Restar unidad" onClick={() => onChange(quantity - 1)} className="grid h-7 w-7 place-items-center rounded-full text-[#526056] transition hover:bg-[#f5efe7] active:scale-95">
+        <Minus className="h-3.5 w-3.5" />
+      </button>
+      <span className="min-w-4 text-center text-sm font-bold">{quantity}</span>
+      <button aria-label="Sumar unidad" onClick={() => onChange(quantity + 1)} className="grid h-7 w-7 place-items-center rounded-full bg-[#FFD72E] text-white transition hover:bg-[#E8C600] active:scale-95">
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function RestaurantCard({ restaurant, onOpen }: { restaurant: Restaurant; onOpen: (restaurant: Restaurant) => void }) {
+  return (
+    <article className="card-lift group relative overflow-hidden rounded-[1.55rem] border border-[#eee4da] bg-white shadow-[0_5px_16px_rgba(55,45,35,.05)]">
+      <button className="block w-full text-left" onClick={() => onOpen(restaurant)}>
+        <div className="relative h-44 overflow-hidden">
+          <img src={restaurant.image} alt={`Plato de ${restaurant.name}`} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-transparent" />
+          {restaurant.promoted && <span className="absolute left-3 top-3 rounded-full bg-[#fff7ed] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#bd4f2e] shadow-sm">Favorito local</span>}
+          <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-[#171715] shadow-sm"><Star className="h-3.5 w-3.5 fill-[#f5aa31] text-[#f5aa31]" /> {restaurant.rating.toFixed(1)} <span className="font-medium text-[#6a746b]">({restaurant.reviews})</span></div>
+        </div>
+        <div className="p-4">
+          <div className="mb-2 flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-extrabold tracking-[-0.02em] text-[#171715]">{restaurant.name}</h3>
+              <p className="mt-0.5 text-sm text-[#657066]">{restaurant.cuisine}</p>
+            </div>
+            <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[#859087] transition-transform group-hover:translate-x-1" />
+          </div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-[#506056]">
+            <span className="flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" /> {restaurant.eta}</span>
+            <span className="h-1 w-1 rounded-full bg-[#b7c0b8]" />
+            <span>{restaurant.fee === 0 ? "Envío gratis" : `Envío ${money.format(restaurant.fee)}`}</span>
+          </div>
+        </div>
+      </button>
+      <button onClick={() => { const key = "piki-favorites"; const saved = JSON.parse(localStorage.getItem(key) || "[]") as string[]; const next = saved.includes(restaurant.id) ? saved.filter((id) => id !== restaurant.id) : [...saved, restaurant.id]; localStorage.setItem(key, JSON.stringify(next)); toast.success(next.includes(restaurant.id) ? "Guardado en favoritos" : "Eliminado de favoritos"); }} aria-label="Guardar restaurante" className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-[#d95737] shadow-sm transition hover:scale-105"><Heart className="h-4 w-4" /></button>
+    </article>
+  );
+}
+
+export default function Home() {
+  const { isAuthenticated } = useAuth();
+  const [category, setCategory] = useState("Todos");
+  const [search, setSearch] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const [cartRestaurant, setCartRestaurant] = useState<Restaurant | null>(null);
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [addressOpen, setAddressOpen] = useState(false);
+  const [address, setAddress] = useState("Carrer de Montcada, Xàtiva");
+  const [addressDraft, setAddressDraft] = useState(address);
+  const [tracking, setTracking] = useState<TrackingOrder | null>(null);
+
+  const catalogInput = useMemo(
+    () => ({ category: category === "Todos" ? undefined : category, query: search.trim() || undefined }),
+    [category, search],
+  );
+  const { data: restaurants, isLoading } = trpc.catalog.list.useQuery(catalogInput);
+  const checkoutMutation = trpc.order.checkout.useMutation();
+  const trackingInput = useMemo(() => ({ id: tracking?.id ?? "" }), [tracking?.id]);
+  const { data: liveTracking } = trpc.order.get.useQuery(trackingInput, { enabled: Boolean(tracking), refetchInterval: 3000 });
+  const customerTracking = trpc.order.customerTracking.useQuery(trackingInput, { enabled: Boolean(tracking) && isAuthenticated, refetchInterval: 8_000, retry: false });
+  const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
+  const subtotal = cart.reduce((total, line) => total + line.item.price * line.quantity, 0);
+  const deliveryFee = cartRestaurant?.fee ?? 0;
+  const serviceFee = cart.length ? 0.79 : 0;
+  const total = subtotal + deliveryFee + serviceFee;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get("order_id");
+    if (params.get("checkout") === "success" && orderId) {
+      setTracking({ id: orderId, restaurant: "Pedido PIKI", eta: "actualizando…", stage: "confirmed" });
+      window.history.replaceState({}, "", window.location.pathname);
+      toast.success("Pago recibido", { description: "Estamos confirmando tu pedido." });
+    }
+    if (params.get("checkout") === "cancelled") {
+      window.history.replaceState({}, "", window.location.pathname);
+      toast("Pago cancelado", { description: "Tu cesta sigue disponible para cuando quieras." });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!liveTracking?.status) return;
+    const serverStage: TrackingStage = ["placed", "accepted"].includes(liveTracking.status) ? "confirmed" : liveTracking.status === "ready" ? "preparing" : "onway";
+    setTracking((current) => current ? { ...current, restaurant: liveTracking.restaurant, stage: serverStage } : current);
+  }, [liveTracking]);
+
+  const addItem = (restaurant: Restaurant, item: MenuItem) => {
+    if (cartRestaurant && cartRestaurant.id !== restaurant.id) {
+      setCartRestaurant(restaurant);
+      setCart([{ item, quantity: 1 }]);
+      toast("Hemos iniciado una nueva cesta", { description: `Tu pedido ahora será de ${restaurant.name}.` });
+    } else {
+      setCartRestaurant(restaurant);
+      setCart((current) => {
+        const existing = current.find((line) => line.item.id === item.id);
+        if (existing) return current.map((line) => line.item.id === item.id ? { ...line, quantity: line.quantity + 1 } : line);
+        return [...current, { item, quantity: 1 }];
+      });
+      toast.success(`${item.name} añadido`);
+    }
+  };
+
+  const changeQuantity = (itemId: string, quantity: number) => {
+    setCart((current) => {
+      const next = quantity <= 0 ? current.filter((line) => line.item.id !== itemId) : current.map((line) => line.item.id === itemId ? { ...line, quantity } : line);
+      if (next.length === 0) setCartRestaurant(null);
+      return next;
+    });
+  };
+
+  const submitOrder = () => {
+    if (!cartRestaurant || !cart.length) return;
+    checkoutMutation.mutate(
+      { restaurantId: cartRestaurant.id, address, items: cart.map((line) => ({ id: line.item.id, quantity: line.quantity })), total },
+      {
+        onSuccess: ({ checkoutUrl, orderId }) => {
+          const opened = window.open(checkoutUrl, "_blank", "noopener,noreferrer");
+          if (!opened) window.location.assign(checkoutUrl);
+          setCheckoutOpen(false);
+          toast.success("Abriendo pago seguro", { description: `Pedido ${orderId} reservado hasta que Stripe confirme el pago.` });
+        },
+        onError: (error) => toast.error("No se pudo iniciar el pago", { description: error.message || "Revisa la configuración de Stripe." }),
+      },
+    );
+  };
+
+  return (
+    <div className="piki-app min-h-screen overflow-x-hidden bg-[#FFFDF5] text-[#171715]"><PikiSplash service="delivery" />
+      <header className="sticky top-0 z-30 border-b border-[#ece3d9]/80 bg-[#FFFDF5]/92 backdrop-blur-xl">
+        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <button className="flex items-center gap-2" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Inicio de PIKI">
+            <span className="grid h-9 w-9 place-items-center rounded-[13px] bg-[#FFD72E] text-xl font-black text-white shadow-[0_7px_15px_rgba(255,107,61,.25)]">Y</span>
+            <span className="font-display text-2xl font-bold tracking-[-0.06em]">PIKI</span>
+          </button>
+          <nav className="hidden items-center gap-7 text-sm font-bold text-[#536056] md:flex">
+            <button onClick={() => document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" })} className="transition hover:text-[#171715]">Explorar</button>
+            <button onClick={() => document.getElementById("restaurantes")?.scrollIntoView({ behavior: "smooth" })} className="transition hover:text-[#171715]">Restaurantes</button>
+            <button onClick={() => toast("Próximamente", { description: "Las ventajas PIKI Plus estarán disponibles pronto." })} className="transition hover:text-[#171715]">PIKI Plus</button>
+          </nav>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button onClick={() => setAddressOpen(true)} className="hidden max-w-[240px] items-center gap-2 rounded-full border border-[#e5dbd0] bg-white px-3 py-2 text-sm font-semibold text-[#304037] shadow-sm transition hover:border-[#bdc9b9] sm:flex"><MapPin className="h-4 w-4 shrink-0 text-[#FFD72E]" /><span className="truncate">{address}</span><ChevronDown className="h-3.5 w-3.5" /></button>
+            <ThemeToggle />
+            <button onClick={() => setCartOpen(true)} className="relative grid h-10 w-10 place-items-center rounded-full bg-[#171715] text-white transition hover:bg-[#171715] active:scale-95" aria-label="Abrir cesta"><ShoppingBag className="h-4.5 w-4.5" />{cartCount > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#FFD72E] px-1 text-[10px] font-extrabold">{cartCount}</span>}</button>
+            <button onClick={() => setMenuOpen(!menuOpen)} className="grid h-10 w-10 place-items-center rounded-full border border-[#e5dbd0] bg-white text-[#171715] md:hidden" aria-label="Abrir menú"><Menu className="h-5 w-5" /></button>
+          </div>
+        </div>
+        {menuOpen && <div className="border-t border-[#eee3d7] bg-white px-5 py-4 md:hidden"><div className="flex flex-col gap-3 text-sm font-bold"><button className="text-left" onClick={() => { setMenuOpen(false); document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" }); }}>Explorar</button><button className="text-left" onClick={() => { setMenuOpen(false); document.getElementById("restaurantes")?.scrollIntoView({ behavior: "smooth" }); }}>Restaurantes</button><button className="text-left" onClick={() => setAddressOpen(true)}>Cambiar dirección</button></div></div>}
+      </header>
+
+      <main><div className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8"><InstallAppBanner service="delivery" /></div>
+        <section className="piki-grid px-4 pb-8 pt-6 sm:px-6 lg:px-8 lg:pb-12 lg:pt-9">
+          <div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] bg-[#171715] shadow-[0_24px_60px_rgba(31,43,33,.18)] lg:grid-cols-[1.02fr_.98fr]">
+            <div className="relative z-10 p-7 sm:p-10 lg:p-14">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(255,107,61,.34),transparent_38%)]" />
+              <div className="relative max-w-xl">
+                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-[#FFF1B0]"><Sparkles className="h-3.5 w-3.5 text-[#FFE36A]" /> PIKI Delivery · Cerca de ti.</div>
+                <h1 className="font-display text-[2.8rem] font-semibold leading-[.95] tracking-[-0.065em] text-white sm:text-6xl lg:text-7xl">Pide lo que quieras.<br /><span className="text-[#FFE36A]">Recibe. Disfruta.</span></h1>
+                <p className="mt-6 max-w-md text-base leading-relaxed text-[#F6EFD2] sm:text-lg">Tu ciudad, tus restaurantes y tus antojos. Todo llega rápido, cerca de ti y con la alegría de PIKI.</p>
+                <button onClick={() => document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" })} className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#FFD72E] px-5 py-3 text-sm font-extrabold text-white shadow-[0_10px_20px_rgba(255,107,61,.28)] transition hover:bg-[#E8C600] active:scale-[.98]">Pedir ahora <ArrowRight className="h-4 w-4" /></button>
+                <button onClick={() => setAddressOpen(true)} className="mt-7 flex items-center gap-2 text-sm font-semibold text-[#F8F0D7] transition hover:text-white"><MapPin className="h-4 w-4 text-[#FFE36A]" /> Entregando en <span className="border-b border-dashed border-[#9eb19e]">{address}</span></button>
+              </div>
+            </div>
+            <div className="relative min-h-[280px] overflow-hidden lg:min-h-full"><img src="/piki-hero-rider.jpg" alt="Comida fresca lista para compartir" className="absolute inset-0 h-full w-full object-cover" /><div className="hero-shine absolute inset-0 lg:bg-[linear-gradient(90deg,rgba(24,32,27,.65),transparent_44%)]" /><div className="absolute bottom-5 right-5 rounded-2xl bg-[#FFFDF5]/95 p-3.5 shadow-xl backdrop-blur"><div className="flex items-center gap-2"><div className="grid h-9 w-9 place-items-center rounded-xl bg-[#FFF3BD] text-[#171715]"><Bike className="h-5 w-5" /></div><div><p className="text-xs font-bold text-[#667267]">Tiempo medio</p><p className="text-sm font-extrabold text-[#171715]">Menos de 30 min</p></div></div></div></div>
+          </div>
+        </section>
+
+        <section id="explorar" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <SectionTitle eyebrow="Elige tu antojo" title="¿Qué te apetece hoy?" />
+          <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-4 sm:px-0 lg:grid-cols-7">
+            {categories.map(({ label, icon: Icon, hue }) => (
+              <button key={label} onClick={() => setCategory(label)} className={`group flex min-w-[116px] flex-col items-start gap-3 rounded-2xl border p-4 text-left transition sm:min-w-0 ${category === label ? "border-[#171715] bg-[#FFF9DD] shadow-[0_8px_18px_rgba(49,91,63,.08)]" : "border-[#ede4da] bg-white hover:-translate-y-0.5 hover:border-[#cdddc7]"}`}>
+                <span className={`grid h-11 w-11 place-items-center rounded-[14px] ${hue}`}><Icon className="h-5 w-5" /></span>
+                <span className="text-sm font-extrabold text-[#263229]">{label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section id="restaurantes" className="mx-auto max-w-7xl px-4 pb-28 pt-2 sm:px-6 lg:px-8">
+          <SectionTitle eyebrow="Ahora cerca de ti" title="Comida que merece el desvío" action="Ver todos" />
+          <div className="mb-7 flex flex-col gap-3 rounded-2xl border border-[#e9dfd5] bg-white p-3 shadow-[0_8px_20px_rgba(54,42,31,.04)] sm:flex-row sm:items-center">
+            <div className="flex flex-1 items-center gap-3 rounded-xl bg-[#faf6f0] px-3.5 py-3"><Search className="h-5 w-5 text-[#718073]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Busca un restaurante o tipo de comida" className="w-full bg-transparent text-sm font-medium outline-none placeholder:text-[#9aa49b]" aria-label="Buscar restaurantes" /></div>
+            <button onClick={() => toast("Orden inteligente", { description: "Mostramos primero los lugares mejor valorados y más cercanos." })} className="flex items-center justify-center gap-2 rounded-xl border border-[#e8ded4] px-4 py-3 text-sm font-bold text-[#3a473d] transition hover:bg-[#faf6f0]"><Sparkles className="h-4 w-4 text-[#FFD72E]" /> Para ti <ChevronDown className="h-4 w-4" /></button>
+          </div>
+          {isLoading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1, 2, 3, 4, 5, 6].map((index) => <div key={index} className="h-[280px] animate-pulse rounded-[1.55rem] bg-[#eee6dd]" />)}</div> : restaurants?.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{restaurants.map((restaurant) => <RestaurantCard key={restaurant.id} restaurant={restaurant} onOpen={setSelectedRestaurant} />)}</div> : <div className="rounded-[1.6rem] border border-dashed border-[#d9d0c5] bg-[#fffcf8] px-6 py-16 text-center"><Search className="mx-auto h-8 w-8 text-[#a3afa2]" /><h3 className="mt-4 text-lg font-extrabold">No encontramos ese sabor</h3><p className="mt-1 text-sm text-[#68746a]">Prueba con otra búsqueda o vuelve a ver todo el barrio.</p><button onClick={() => { setSearch(""); setCategory("Todos"); }} className="mt-5 rounded-full bg-[#171715] px-4 py-2 text-sm font-bold text-white">Ver todos</button></div>}
+        </section>
+      </main>
+
+      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-[#e8ded4] bg-[#FFFDF5]/95 px-4 py-3 backdrop-blur lg:hidden"><button onClick={() => setCartOpen(true)} className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-4 py-3 text-white shadow-lg"><span className="flex items-center gap-2 text-sm font-bold"><ShoppingBag className="h-4 w-4" /> {cartCount ? `${cartCount} en tu cesta` : "Tu cesta está vacía"}</span><span className="text-sm font-extrabold">{cartCount ? money.format(total) : "Ver cesta"}</span></button></div>
+
+      {selectedRestaurant && <div className="fixed inset-0 z-40 overflow-y-auto bg-[#171715]/35 p-0 backdrop-blur-sm sm:p-6"><div className="min-h-full bg-[#FFFDF5] sm:mx-auto sm:min-h-0 sm:max-w-3xl sm:overflow-hidden sm:rounded-[2rem] sm:shadow-2xl"><div className="relative h-64 sm:h-72"><img src={selectedRestaurant.image} alt="" className="h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-t from-[#171715]/75 via-transparent to-black/10" /><button onClick={() => setSelectedRestaurant(null)} className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/95 text-[#171715] shadow-lg transition hover:bg-white" aria-label="Cerrar restaurante"><X className="h-5 w-5" /></button><div className="absolute bottom-0 left-0 p-6 text-white sm:p-8"><p className="mb-2 text-sm font-bold text-[#FFE88A]">{selectedRestaurant.cuisine}</p><h2 className="font-display text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">{selectedRestaurant.name}</h2><div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-bold"><span className="flex items-center gap-1"><Star className="h-4 w-4 fill-[#f9b43d] text-[#f9b43d]" /> {selectedRestaurant.rating.toFixed(1)} ({selectedRestaurant.reviews})</span><span className="h-1 w-1 rounded-full bg-white/60" /><span>{selectedRestaurant.eta}</span><span className="h-1 w-1 rounded-full bg-white/60" /><span>{selectedRestaurant.fee === 0 ? "Envío gratis" : `Envío ${money.format(selectedRestaurant.fee)}`}</span></div></div></div><div className="p-5 sm:p-8"><p className="mb-7 text-base text-[#647166]">{selectedRestaurant.tagline}</p><div className="mb-4 flex items-center justify-between"><h3 className="font-display text-2xl font-semibold tracking-[-0.04em]">Lo más pedido</h3><span className="rounded-full bg-[#FFF2AD] px-3 py-1 text-xs font-bold text-[#171715]">Entrega sostenible</span></div><div className="space-y-3">{selectedRestaurant.menu.map((item) => { const quantity = cart.find((line) => line.item.id === item.id)?.quantity ?? 0; return <div key={item.id} className="flex gap-3 rounded-2xl border border-[#ebe1d7] bg-white p-4 shadow-[0_4px_12px_rgba(61,49,36,.03)]"><div className="min-w-0 flex-1"><div className="flex items-center gap-2"><h4 className="font-extrabold">{item.name}</h4>{item.popular && <span className="rounded-full bg-[#ffe6dc] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#c14f2d]">Top</span>}{item.vegetarian && <Leaf className="h-3.5 w-3.5 text-[#4f883c]" />}</div><p className="mt-1 text-sm leading-relaxed text-[#68746a]">{item.description}</p><p className="mt-2 text-sm font-extrabold text-[#263229]">{money.format(item.price)}</p></div>{quantity ? <QuantityControl quantity={quantity} onChange={(next) => changeQuantity(item.id, next)} /> : <button onClick={() => addItem(selectedRestaurant, item)} className="grid h-9 w-9 shrink-0 place-items-center self-center rounded-full bg-[#171715] text-white transition hover:bg-[#050505] active:scale-95" aria-label={`Añadir ${item.name}`}><Plus className="h-5 w-5" /></button>}</div>; })}</div></div><div className="sticky bottom-0 border-t border-[#eee4da] bg-[#FFFDF5]/95 p-4 backdrop-blur"><button onClick={() => { setSelectedRestaurant(null); setCartOpen(true); }} className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-5 py-3.5 text-white transition hover:bg-[#171715]"><span className="text-sm font-extrabold">{cartCount ? `${cartCount} productos en la cesta` : "Añade productos a la cesta"}</span><span className="flex items-center gap-2 text-sm font-extrabold">{cartCount ? money.format(total) : "Ver cesta"}<ArrowRight className="h-4 w-4" /></span></button></div></div></div>}
+
+      {cartOpen && <div className="fixed inset-0 z-50 bg-[#171715]/35 backdrop-blur-sm" onMouseDown={() => setCartOpen(false)}><aside onMouseDown={(event) => event.stopPropagation()} className="ml-auto flex h-full w-full max-w-md flex-col bg-[#FFFDF5] shadow-2xl"><div className="flex items-center justify-between border-b border-[#ece2d8] p-5"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Tu selección</p><h2 className="font-display text-3xl font-semibold tracking-[-.05em]">La cesta</h2></div><button onClick={() => setCartOpen(false)} className="grid h-10 w-10 place-items-center rounded-full border border-[#e5dbd0] bg-white"><X className="h-5 w-5" /></button></div>{cartRestaurant && cart.length ? <><div className="flex-1 overflow-y-auto p-5"><div className="mb-5 flex items-center gap-3 rounded-2xl bg-[#FFF4BE] p-3"><div className="grid h-9 w-9 place-items-center rounded-xl bg-[#171715] text-white"><Store className="h-4 w-4" /></div><div><p className="text-xs font-bold text-[#617162]">Pedido de</p><p className="text-sm font-extrabold">{cartRestaurant.name}</p></div></div><div className="space-y-4">{cart.map((line) => <div key={line.item.id} className="flex gap-3"><div className="min-w-0 flex-1"><p className="font-bold">{line.item.name}</p><p className="mt-0.5 text-sm text-[#68746a]">{money.format(line.item.price)} · unidad</p></div><div className="flex flex-col items-end gap-2"><p className="text-sm font-extrabold">{money.format(line.item.price * line.quantity)}</p><QuantityControl quantity={line.quantity} onChange={(next) => changeQuantity(line.item.id, next)} /></div></div>)}</div></div><div className="border-t border-[#ece2d8] p-5"><div className="mb-4 space-y-2 text-sm"><div className="flex justify-between text-[#667267]"><span>Productos</span><span>{money.format(subtotal)}</span></div><div className="flex justify-between text-[#667267]"><span>Entrega</span><span>{deliveryFee ? money.format(deliveryFee) : "Gratis"}</span></div><div className="flex justify-between text-[#667267]"><span>Servicio</span><span>{money.format(serviceFee)}</span></div><div className="mt-3 flex justify-between border-t border-[#e6ddd2] pt-3 text-base font-extrabold text-[#171715]"><span>Total</span><span>{money.format(total)}</span></div></div><button onClick={() => { setCartOpen(false); setCheckoutOpen(true); }} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFD72E] py-3.5 text-sm font-extrabold text-white shadow-[0_10px_20px_rgba(255,107,61,.22)] transition hover:bg-[#E8C600] active:scale-[.98]">Continuar al pago <ArrowRight className="h-4 w-4" /></button></div></> : <div className="flex flex-1 flex-col items-center justify-center px-9 text-center"><div className="grid h-16 w-16 place-items-center rounded-[1.4rem] bg-[#f2e9df] text-[#b5724c]"><ShoppingBag className="h-7 w-7" /></div><h3 className="mt-5 font-display text-3xl font-semibold tracking-[-.05em]">Aún no hay nada</h3><p className="mt-2 text-sm leading-relaxed text-[#68746a]">Explora los restaurantes de tu barrio y guarda algo rico para luego.</p><button onClick={() => { setCartOpen(false); document.getElementById("restaurantes")?.scrollIntoView({ behavior: "smooth" }); }} className="mt-6 rounded-full bg-[#171715] px-5 py-2.5 text-sm font-bold text-white">Explorar restaurantes</button></div>}</aside></div>}
+
+      {checkoutOpen && <div className="fixed inset-0 z-[60] grid place-items-end bg-[#171715]/45 p-0 backdrop-blur-sm sm:place-items-center sm:p-6"><div className="w-full max-w-lg rounded-t-[2rem] bg-[#FFFDF5] p-6 shadow-2xl sm:rounded-[2rem] sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Revisión final</p><h2 className="font-display text-3xl font-semibold tracking-[-.05em]">Casi en camino</h2></div><button onClick={() => setCheckoutOpen(false)} className="grid h-9 w-9 place-items-center rounded-full border border-[#e5dbd0] bg-white"><X className="h-4 w-4" /></button></div><div className="mt-6 space-y-4"><div className="rounded-2xl border border-[#e9dfd5] bg-white p-4"><div className="flex items-center gap-3"><MapPin className="h-5 w-5 text-[#FFD72E]" /><div className="min-w-0 flex-1"><p className="text-xs font-bold text-[#69756a]">Entregar en</p><p className="truncate text-sm font-extrabold">{address}</p></div><button onClick={() => { setCheckoutOpen(false); setAddressOpen(true); }} className="text-xs font-extrabold text-[#171715]">Cambiar</button></div></div><div className="rounded-2xl border border-[#e9dfd5] bg-white p-4"><div className="flex items-center gap-3"><CreditCard className="h-5 w-5 text-[#171715]" /><div><p className="text-xs font-bold text-[#69756a]">Método de pago</p><p className="text-sm font-extrabold">Stripe · Tarjeta, Apple Pay, Google Pay o Bizum</p></div></div></div><div className="flex items-center justify-between rounded-xl bg-[#f3eee7] px-4 py-3"><span className="text-sm font-bold">Total del pedido</span><span className="text-lg font-extrabold">{money.format(total)}</span></div></div><button disabled={checkoutMutation.isPending} onClick={submitOrder} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFD72E] py-3.5 text-sm font-extrabold text-white transition hover:bg-[#E8C600] disabled:opacity-60">{checkoutMutation.isPending ? "Preparando pago seguro…" : "Pagar de forma segura"}<ArrowRight className="h-4 w-4" /></button><p className="mt-3 text-center text-xs leading-relaxed text-[#7b857d]">El pago se realiza en Stripe. Bizum aparece cuando esté habilitado para la cuenta española de PIKI.</p></div></div>}
+
+      {addressOpen && <div className="fixed inset-0 z-[70] grid place-items-center bg-[#171715]/45 p-5 backdrop-blur-sm"><div className="w-full max-w-md rounded-[2rem] bg-[#FFFDF5] p-6 shadow-2xl"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Zona de entrega</p><h2 className="font-display text-3xl font-semibold tracking-[-.05em]">¿Dónde estás?</h2></div><button onClick={() => setAddressOpen(false)} className="grid h-9 w-9 place-items-center rounded-full border border-[#e5dbd0] bg-white"><X className="h-4 w-4" /></button></div><div className="mt-6 rounded-2xl border border-[#e9dfd5] bg-white p-3"><label className="flex items-center gap-3"><MapPin className="h-5 w-5 text-[#FFD72E]" /><input autoFocus value={addressDraft} onChange={(event) => setAddressDraft(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" aria-label="Dirección de entrega" /></label></div><div className="mt-3 flex items-start gap-2 rounded-xl bg-[#FFF4BE] p-3 text-xs leading-relaxed text-[#526952]"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#171715]" />La selección y los tiempos se ajustan a tu zona.</div><button onClick={() => { if (addressDraft.trim().length < 5) { toast.error("Escribe una dirección más completa"); return; } setAddress(addressDraft.trim()); setAddressOpen(false); toast.success("Dirección actualizada"); }} className="mt-6 w-full rounded-xl bg-[#171715] py-3.5 text-sm font-extrabold text-white transition hover:bg-[#050505]">Ver opciones disponibles</button></div></div>}
+
+      {tracking && <div className="fixed inset-0 z-[80] grid place-items-center bg-[#171715]/45 p-4 backdrop-blur-sm"><div className="w-full max-w-md overflow-hidden rounded-[2rem] bg-[#FFFDF5] shadow-2xl"><div className="relative overflow-hidden bg-[#171715] p-6 text-white"><div className="absolute -right-12 -top-10 h-44 w-44 rounded-full border-[24px] border-white/10" /><button onClick={() => setTracking(null)} className="absolute right-5 top-5 grid h-9 w-9 place-items-center rounded-full bg-white/15"><X className="h-4 w-4" /></button><p className="relative text-xs font-bold uppercase tracking-[.16em] text-[#cfe1c8]">Pedido {tracking.id}</p><h2 className="relative mt-2 font-display text-3xl font-semibold tracking-[-.05em]">{tracking.stage === "confirmed" ? "¡Lo tenemos!" : tracking.stage === "preparing" ? "Ya están cocinando" : "Va de camino"}</h2><p className="relative mt-2 text-sm text-[#e3efe0]">{tracking.restaurant} · llegada estimada {tracking.eta}</p></div><div className="p-6"><div className="relative grid grid-cols-3 before:absolute before:left-[16.5%] before:right-[16.5%] before:top-5 before:h-0.5 before:bg-[#dfe6dc]">{([{ label: "Confirmado", icon: Check, state: "confirmed" }, { label: "En cocina", icon: Utensils, state: "preparing" }, { label: "En ruta", icon: Bike, state: "onway" }] as const).map(({ label, icon: Icon, state }, index) => { const active = ["confirmed", "preparing", "onway"].indexOf(tracking.stage) >= index; return <div key={state} className="relative z-10 flex flex-col items-center gap-2 text-center"><div className={`grid h-10 w-10 place-items-center rounded-full border-4 border-[#FFFDF5] ${active ? "bg-[#FFD72E] text-white" : "bg-[#dfe6dc] text-[#758275]"}`}><Icon className="h-4 w-4" /></div><span className={`text-xs font-bold ${active ? "text-[#263229]" : "text-[#879187]"}`}>{label}</span></div>; })}</div><DeliverySimulation /><CustomerLiveTracking isAuthenticated={isAuthenticated} tracking={customerTracking.data} loading={customerTracking.isLoading} /><div className="mt-5 rounded-2xl bg-white p-4 shadow-[0_6px_18px_rgba(53,45,35,.06)]"><div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-[#ffe8df] text-[#d45731]"><PackageCheck className="h-5 w-5" /></div><div><p className="text-sm font-extrabold">Sigue disfrutando del día</p><p className="mt-0.5 text-xs text-[#6c786e]">Te avisaremos cuando el repartidor esté cerca.</p></div></div></div><button onClick={() => setTracking(null)} className="mt-5 w-full rounded-xl border border-[#ded5cb] bg-white py-3 text-sm font-extrabold text-[#314037]">Seguir explorando</button></div></div></div>}
+      {tracking && <DeliveryCredentials orderId={tracking.id} status={liveTracking?.status} />}
+
+      <AccountHub />
+
+      <footer className="hidden border-t border-[#ede3d9] bg-[#f6efe6] px-6 py-10 lg:block"><div className="mx-auto flex max-w-7xl items-center justify-between"><div><div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-[11px] bg-[#FFD72E] text-sm font-black text-white">Y</span><span className="font-display text-xl font-bold tracking-[-.06em]">PIKI</span></div><p className="mt-2 text-sm text-[#68756a]">Comida local, a tu ritmo.</p></div><p className="text-sm font-medium text-[#7a857b]">PIKI · Pago digital seguro</p></div></footer>
+    </div>
+  );
+}
+
+function DeliverySimulation() {
+  const [active, setActive] = useState(false);
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const timer = window.setInterval(() => setStep((current) => (current + 1) % demoRoute.length), 3000);
+    return () => window.clearInterval(timer);
+  }, [active]);
+  const point = demoRoute[step];
+  return <div className="mt-6 rounded-xl border border-[#dbe5d7] bg-[#f4f8f1] px-3 py-2"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-extrabold text-[#171715]">Prueba de seguimiento</p><p className="text-[11px] text-[#68746a]">Simula un rider en ruta sin afectar pedidos reales.</p></div><button onClick={() => setActive((current) => !current)} className="rounded-full bg-[#171715] px-3 py-2 text-xs font-extrabold text-white">{active ? "Pausar" : "Iniciar GPS"}</button></div>{active && <div className="mt-3 overflow-hidden rounded-xl bg-white"><MapView className="h-36" initialCenter={{ lat: point.latitude, lng: point.longitude }} initialZoom={16} interactive={false} points={[{ lat: point.latitude, lng: point.longitude, label: "Rider de prueba · GPS", kind: "rider" }]} route={demoRoute.map((item) => ({ lat: item.latitude, lng: item.longitude }))} /><p className="px-3 py-2 text-[11px] font-semibold text-[#748074]">Simulación activa · posición {step + 1}/{demoRoute.length} · actualización cada 3 s</p></div>}</div>;
+}
+
+function CustomerLiveTracking({ isAuthenticated, tracking, loading }: { isAuthenticated: boolean; tracking: { available: boolean; riderName?: string; latitude?: number; longitude?: number; accuracyMeters?: number | null; updatedAt?: number } | undefined; loading: boolean }) {
+  if (!isAuthenticated) return <div className="mt-7 rounded-2xl border border-[#dfe6dc] bg-[#f5f8f3] p-4 text-xs leading-relaxed text-[#647166]">Inicia sesión con la cuenta que realizó el pedido para ver la ubicación del rider en tiempo real.</div>;
+  if (loading) return <div className="mt-7 h-28 animate-pulse rounded-2xl bg-[#edf2ea]" />;
+  if (!tracking?.available || tracking.latitude === undefined || tracking.longitude === undefined) return <div className="mt-7 rounded-2xl border border-[#dfe6dc] bg-[#f5f8f3] p-4 text-xs leading-relaxed text-[#647166]">El seguimiento GPS se activará cuando tu rider inicie la ruta. Esta ubicación solo se comparte durante la entrega.</div>;
+  return <section className="mt-7 overflow-hidden rounded-2xl border border-[#dbe5d7] bg-white"><div className="flex items-center justify-between gap-3 px-4 py-3"><div className="flex items-center gap-2"><Navigation className="h-4 w-4 text-[#171715]" /><div><p className="text-sm font-extrabold">{tracking.riderName || "Tu rider"} está en ruta</p><p className="text-xs text-[#6c786e]">Ubicación actualizada cada pocos segundos</p></div></div><span className="rounded-full bg-[#e7f2e4] px-2.5 py-1 text-[10px] font-extrabold text-[#171715]">EN DIRECTO</span></div><MapView className="h-52" initialCenter={{ lat: tracking.latitude, lng: tracking.longitude }} initialZoom={16} interactive={false} points={[{ lat: tracking.latitude, lng: tracking.longitude, label: `${tracking.riderName || "Tu rider"} · GPS`, kind: "rider" }]} /><p className="px-4 py-3 text-[11px] font-semibold text-[#748074]">Precisión aproximada: {Math.round(tracking.accuracyMeters || 0) || "—"} m · última señal {tracking.updatedAt ? new Date(tracking.updatedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "ahora"}</p></section>;
+}
+
+function DeliveryCredentials({ orderId, status }: { orderId: string; status?: string }) {
+  const { isAuthenticated } = useAuth();
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const { data } = trpc.order.deliveryCredentials.useQuery({ id: orderId }, { enabled: isAuthenticated && ["assigned", "picked_up", "delivering"].includes(status || ""), refetchInterval: 5000, retry: false });
+  useEffect(() => { if (data?.qrToken) QRCode.toDataURL(data.qrToken, { margin: 1, width: 180 }).then(setQrDataUrl).catch(() => setQrDataUrl("")); }, [data?.qrToken]);
+  if (!isAuthenticated || !data?.available || data.state === "confirmed") return null;
+  return <div className="fixed inset-0 z-[85] pointer-events-none flex items-end justify-center p-4"><div className="pointer-events-auto w-full max-w-md rounded-[1.4rem] border border-[#d8e3d4] bg-[#FFFDF5] p-4 shadow-2xl"><div className="flex items-start gap-3"><div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#FFF4BE] text-[#171715]"><PackageCheck className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="text-sm font-extrabold">Código de entrega seguro</p><p className="mt-1 text-xs leading-relaxed text-[#68746a]">Muéstraselo al rider al recibir el pedido. La entrega solo se cierra con este PIN o QR.</p></div></div><div className="mt-4 grid grid-cols-[1fr_116px] gap-3"><div className="rounded-2xl bg-[#143b2b] p-4 text-white"><p className="text-xs font-bold text-[#cfe2cf]">PIN</p><p className="mt-2 font-mono text-4xl font-black tracking-[.18em]">{data.pin}</p></div><div className="grid place-items-center rounded-2xl bg-white p-2 ring-1 ring-[#e2eadf]">{qrDataUrl ? <img src={qrDataUrl} alt="QR de confirmación de entrega" className="h-24 w-24" /> : <span className="text-xs font-bold text-[#718076]">QR</span>}</div></div></div></div>;
+}
