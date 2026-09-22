@@ -212,7 +212,7 @@ export default function Home() {
       <header className="sticky top-0 z-30 border-b border-[#ece3d9]/80 bg-[#FFFDF5]/92 backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <button className="flex items-center gap-2" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Inicio de PIKI">
-            <span className="grid h-9 w-9 place-items-center rounded-[13px] bg-[#FFD72E] text-xl font-black text-white shadow-[0_7px_15px_rgba(255,107,61,.25)]">Y</span>
+            <span className="grid h-9 w-9 place-items-center rounded-[13px] bg-[#FFD72E] text-xl font-black text-[#171715] shadow-[0_7px_15px_rgba(255,215,46,.32)]">P</span>
             <span className="font-display text-2xl font-bold tracking-[-0.06em]">PIKI</span>
           </button>
           <nav className="hidden items-center gap-7 text-sm font-bold text-[#536056] md:flex">
@@ -232,18 +232,18 @@ export default function Home() {
 
       <main><div className="mx-auto max-w-7xl px-4 pt-5 sm:px-6 lg:px-8"><InstallAppBanner service="delivery" /></div>
         <section className="piki-grid px-4 pb-8 pt-6 sm:px-6 lg:px-8 lg:pb-12 lg:pt-9">
-          <div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] bg-[#171715] shadow-[0_24px_60px_rgba(31,43,33,.18)] lg:grid-cols-[1.02fr_.98fr]">
+          <div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] bg-[#FFD72E] shadow-[0_24px_60px_rgba(31,43,33,.18)] lg:grid-cols-[1.02fr_.98fr]">
             <div className="relative z-10 p-7 sm:p-10 lg:p-14">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(255,107,61,.34),transparent_38%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(255,255,255,.32),transparent_38%)]" />
               <div className="relative max-w-xl">
-                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-[#FFF1B0]"><Sparkles className="h-3.5 w-3.5 text-[#FFE36A]" /> PIKI Delivery · Cerca de ti.</div>
-                <h1 className="font-display text-[2.8rem] font-semibold leading-[.95] tracking-[-0.065em] text-white sm:text-6xl lg:text-7xl">Pide lo que quieras.<br /><span className="text-[#FFE36A]">Recibe. Disfruta.</span></h1>
-                <p className="mt-6 max-w-md text-base leading-relaxed text-[#F6EFD2] sm:text-lg">Tu ciudad, tus restaurantes y tus antojos. Todo llega rápido, cerca de ti y con la alegría de PIKI.</p>
-                <button onClick={() => document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" })} className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#FFD72E] px-5 py-3 text-sm font-extrabold text-white shadow-[0_10px_20px_rgba(255,107,61,.28)] transition hover:bg-[#E8C600] active:scale-[.98]">Pedir ahora <ArrowRight className="h-4 w-4" /></button>
-                <button onClick={() => setAddressOpen(true)} className="mt-7 flex items-center gap-2 text-sm font-semibold text-[#F8F0D7] transition hover:text-white"><MapPin className="h-4 w-4 text-[#FFE36A]" /> Entregando en <span className="border-b border-dashed border-[#9eb19e]">{address}</span></button>
+                <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-[#171715] px-3 py-1.5 text-xs font-bold text-[#FFD72E]"><Sparkles className="h-3.5 w-3.5 text-[#FFD72E]" /> PIKI Delivery · Cerca de ti.</div>
+                <h1 className="font-display text-[2.8rem] font-semibold leading-[.95] tracking-[-0.065em] text-[#171715] sm:text-6xl lg:text-7xl">Pide lo que quieras.<br /><span className="text-[#171715]">Recibe. Disfruta.</span></h1>
+                <p className="mt-6 max-w-md text-base leading-relaxed text-[#2c2b20] sm:text-lg">Restaurantes, supermercados y tus antojos favoritos. Todo llega rápido, cerca de ti y con la alegría de PIKI.</p>
+                <button onClick={() => document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" })} className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#171715] px-5 py-3 text-sm font-extrabold text-[#FFD72E] shadow-[0_10px_20px_rgba(31,31,20,.2)] transition hover:bg-black active:scale-[.98]">Pedir ahora <ArrowRight className="h-4 w-4" /></button>
+                <button onClick={() => setAddressOpen(true)} className="mt-7 flex items-center gap-2 text-sm font-semibold text-[#29281e] transition hover:text-black"><MapPin className="h-4 w-4 text-[#171715]" /> Entregando en <span className="border-b border-dashed border-[#171715]/45">{address}</span></button>
               </div>
             </div>
-            <div className="relative min-h-[280px] overflow-hidden lg:min-h-full"><img src="/piki-hero-rider.jpg" alt="Comida fresca lista para compartir" className="absolute inset-0 h-full w-full object-cover" /><div className="hero-shine absolute inset-0 lg:bg-[linear-gradient(90deg,rgba(24,32,27,.65),transparent_44%)]" /><div className="absolute bottom-5 right-5 rounded-2xl bg-[#FFFDF5]/95 p-3.5 shadow-xl backdrop-blur"><div className="flex items-center gap-2"><div className="grid h-9 w-9 place-items-center rounded-xl bg-[#FFF3BD] text-[#171715]"><Bike className="h-5 w-5" /></div><div><p className="text-xs font-bold text-[#667267]">Tiempo medio</p><p className="text-sm font-extrabold text-[#171715]">Menos de 30 min</p></div></div></div></div>
+            <div className="relative min-h-[280px] overflow-hidden bg-[#171715] lg:min-h-full"><img src="/manus-storage/piki-reference_2921a008.png" alt="PIKI Delivery: comida y reparto cerca de ti" className="absolute inset-0 h-full w-full object-cover object-center" /><div className="absolute inset-0 bg-gradient-to-r from-[#FFD72E]/25 via-transparent to-[#171715]/10" /><div className="absolute bottom-5 right-5 rounded-2xl bg-[#FFFDF5]/95 p-3.5 shadow-xl backdrop-blur"><div className="flex items-center gap-2"><div className="grid h-9 w-9 place-items-center rounded-xl bg-[#FFD72E] text-[#171715]"><Bike className="h-5 w-5" /></div><div><p className="text-xs font-bold text-[#667267]">Tiempo medio</p><p className="text-sm font-extrabold text-[#171715]">Menos de 30 min</p></div></div></div></div>
           </div>
         </section>
 
