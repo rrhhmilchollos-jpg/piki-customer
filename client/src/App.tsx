@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Partners from "./pages/Partners";
 import Riders from "./pages/Riders";
 import Admin from "./pages/Admin";
+import JoinPiki from "./pages/JoinPiki";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/partners" component={Partners} />
       <Route path="/riders" component={Riders} />
       <Route path="/admin" component={Admin} />
+      <Route path="/unete" component={JoinPiki} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
