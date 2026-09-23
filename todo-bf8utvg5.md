@@ -1,4 +1,4 @@
-# Yavoy — sesión Bf8uTVg5gOZ1EHthTJ9DTe
+# PIKI — sesión Bf8uTVg5gOZ1EHthTJ9DTe
 
 | Área | Estado | Resultado |
 |---|---|---|
@@ -8,4 +8,5 @@
 | Modo oscuro | Completado | Delivery, Riders y Admin comparten control persistente de noche; las pantallas iniciales, mapas e imágenes se adaptan sin perder legibilidad. |
 | Estadísticas Admin | Completado | La operación muestra flujo real de pedidos, disponibilidad de riders, porcentaje completado, cuentas activas y documentación verificada conforme a los filtros actuales. |
 | Validación | Completado | TypeScript, nueve pruebas, build de producción, auditoría de botones anidados y consola del navegador sin errores de la app. |
+| Rebranding PIKI | Completado | Se sustituyó la marca anterior por PIKI en la documentación, manifiestos, kits Android e iconos de aplicación. |
 | Checkpoint | En curso | Pendiente de registrar la revisión verificada. |
