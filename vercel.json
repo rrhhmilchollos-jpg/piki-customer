@@ -4,5 +4,6 @@
   "outputDirectory": "dist/public",
   "installCommand": "pnpm install --frozen-lockfile",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "rewrites": [{ "source": "/api/trpc/:path*", "destination": "https://api.pikidelivery.com/api/trpc/:path*" }]
 }
