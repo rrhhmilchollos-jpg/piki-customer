@@ -171,13 +171,12 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query((opts) => publicAccount(opts.ctx.user)),
-    register: publicProcedure.input(z.object({ name: z.string().trim().min(2).max(160), email, password, role: userRole.default("user") })).mutation(async ({ input, ctx }) => {
+    register: publicProcedure.input(z.object({ name: z.string().trim().min(2).max(160), email, password })).mutation(async ({ input, ctx }) => {
       const existing = await getUserByEmail(input.email);
       if (existing) throw new TRPCError({ code: "CONFLICT", message: "Ya existe una cuenta con este email. Inicia sesión o recupera tu contraseña." });
       const openId = `email_${nanoid(30)}`;
-      const user = await createCredentialUser({ openId, name: input.name, email: input.email, passwordHash: await hash(input.password, 12), role: input.role });
+      const user = await createCredentialUser({ openId, name: input.name, email: input.email, passwordHash: await hash(input.password, 12), role: "user" });
       if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo crear tu cuenta. Inténtalo de nuevo." });
-      if (input.role === "rider") await upsertRiderProfile({ riderOpenId: user.openId, displayName: user.name || input.name, vehicle: "bike", availability: "offline", zone: "Pendiente de asignación", status: "pending", documentsStatus: "pending" });
       await setCredentialSession(ctx, user);
       return { user: { id: user.id, name: user.name, email: user.email, role: user.role } };
     }),

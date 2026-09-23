@@ -110,7 +110,7 @@ export default function AccountHub() {
     if (password.length < 8) return toast.error("Usa al menos 8 caracteres en la contraseña");
     if (password !== confirmPassword) return toast.error("Las contraseñas no coinciden");
     if (!acceptedTerms) return toast.error("Acepta los términos para crear la cuenta");
-    register.mutate({ name: fullName.trim(), email, password, role: "user" }, { onSuccess: ({ user: signedIn }) => { void finishAuth(signedIn.role); }, onError: (error) => toast.error("No se pudo crear la cuenta", { description: error.message }) });
+    register.mutate({ name: fullName.trim(), email, password }, { onSuccess: ({ user: signedIn }) => { void finishAuth(signedIn.role); }, onError: (error) => toast.error("No se pudo crear la cuenta", { description: error.message }) });
   };
   const submitForgot = () => {
     if (!email) return toast.error("Introduce el email de tu cuenta");
