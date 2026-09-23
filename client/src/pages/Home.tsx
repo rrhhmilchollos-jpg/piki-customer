@@ -193,6 +193,11 @@ export default function Home() {
 
   const submitOrder = () => {
     if (!cartRestaurant || !cart.length) return;
+    if (!isAuthenticated) {
+      toast.error("Inicia sesión para realizar el pedido", { description: "Tu cesta se conservará mientras accedes a tu cuenta de cliente." });
+      window.dispatchEvent(new CustomEvent("piki:open-customer-auth"));
+      return;
+    }
     checkoutMutation.mutate(
       { restaurantId: cartRestaurant.id, address, items: cart.map((line) => ({ id: line.item.id, quantity: line.quantity })), total },
       {

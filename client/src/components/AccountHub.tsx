@@ -82,6 +82,12 @@ export default function AccountHub() {
       setPanel("auth");
       window.history.replaceState({}, "", window.location.pathname);
     }
+    const openCustomerAuth = () => {
+      setAuthMode("login");
+      setPanel("auth");
+    };
+    window.addEventListener("piki:open-customer-auth", openCustomerAuth);
+    return () => window.removeEventListener("piki:open-customer-auth", openCustomerAuth);
   }, []);
 
   const favoriteRestaurants = useMemo(() => restaurants.filter((restaurant) => favorites.includes(restaurant.id)), [favorites, restaurants]);
