@@ -80,9 +80,12 @@ export default function JoinPiki() {
       </header>
 
       <section className="mx-auto max-w-7xl px-5 pb-12 pt-14 sm:px-8 sm:pt-20">
+        <div className="mb-10 overflow-hidden rounded-[1.75rem] border border-[#e7d92c] bg-[#ffd72e]">
+          <img src="/piki-join-banner.png" alt="PIKI. Pide. Recibe. Disfruta." className="h-auto w-full object-cover" />
+        </div>
         <div className="max-w-3xl">
-          <p className="text-xs font-black uppercase tracking-[.2em] text-[#dc5c35]">Únete a PIKI · Xàtiva</p>
-          <h1 className="mt-4 font-display text-5xl font-semibold leading-[.98] tracking-[-.07em] sm:text-7xl">Crece con la red local de delivery.</h1>
+          <p className="text-xs font-black uppercase tracking-[.2em] text-[#171715]">PIKI · Pide. Recibe. Disfruta.</p>
+          <h1 className="mt-4 font-display text-5xl font-semibold leading-[.98] tracking-[-.07em] sm:text-7xl">Únete al equipo PIKI.</h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[#66736a]">Esta es la página oficial para solicitar ser rider o partner de PIKI. Tu solicitud llega directamente al departamento responsable y queda registrada para revisión.</p>
         </div>
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
