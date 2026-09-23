@@ -259,6 +259,17 @@ export default function Home() {
           </div>
         </section>
 
+        <section aria-labelledby="cobertura-piki" className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+          <div className="rounded-[1.8rem] border border-[#eadfce] bg-[#fff8d9] p-6 sm:p-8">
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#bd4f2e]">PIKI cerca de ti</p>
+            <h2 id="cobertura-piki" className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-[#171715] sm:text-4xl">Delivery en Xàtiva y alrededores</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[#526056] sm:text-base">Pide comida, productos y tus favoritos a negocios locales de Xàtiva, sus pedanías y las localidades cercanas. PIKI conecta restaurantes partners con clientes y riders de la zona.</p>
+            <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-[#3a473d]">
+              {['Xàtiva', 'Annauir', 'Bixquert', 'Sorió', 'El Genovés', 'Novetlè', 'La Llosa de Ranes', 'Vallés', 'Rotglà i Corberà', "L'Alcúdia de Crespins", 'Canals', 'Montesa', 'Barxeta'].map((place) => <span key={place} className="rounded-full bg-white px-3 py-2 shadow-sm">{place}</span>)}
+            </div>
+          </div>
+        </section>
+
         <section id="restaurantes" className="mx-auto max-w-7xl px-4 pb-28 pt-2 sm:px-6 lg:px-8">
           <SectionTitle eyebrow="Ahora cerca de ti" title="Comida que merece el desvío" action="Ver todos" />
           <div className="mb-7 flex flex-col gap-3 rounded-2xl border border-[#e9dfd5] bg-white p-3 shadow-[0_8px_20px_rgba(54,42,31,.04)] sm:flex-row sm:items-center">
