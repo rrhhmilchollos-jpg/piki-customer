@@ -13,7 +13,9 @@ export function PikiSplash({ service }: { service: Service }) {
   const item = config[service];
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => setVisible(false), 950);
+    // Mantener la identidad PIKI visible el tiempo suficiente para que el usuario
+    // reconozca la aplicación antes de entrar al contenido.
+    const timeout = window.setTimeout(() => setVisible(false), 4000);
     return () => window.clearTimeout(timeout);
   }, []);
 
