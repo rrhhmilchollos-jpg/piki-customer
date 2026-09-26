@@ -254,9 +254,15 @@ export const appRouter = router({
       if (!mayShareRiderLocation(order, ctx.user.openId)) return { available: false as const, reason: "not_in_delivery" as const };
       const location = await getLatestRiderLocation(order.riderOpenId!);
       if (!location || !isFreshRiderLocation(location.createdAt)) return { available: false as const, reason: "location_unavailable" as const };
+      const rider = await getRiderProfile(order.riderOpenId!);
+      const phase = order.status === "assigned" ? "going_to_restaurant" : order.status === "picked_up" ? "going_to_customer" : "waiting_for_food";
+      const etaMinutes = Math.max(1, Math.round((Date.now() - order.createdAt.getTime()) / 60000) + (phase === "going_to_customer" ? 8 : 15));
       return {
         available: true as const,
         riderName: order.riderName || "Tu rider",
+        vehicle: rider?.vehicle || "bike",
+        phase,
+        etaMinutes,
         latitude: location.latitudeE6 / 1_000_000,
         longitude: location.longitudeE6 / 1_000_000,
         accuracyMeters: location.accuracyMeters,
