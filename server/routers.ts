@@ -216,6 +216,12 @@ export const appRouter = router({
     }),
     logout: publicProcedure.mutation(({ ctx }) => { const cookieOptions = getSessionCookieOptions(ctx.req); ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 }); return { success: true } as const; }),
   }),
+  customer: router({
+    deliveryAddress: router({
+      get: protectedProcedure.query(() => ({ saved: false as const, address: null as string | null, deliveryLocation: null as { latitude: number; longitude: number } | null, updatedAt: null as Date | null })),
+      save: protectedProcedure.input(z.object({ address: z.string().trim().min(5).max(280), deliveryLocation: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }) })).mutation(({ input }) => ({ saved: true as const, address: input.address, deliveryLocation: input.deliveryLocation, updatedAt: new Date() })),
+    }),
+  }),
   catalog: router({
     list: publicProcedure.input(z.object({ category: z.string().optional(), query: z.string().optional() })).query(({ input }) => {
       const query = input.query?.trim().toLocaleLowerCase();
