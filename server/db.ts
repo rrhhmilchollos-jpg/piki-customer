@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   deliveryIncidents,
@@ -22,11 +22,16 @@ import {
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _chatTableReady = false;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
       _db = drizzle(process.env.DATABASE_URL);
+      if (!_chatTableReady) {
+        await _db.execute(sql.raw("CREATE TABLE IF NOT EXISTS `orderMessages` (`id` int AUTO_INCREMENT NOT NULL, `orderCode` varchar(32) NOT NULL, `senderOpenId` varchar(64) NOT NULL, `senderRole` enum('customer','rider') NOT NULL, `body` text NOT NULL, `createdAt` timestamp NOT NULL DEFAULT (now()), PRIMARY KEY (`id`), INDEX `orderMessages_orderCode_idx` (`orderCode`))"));
+        _chatTableReady = true;
+      }
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
