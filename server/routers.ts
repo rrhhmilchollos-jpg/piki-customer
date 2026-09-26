@@ -77,6 +77,7 @@ const basketInput = z.object({
   // Kept only for backward compatible callers; never trusted by the server.
   total: z.number().positive().optional(),
   customerName: z.string().max(160).optional(),
+  paymentMethod: z.enum(["stripe", "bizum", "cash"]).default("stripe"),
 });
 const orderStatuses = ["placed", "accepted", "ready", "assigned", "picked_up", "delivering", "delivered", "cancelled"] as const;
 const riderNameInput = z.object({ riderName: z.string().min(2).max(160), vehicle: z.enum(["bike", "moto", "car"]).default("bike"), zone: z.string().min(2).max(120).default("Xàtiva centro") });
