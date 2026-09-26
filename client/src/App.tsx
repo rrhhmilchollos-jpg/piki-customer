@@ -2,8 +2,13 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { useAuth } from "./_core/hooks/useAuth";
+import { connectCustomerRealtime } from "./lib/realtime";
 import Home from "./pages/Home";
 import Partners from "./pages/Partners";
 import Riders from "./pages/Riders";
@@ -24,12 +29,27 @@ function Router() {
   );
 }
 
+function CustomerRealtimeBridge() {
+  const { isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return connectCustomerRealtime((event) => {
+      void queryClient.invalidateQueries();
+      if (event.type === "order.processing") toast.success("Pago confirmado: tu pedido está siendo procesado por el restaurante.");
+      if (event.type === "order.status_changed" && typeof event.payload.message === "string") toast.info(event.payload.message);
+    });
+  }, [isAuthenticated, queryClient]);
+  return null;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster position="top-center" richColors />
+          <CustomerRealtimeBridge />
           <Router />
         </TooltipProvider>
       </ThemeProvider>
