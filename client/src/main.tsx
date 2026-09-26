@@ -8,6 +8,7 @@ import App from "./App";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { startLogin } from "./const";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { CUSTOMER_RELEASE, compareVersions } from "./lib/release";
 import "./index.css";
 
 if ("serviceWorker" in navigator) {
@@ -93,15 +94,22 @@ createRoot(document.getElementById("root")!).render(
 );
 
 function checkPikiMinimumVersion() {
-  const current = "0.2.1";
-  const surface = window.location.hostname.split(".")[0] || "unknown";
+  const current = CUSTOMER_RELEASE.version;
   const api = "https://api.pikidelivery.com";
-  void fetch(`${api}/api/v1/app-version?surface=${encodeURIComponent(surface)}`, { cache: "no-store" })
+  void fetch(`${api}/api/v1/app-version?surface=${encodeURIComponent(CUSTOMER_RELEASE.surface)}`, { cache: "no-store" })
     .then((r) => r.ok ? r.json() as Promise<{ minimumVersion?: string }> : null)
     .then((v) => {
-      if (v?.minimumVersion && v.minimumVersion !== current) {
+      const minimumComparison = v?.minimumVersion ? compareVersions(v.minimumVersion, current) : null;
+      // Only a minimum version newer than this build is blocking. Previously
+      // this compared against 0.2.1 and blocked the valid 0.2.2 build.
+      if (minimumComparison !== null && minimumComparison > 0) {
         document.body.innerHTML = `<main style="font-family:system-ui;padding:32px;max-width:560px;margin:auto"><h1>Actualización obligatoria</h1><p>Hay una nueva versión de PIKI disponible. Recarga para continuar.</p><button style="padding:12px 18px" onclick="location.reload()">Actualizar ahora</button></main>`;
-        if ("serviceWorker" in navigator) void navigator.serviceWorker.getRegistrations().then((rs) => Promise.all(rs.map((r) => r.update())));
+        if ("serviceWorker" in navigator) {
+          void navigator.serviceWorker.getRegistrations().then(async (registrations) => {
+            await Promise.all(registrations.map((registration) => registration.update()));
+            for (const registration of registrations) registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+          });
+        }
       }
     }).catch(() => undefined);
 }

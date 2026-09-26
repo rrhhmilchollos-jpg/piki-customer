@@ -37,3 +37,9 @@ El aviso de chunks grandes de Vite es de optimización y no impide la compilaci�
 ## Publicación
 
 La aplicación está preparada para Vercel y para instalación como PWA en Android. El dominio público previsto es `app.pikidelivery.com`. Las previews deben permanecer protegidas; únicamente el dominio público de producción debe añadirse a las excepciones de Deployment Protection.
+
+## Actualizaciones de la PWA instalada
+
+Las actualizaciones de la aplicación web se publican desplegando este repositorio en el mismo dominio HTTPS; no es necesario volver a pasar por PWABuilder para cada cambio. El cliente consulta la versión mínima del API, el service worker usa una caché versionada y activa el nuevo contenido al abrir o recargar la PWA. Para una actualización incompatible, incrementa `CUSTOMER_RELEASE.version` y establece el mismo valor como `minimumVersion` en el servicio que responde `/api/v1/app-version`.
+
+> Nota: si se distribuyó un APK firmado generado por PWABuilder, cambiar la web no cambia el APK ni su `versionCode`. En ese caso solo hace falta generar y publicar otro APK cuando se quiera actualizar el contenedor Android; para cambios de la web/PWA, el despliegue HTTPS es suficiente.
