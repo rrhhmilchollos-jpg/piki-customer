@@ -21,6 +21,9 @@ import {
   getRiderProfile,
   getLatestRiderLocation,
   getOrderRecord,
+  listOrderMessages,
+  createOrderMessage,
+  deleteOrderMessages,
   getPartnerStore,
   getUserByEmail,
   listAdminPartnerStores,
@@ -269,6 +272,19 @@ export const appRouter = router({
         updatedAt: location.createdAt.getTime(),
       };
     }),
+    messages: protectedProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input, ctx }) => {
+      const order = await getOrderRecord(input.id);
+      const isParticipant = Boolean(order && (order.customerOpenId === ctx.user.openId || order.riderOpenId === ctx.user.openId));
+      if (!isParticipant || !["assigned", "picked_up", "delivering"].includes(order!.status)) throw new TRPCError({ code: "FORBIDDEN", message: "El chat solo está disponible durante una entrega activa." });
+      return listOrderMessages(order!.publicCode);
+    }),
+    sendMessage: protectedProcedure.input(z.object({ id: z.string().min(1), body: z.string().trim().min(1).max(500) })).mutation(async ({ input, ctx }) => {
+      const order = await getOrderRecord(input.id);
+      if (!order || !["assigned", "picked_up", "delivering"].includes(order.status)) throw new TRPCError({ code: "FORBIDDEN", message: "El chat se cierra al finalizar la entrega." });
+      const senderRole = order.customerOpenId === ctx.user.openId ? "customer" : order.riderOpenId === ctx.user.openId ? "rider" : null;
+      if (!senderRole) throw new TRPCError({ code: "FORBIDDEN", message: "No formas parte de este pedido." });
+      return createOrderMessage({ orderCode: order.publicCode, senderOpenId: ctx.user.openId, senderRole, body: input.body });
+    }),
     feed: protectedProcedure.input(z.object({ statuses: z.array(z.enum(orderStatuses)).optional() }).optional()).query(async ({ input, ctx }) => {
       if (!["partner", "fleet_manager", "zone_manager", "admin"].includes(ctx.user.role)) throw new TRPCError({ code: "FORBIDDEN", message: "No tienes permisos para consultar el feed operativo." });
       const rows = await listOrderRecords(input?.statuses);
@@ -323,6 +339,7 @@ export const appRouter = router({
       }
       const rider = await getRiderProfile(ctx.user.openId);
       const updated = await updateOrderRecord(current.publicCode, { status: "delivered", deliveryVerificationState: "confirmed", deliveryVerifiedAt: new Date() });
+      await deleteOrderMessages(current.publicCode);
       if (rider) await updateRiderProfile(ctx.user.openId, { availability: "available", earningsCents: rider.earningsCents + Math.max(350, Math.round(current.totalCents * 0.09)) });
       await audit(ctx.user.openId, "confirm_delivery", "order", current.publicCode, { method: input.method });
       return { id: updated?.publicCode ?? current.publicCode, status: "delivered" as const, verifiedAt: Date.now() };

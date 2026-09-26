@@ -45,6 +45,16 @@ export const orders = mysqlTable("orders", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+/** Private rider/customer messages, scoped to an active order. */
+export const orderMessages = mysqlTable("orderMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  orderCode: varchar("orderCode", { length: 32 }).notNull(),
+  senderOpenId: varchar("senderOpenId", { length: 64 }).notNull(),
+  senderRole: mysqlEnum("senderRole", ["customer", "rider"]).notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 /** Minimal audit record: identifiers and event type only; never raw payment data. */
 export const paymentEvents = mysqlTable("paymentEvents", {
   id: int("id").autoincrement().primaryKey(),

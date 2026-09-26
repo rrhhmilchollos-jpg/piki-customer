@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   deliveryIncidents,
@@ -7,6 +7,7 @@ import {
   InsertUser,
   opsAuditEvents,
   orders,
+  orderMessages,
   partnerMenuItems,
   partnerStores,
   passwordResetTokens,
@@ -161,6 +162,23 @@ export async function updateOrderRecord(publicCode: string, patch: Partial<typeo
   if (!db) return null;
   await db.update(orders).set(patch).where(eq(orders.publicCode, publicCode));
   return getOrderRecord(publicCode);
+}
+
+export async function listOrderMessages(orderCode: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({ id: orderMessages.id, orderCode: orderMessages.orderCode, senderOpenId: orderMessages.senderOpenId, senderRole: orderMessages.senderRole, body: orderMessages.body, createdAt: orderMessages.createdAt }).from(orderMessages).where(eq(orderMessages.orderCode, orderCode)).orderBy(asc(orderMessages.createdAt));
+}
+export async function createOrderMessage(input: { orderCode: string; senderOpenId: string; senderRole: "customer" | "rider"; body: string }) {
+  const db = await getDb(); if (!db) return null;
+  const result = await db.insert(orderMessages).values(input);
+  const rows = await db.select({ id: orderMessages.id, orderCode: orderMessages.orderCode, senderOpenId: orderMessages.senderOpenId, senderRole: orderMessages.senderRole, body: orderMessages.body, createdAt: orderMessages.createdAt }).from(orderMessages).where(eq(orderMessages.id, Number(result[0].insertId))).limit(1);
+  return rows[0] ?? null;
+}
+export async function deleteOrderMessages(orderCode: string) {
+  const db = await getDb(); if (!db) return 0;
+  const result = await db.delete(orderMessages).where(eq(orderMessages.orderCode, orderCode));
+  return Number(result[0]?.affectedRows ?? 0);
 }
 
 /** Returns false for a duplicated Stripe event. The raw event payload is never retained. */
