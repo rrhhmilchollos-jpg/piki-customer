@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { PIKI_RELEASE } from "./release-meta";
+import { shouldShowPushConsent } from "./pushConsentPolicy";
 
 type ReleasePolicy = {
   surface?: unknown;
@@ -178,22 +179,31 @@ function PushConsentControl() {
       return;
     }
     const authenticated = customerSurface ? authEpoch > 0 : Boolean(storedEmployeeToken());
-    if (!authenticated) { setVisible(false); return; }
-    if (Notification.permission === "default") { setVisible(true); return; }
-    if (Notification.permission === "granted") {
-      void syncPushSubscription(false).then(() => { setMessage(""); setVisible(false); }).catch((error) => { setMessage(error instanceof Error ? error.message : "No se pudo registrar este dispositivo."); setVisible(true); });
+    const permission = "Notification" in window ? Notification.permission : "default";
+    if (!shouldShowPushConsent({ supported, authenticated, permission })) {
+      setVisible(false);
+      if (permission === "granted") void syncPushSubscription(false).catch((error) => console.warn("No se pudo sincronizar la suscripción de avisos.", error));
+      return;
     }
+    setVisible(true);
   }, [authEpoch, customerSurface, supported]);
   const enable = useCallback(async () => {
     setBusy(true); setMessage("");
-    try { setMessage(await syncPushSubscription(true)); window.setTimeout(() => setVisible(false), 900); }
-    catch (error) { setMessage(error instanceof Error ? error.message : "No se pudieron activar los avisos."); setVisible(true); }
+    try { await syncPushSubscription(true); setMessage(""); setVisible(false); }
+    catch (error) {
+      const permission = "Notification" in window ? Notification.permission : "default";
+      if (permission === "default") { setMessage(error instanceof Error ? error.message : "No se pudieron activar los avisos."); setVisible(true); }
+      else { setMessage(""); setVisible(false); console.warn("No se pudo registrar este dispositivo para avisos.", error); }
+    }
     finally { setBusy(false); }
   }, []);
   useEffect(() => {
     if (!supported) return;
     const listener = (event: MessageEvent) => {
-      if (event.data?.type === "PIKI_PUSH_SUBSCRIPTION_CHANGED" && Notification.permission === "granted") void syncPushSubscription(false).catch(() => setVisible(true));
+      if (event.data?.type === "PIKI_PUSH_SUBSCRIPTION_CHANGED" && Notification.permission === "granted") void syncPushSubscription(false).catch((error) => {
+        console.warn("No se pudo resincronizar la suscripción de avisos.", error);
+        setMessage(""); setVisible(false);
+      });
     };
     navigator.serviceWorker.addEventListener("message", listener);
     return () => navigator.serviceWorker.removeEventListener("message", listener);
