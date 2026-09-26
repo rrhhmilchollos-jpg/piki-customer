@@ -1,7 +1,7 @@
 {
   "surface": "customer",
   "version": "0.2.4",
-  "minimumVersion": "0.2.4",
-  "buildId": "646cc2aeee6b",
-  "forceUpdate": true
+  "minimumVersion": "0.0.0",
+  "buildId": "b3caf32e1f3d",
+  "forceUpdate": false
 }

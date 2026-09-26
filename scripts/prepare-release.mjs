@@ -14,7 +14,11 @@ function buildId() {
   try { return execFileSync("git", ["rev-parse", "--short=12", "HEAD"], { cwd: root, encoding: "utf8" }).trim(); }
   catch { return `local-${version}`; }
 }
-const release = { surface, version, minimumVersion: version, buildId: buildId(), forceUpdate: true };
+// Opt-in blocking avoids trapping cached 0.2.x PWAs behind a page that cannot
+// activate the recovery worker. Deployments default to a compatible release;
+// enable PIKI_FORCE_UPDATE=true only after validating the migration in staging.
+const forceUpdate = process.env.PIKI_FORCE_UPDATE === "true";
+const release = { surface, version, minimumVersion: forceUpdate ? version : "0.0.0", buildId: buildId(), forceUpdate };
 const publicDir = path.join(root, "client/public");
 fs.writeFileSync(path.join(publicDir, "release.json"), `${JSON.stringify(release, null, 2)}\n`);
 fs.writeFileSync(path.join(root, "client/src", "release-meta.ts"), `export const PIKI_RELEASE = ${JSON.stringify(release, null, 2)} as const;\n`);
