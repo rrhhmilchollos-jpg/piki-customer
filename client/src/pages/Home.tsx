@@ -163,6 +163,11 @@ export default function Home() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get("order_id");
+    if (orderId && !params.get("checkout")) {
+      setTracking({ id: orderId, restaurant: "Pedido PIKI", eta: "actualizando…", stage: "confirmed" });
+      window.history.replaceState({}, "", `${window.location.pathname}?order_id=${encodeURIComponent(orderId)}`);
+      toast.success("Pedido abierto", { description: "Este QR enlaza con la página pública de clientes PIKI." });
+    }
     if (params.get("checkout") === "success" && orderId) {
       setTracking({ id: orderId, restaurant: "Pedido PIKI", eta: "actualizando…", stage: "confirmed" });
       window.history.replaceState({}, "", window.location.pathname);

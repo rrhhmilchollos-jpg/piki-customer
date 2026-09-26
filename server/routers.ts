@@ -113,9 +113,13 @@ function deliveryPin(orderCode: string) {
   const value = createHmac("sha256", ENV.cookieSecret || "piki-delivery").update(`pin:${orderCode}`).digest("hex");
   return String((parseInt(value.slice(0, 8), 16) % 900000) + 100000);
 }
+function deliveryQrSignature(orderCode: string) {
+  return createHmac("sha256", ENV.cookieSecret || "piki-delivery").update(`qr:${orderCode}`).digest("hex").slice(0, 18);
+}
 function deliveryQrToken(orderCode: string) {
-  const signature = createHmac("sha256", ENV.cookieSecret || "piki-delivery").update(`qr:${orderCode}`).digest("hex").slice(0, 18);
-  return `MANDUCA:${orderCode}:${signature}`;
+  const signature = deliveryQrSignature(orderCode);
+  const origin = (process.env.APP_URL || "https://pikidelivery.com").replace(/\/$/, "");
+  return `${origin}/?order_id=${encodeURIComponent(orderCode)}&delivery_token=${encodeURIComponent(signature)}`;
 }
 function restaurantPosition(restaurantId: string) {
   const position = restaurants.findIndex((restaurant) => restaurant.id === restaurantId);
@@ -332,8 +336,13 @@ export const appRouter = router({
       const current = await getOrderRecord(input.id);
       if (!current || current.riderOpenId !== ctx.user.openId || !["picked_up", "delivering"].includes(current.status)) throw new TRPCError({ code: "FORBIDDEN", message: "No puedes confirmar esta entrega." });
       if (current.deliveryPinAttempts >= 5) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Se superó el límite de intentos. Contacta con operaciones." });
-      const expected = input.method === "pin" ? deliveryPin(current.publicCode) : deliveryQrToken(current.publicCode);
-      if (input.value !== expected) {
+      const expected = input.method === "pin" ? deliveryPin(current.publicCode) : deliveryQrSignature(current.publicCode);
+      let received = input.value;
+      if (input.method === "qr" && input.value.startsWith("http")) {
+        try { received = new URL(input.value).searchParams.get("delivery_token") || input.value; } catch {}
+      }
+      const legacy = input.method === "qr" ? `MANDUCA:${current.publicCode}:${expected}` : expected;
+      if (received !== expected && received !== legacy) {
         await updateOrderRecord(current.publicCode, { deliveryPinAttempts: current.deliveryPinAttempts + 1, deliveryVerificationState: "failed" });
         throw new TRPCError({ code: "BAD_REQUEST", message: "El código no coincide. Compruébalo con el cliente." });
       }
