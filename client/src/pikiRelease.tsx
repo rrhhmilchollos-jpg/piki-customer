@@ -157,19 +157,43 @@ async function syncPushSubscription(showNotification: boolean): Promise<string> 
 function PushConsentControl() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [authEpoch, setAuthEpoch] = useState(0);
   const [supported] = useState(() => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window);
-  const [visible, setVisible] = useState(() => typeof Notification === "undefined" || Notification.permission === "default");
-  const closeLater = useCallback((delay: number) => { window.setTimeout(() => setVisible(false), delay); }, []);
+  const [visible, setVisible] = useState(false);
+  const customerSurface: boolean = String(PIKI_RELEASE.surface) === "customer";
+  useEffect(() => {
+    const wake = () => setAuthEpoch((value) => value + 1);
+    window.addEventListener("piki-authenticated", wake);
+    return () => window.removeEventListener("piki-authenticated", wake);
+  }, []);
+  useEffect(() => {
+    if (!supported) return;
+    if (customerSurface && authEpoch === 0) {
+      void fetch(`${apiOrigin}/api/trpc/auth.me`, { credentials: "include" }).then(async (response) => {
+        if (!response.ok) return null;
+        const payload = await response.json() as { result?: { data?: { json?: unknown } } };
+        return payload.result?.data?.json ?? null;
+      }).then((user) => { if (user) setAuthEpoch(1); }).catch(() => undefined);
+      setVisible(false);
+      return;
+    }
+    const authenticated = customerSurface ? authEpoch > 0 : Boolean(storedEmployeeToken());
+    if (!authenticated) { setVisible(false); return; }
+    if (Notification.permission === "default") { setVisible(true); return; }
+    if (Notification.permission === "granted") {
+      void syncPushSubscription(false).then(() => { setMessage(""); setVisible(false); }).catch((error) => { setMessage(error instanceof Error ? error.message : "No se pudo registrar este dispositivo."); setVisible(true); });
+    }
+  }, [authEpoch, customerSurface, supported]);
   const enable = useCallback(async () => {
-    setBusy(true);
-    try { setMessage(await syncPushSubscription(true)); closeLater(1600); }
-    catch (error) { setMessage(error instanceof Error ? error.message : "No se pudieron activar los avisos."); closeLater(3200); }
+    setBusy(true); setMessage("");
+    try { setMessage(await syncPushSubscription(true)); window.setTimeout(() => setVisible(false), 900); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "No se pudieron activar los avisos."); setVisible(true); }
     finally { setBusy(false); }
-  }, [closeLater]);
+  }, []);
   useEffect(() => {
     if (!supported) return;
     const listener = (event: MessageEvent) => {
-      if (event.data?.type === "PIKI_PUSH_SUBSCRIPTION_CHANGED" && Notification.permission === "granted") void syncPushSubscription(false).catch(() => undefined);
+      if (event.data?.type === "PIKI_PUSH_SUBSCRIPTION_CHANGED" && Notification.permission === "granted") void syncPushSubscription(false).catch(() => setVisible(true));
     };
     navigator.serviceWorker.addEventListener("message", listener);
     return () => navigator.serviceWorker.removeEventListener("message", listener);

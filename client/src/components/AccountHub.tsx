@@ -112,6 +112,7 @@ export default function AccountHub() {
   };
   const finishAuth = async (role: "user" | "partner" | "rider" | "fleet_manager" | "zone_manager" | "admin") => {
     await utils.auth.me.invalidate();
+    window.dispatchEvent(new Event("piki-authenticated"));
     toast.success("Bienvenido a PIKI");
     setPanel(null);
   };
