@@ -56,7 +56,6 @@ import {
   upsertRiderPushSubscription,
   upsertRiderProfile,
 } from "./db";
-import { createCheckoutSession } from "./payments";
 import { sendPasswordResetEmail } from "./credentialEmail";
 import { storagePut } from "./storage";
 import { isFreshRiderLocation, mayShareRiderLocation } from "./deliveryTracking";
@@ -77,7 +76,8 @@ const basketInput = z.object({
   // Kept only for backward compatible callers; never trusted by the server.
   total: z.number().positive().optional(),
   customerName: z.string().max(160).optional(),
-  paymentMethod: z.enum(["stripe", "bizum", "cash"]).default("stripe"),
+  paymentMethod: z.literal("cash").default("cash"),
+  deliveryLocation: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }).optional(),
 });
 const orderStatuses = ["placed", "accepted", "ready", "assigned", "picked_up", "delivering", "delivered", "cancelled"] as const;
 const riderNameInput = z.object({ riderName: z.string().min(2).max(160), vehicle: z.enum(["bike", "moto", "car"]).default("bike"), zone: z.string().min(2).max(120).default("Xàtiva centro") });
@@ -232,19 +232,13 @@ export const appRouter = router({
       return { id: stored?.publicCode ?? code, restaurant: restaurant.name, eta: restaurant.eta, createdAt: stored?.createdAt?.getTime() ?? Date.now(), status: stored?.status ?? "placed", totalCents: quote.totalCents } as const;
     }),
     checkout: publicProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
+      if (input.paymentMethod !== "cash") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Tarjeta y Bizum todavía no están disponibles. Selecciona efectivo al recibir." });
+      if (!input.deliveryLocation) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Selecciona una dirección validada de la lista para poder despachar el pedido." });
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
       const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending" });
       if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible iniciar el pago; inténtalo de nuevo." });
-      try {
-        const session = await createCheckoutSession({ origin: requestOrigin(ctx.req.headers), orderCode: code, restaurantName: restaurant.name, quote, customerOpenId: ctx.user?.openId, customerName: input.customerName ?? ctx.user?.name, customerEmail: ctx.user?.email });
-        await updateOrderRecord(code, { stripeCheckoutSessionId: session.id });
-        if (!session.url) throw new Error("Stripe no devolvió URL de checkout");
-        return { orderId: code, checkoutUrl: session.url, totalCents: quote.totalCents };
-      } catch (error) {
-        await updateOrderRecord(code, { paymentState: "failed" });
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "El pago todavía no está disponible. Revisa la configuración de Stripe." });
-      }
+      return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash", cashDueAtDelivery: true };
     }),
     get: publicProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input }) => {
       const row = await getOrderRecord(input.id);
