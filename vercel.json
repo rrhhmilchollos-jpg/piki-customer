@@ -82,6 +82,10 @@
       "destination": "https://api.pikidelivery.com/api/trpc/:path*"
     },
     {
+      "source": "/api/v1/:path*",
+      "destination": "https://api.pikidelivery.com/api/v1/:path*"
+    },
+    {
       "source": "/unete",
       "destination": "/index.html"
     },
