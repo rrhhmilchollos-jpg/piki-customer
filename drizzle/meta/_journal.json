@@ -50,6 +50,13 @@
       "when": 1790032241059,
       "tag": "0006_secret_carlie_cooper",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790511540544,
+      "tag": "0008_delivery_fee_299",
+      "breakpoints": true
     }
   ]
 }
