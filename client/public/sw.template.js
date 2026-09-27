@@ -8,6 +8,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await cache.addAll(APP_SHELL);
+    await self.skipWaiting();
   })());
 });
 

@@ -16,7 +16,7 @@ type ValidPolicy = { surface: string; version?: unknown; minimumVersion: string;
 
 const apiOrigin = (import.meta.env.VITE_API_URL ?? "https://api.pikidelivery.com").replace(/\/$/, "");
 const apiHost = new URL(apiOrigin, window.location.origin).origin;
-const requestTimeoutMs = 8_000;
+const requestTimeoutMs = 15_000;
 
 function versionParts(value: string): number[] | null {
   const match = value.match(/^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/);
@@ -46,6 +46,43 @@ async function registerWorker(): Promise<ServiceWorkerRegistration | null> {
   const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
   await registration.update();
   return registration;
+}
+
+async function waitForWorkerActivation(
+  registration: ServiceWorkerRegistration | null,
+): Promise<void> {
+  if (!registration || !("serviceWorker" in navigator)) return;
+  await new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      navigator.serviceWorker.removeEventListener("controllerchange", finish);
+      resolve();
+    };
+    const activateWaiting = () => {
+      registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+    };
+    const watchInstalling = () => {
+      const installing = registration.installing;
+      if (!installing) {
+        activateWaiting();
+        return;
+      }
+      const onStateChange = () => {
+        if (installing.state === "installed") activateWaiting();
+        if (installing.state === "activated" || installing.state === "redundant")
+          finish();
+      };
+      installing.addEventListener("statechange", onStateChange, { once: false });
+      onStateChange();
+    };
+    const timeout = window.setTimeout(finish, 4_000);
+    navigator.serviceWorker.addEventListener("controllerchange", finish);
+    registration.addEventListener("updatefound", watchInstalling, { once: true });
+    watchInstalling();
+  });
 }
 
 export function installPikiReleaseHeaders(): void {
@@ -199,7 +236,7 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
       await registerWorker();
       const policy = await fetchPolicy();
       if (!isValidPolicy(policy)) throw new Error("La política de versión no es válida.");
-      const requiresUpdate = policy.forceUpdate && (policy.updateRequired === true || isNewer(policy.minimumVersion, PIKI_RELEASE.version) || policy.buildId !== PIKI_RELEASE.buildId);
+      const requiresUpdate = policy.forceUpdate && isNewer(policy.minimumVersion, PIKI_RELEASE.version);
       if (requiresUpdate) {
         setRequiredVersion(`${String(policy.version || policy.minimumVersion)} · ${policy.buildId}`);
         setState("required");
@@ -209,6 +246,11 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
     } catch (error) {
       // The API independently rejects obsolete, versioned requests. The UI remains usable only
       // while the policy cannot be reached, avoiding a permanent client-side outage offline.
+      if (error instanceof Error && error.name === "AbortError") {
+        setDetail("");
+        setState("ready");
+        return;
+      }
       setDetail(error instanceof Error ? error.message : "No se pudo comprobar la versión.");
       setState("error");
     }
@@ -228,8 +270,7 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
     setDetail("");
     try {
       const registration = await registerWorker();
-      const waiting = registration?.waiting ?? null;
-      if (waiting) waiting.postMessage({ type: "SKIP_WAITING" });
+      await waitForWorkerActivation(registration);
       const url = new URL(window.location.href);
       url.searchParams.set("piki_update", String(Date.now()));
       window.location.replace(url.toString());
