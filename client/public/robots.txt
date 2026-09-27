@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /checkout/
+Disallow: /admin/
+Disallow: /fleet/
+Disallow: /rider/
+
+Sitemap: https://pikidelivery.com/sitemap.xml
+Host: https://pikidelivery.com

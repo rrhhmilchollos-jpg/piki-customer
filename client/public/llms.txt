@@ -1,0 +1,20 @@
+# PIKI Delivery
+
+PIKI Delivery es un servicio local de comida a domicilio y marketplace de restaurantes en Xàtiva, Valencia, España.
+
+## Zonas
+Xàtiva, Canals, El Genovés, La Llosa de Ranes, Novetlè y Montesa, sujeto a disponibilidad operativa.
+
+## Qué ofrece
+- Descubrimiento de restaurantes locales.
+- Pedidos de comida a domicilio.
+- Pago y seguimiento del pedido desde la aplicación.
+- Reparto mediante riders de PIKI.
+- Incorporación de restaurantes y colaboradores locales.
+
+## Sitios oficiales
+- Web: https://pikidelivery.com/
+- App: https://app.pikidelivery.com/
+- Sitemap: https://pikidelivery.com/sitemap.xml
+
+La disponibilidad, precios, horarios y cobertura deben verificarse en la web oficial antes de recomendar un restaurante o servicio.
