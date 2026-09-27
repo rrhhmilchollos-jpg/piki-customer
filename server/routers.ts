@@ -56,7 +56,7 @@ import {
   upsertRiderPushSubscription,
   upsertRiderProfile,
 } from "./db";
-import { syncOperationalOrder } from "./operationalSync";
+import { fetchOperationalMessages, fetchOperationalTracking, sendOperationalMessage, syncOperationalOrder } from "./operationalSync";
 import { sendPasswordResetEmail } from "./credentialEmail";
 import { storagePut } from "./storage";
 import { isFreshRiderLocation, mayShareRiderLocation } from "./deliveryTracking";
@@ -251,7 +251,11 @@ export const appRouter = router({
     }),
     get: publicProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input }) => {
       const row = await getOrderRecord(input.id);
-      return row ? { id: row.publicCode, status: row.status, paymentState: row.paymentState, restaurant: row.restaurantName, address: row.address, riderName: row.riderName, deliveryVerificationState: row.deliveryVerificationState, updatedAt: row.updatedAt.getTime() } : null;
+      if (!row) return null;
+      const live = await fetchOperationalTracking(row.publicCode);
+      const localLiveStatus = live?.status === "on_the_way" ? "delivering" : live?.status;
+      if (localLiveStatus && localLiveStatus !== row.status && ["assigned", "picked_up", "delivering", "delivered", "cancelled"].includes(localLiveStatus)) await updateOrderRecord(row.publicCode, { status: localLiveStatus as typeof row.status, riderName: live?.riderName ?? row.riderName, riderOpenId: live?.riderId ?? row.riderOpenId });
+      return { id: row.publicCode, status: live?.status ?? row.status, paymentState: row.paymentState, restaurant: row.restaurantName, address: row.address, riderName: live?.riderName ?? row.riderName, riderPhotoUrl: live?.riderPhotoUrl ?? null, deliveryVerificationState: row.deliveryVerificationState, updatedAt: live?.updatedAt ?? row.updatedAt.getTime() };
     }),
     deliveryCredentials: protectedProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input, ctx }) => {
       const row = await getOrderRecord(input.id);
@@ -262,6 +266,10 @@ export const appRouter = router({
     customerTracking: protectedProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input, ctx }) => {
       const order = await getOrderRecord(input.id);
       if (!order || order.customerOpenId !== ctx.user.openId) throw new TRPCError({ code: "FORBIDDEN", message: "Solo la cuenta que realizó el pedido puede ver su seguimiento." });
+      const live = await fetchOperationalTracking(order.publicCode);
+      const localLiveStatus = live?.status === "on_the_way" ? "delivering" : live?.status;
+      if (localLiveStatus && localLiveStatus !== order.status && ["assigned", "picked_up", "delivering", "delivered", "cancelled"].includes(localLiveStatus)) await updateOrderRecord(order.publicCode, { status: localLiveStatus as typeof order.status, riderName: live?.riderName ?? order.riderName, riderOpenId: live?.riderId ?? order.riderOpenId });
+      if (live) return { available: live.locationAvailable, riderName: live.riderName || "Tu rider", riderPhotoUrl: live.riderPhotoUrl, vehicle: live.vehicle, phase: live.status === "picked_up" || live.status === "on_the_way" ? "going_to_customer" : "going_to_restaurant", etaMinutes: null, latitude: live.latitude ?? undefined, longitude: live.longitude ?? undefined, accuracyMeters: null, updatedAt: live.updatedAt ?? undefined };
       if (!mayShareRiderLocation(order, ctx.user.openId)) return { available: false as const, reason: "not_in_delivery" as const };
       const location = await getLatestRiderLocation(order.riderOpenId!);
       if (!location || !isFreshRiderLocation(location.createdAt)) return { available: false as const, reason: "location_unavailable" as const };
@@ -283,14 +291,26 @@ export const appRouter = router({
     messages: protectedProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input, ctx }) => {
       const order = await getOrderRecord(input.id);
       const isParticipant = Boolean(order && (order.customerOpenId === ctx.user.openId || order.riderOpenId === ctx.user.openId));
-      if (!isParticipant || !["assigned", "picked_up", "delivering"].includes(order!.status)) throw new TRPCError({ code: "FORBIDDEN", message: "El chat solo está disponible durante una entrega activa." });
+      const live = order ? await fetchOperationalTracking(order.publicCode) : null;
+      const effectiveStatus = live?.status === "on_the_way" ? "delivering" : live?.status ?? order?.status;
+      if (!isParticipant || !["assigned", "picked_up", "delivering"].includes(effectiveStatus || "")) throw new TRPCError({ code: "FORBIDDEN", message: "El chat solo está disponible durante una entrega activa." });
+      if (order!.customerOpenId === ctx.user.openId) {
+        const liveMessages = await fetchOperationalMessages(order!.publicCode, ctx.user.openId);
+        if (liveMessages) return liveMessages;
+      }
       return listOrderMessages(order!.publicCode);
     }),
     sendMessage: protectedProcedure.input(z.object({ id: z.string().min(1), body: z.string().trim().min(1).max(500) })).mutation(async ({ input, ctx }) => {
       const order = await getOrderRecord(input.id);
-      if (!order || !["assigned", "picked_up", "delivering"].includes(order.status)) throw new TRPCError({ code: "FORBIDDEN", message: "El chat se cierra al finalizar la entrega." });
+      const live = order ? await fetchOperationalTracking(order.publicCode) : null;
+      const effectiveStatus = live?.status === "on_the_way" ? "delivering" : live?.status ?? order?.status;
+      if (!order || !["assigned", "picked_up", "delivering"].includes(effectiveStatus || "")) throw new TRPCError({ code: "FORBIDDEN", message: "El chat se cierra al finalizar la entrega." });
       const senderRole = order.customerOpenId === ctx.user.openId ? "customer" : order.riderOpenId === ctx.user.openId ? "rider" : null;
       if (!senderRole) throw new TRPCError({ code: "FORBIDDEN", message: "No formas parte de este pedido." });
+      if (senderRole === "customer") {
+        const liveMessage = await sendOperationalMessage(order.publicCode, ctx.user.openId, input.body);
+        if (liveMessage) return liveMessage;
+      }
       return createOrderMessage({ orderCode: order.publicCode, senderOpenId: ctx.user.openId, senderRole, body: input.body });
     }),
     feed: protectedProcedure.input(z.object({ statuses: z.array(z.enum(orderStatuses)).optional() }).optional()).query(async ({ input, ctx }) => {

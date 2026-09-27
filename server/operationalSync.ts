@@ -1,6 +1,7 @@
 import { findRestaurant } from "./catalog";
 
 const apiUrl = (process.env.PIKI_API_URL ?? "https://api.pikidelivery.com").replace(/\/$/, "");
+const syncSecret = () => process.env.PIKI_CUSTOMER_SYNC_SECRET || "";
 
 export type OperationalOrderInput = {
   publicCode: string;
@@ -34,4 +35,18 @@ export async function syncOperationalOrder(order: OperationalOrderInput, deliver
     if (!response.ok) { console.warn(`[OperationalSync] API respondió ${response.status} para ${order.publicCode}: ${await response.text()}`); return false; }
     return true;
   } catch (error) { console.warn(`[OperationalSync] Error sincronizando ${order.publicCode}`, error); return false; }
+}
+
+export type OperationalTracking = { publicCode: string; status: string; assignmentState: string; riderId: string | null; riderName: string | null; riderPhotoUrl: string | null; vehicle: string; chatAvailable: boolean; locationAvailable: boolean; latitude: number | null; longitude: number | null; updatedAt: number | null };
+export async function fetchOperationalTracking(publicCode: string): Promise<OperationalTracking | null> {
+  const secret = syncSecret(); if (!secret) return null;
+  try { const response = await fetch(`${apiUrl}/api/v1/internal/customer-orders/${encodeURIComponent(publicCode)}/tracking`, { headers: { "x-piki-customer-sync-secret": secret } }); return response.ok ? await response.json() as OperationalTracking : null; } catch { return null; }
+}
+export async function fetchOperationalMessages(publicCode: string, customerId: string) {
+  const secret = syncSecret(); if (!secret) return null;
+  try { const response = await fetch(`${apiUrl}/api/v1/internal/customer-orders/${encodeURIComponent(publicCode)}/messages`, { method: "POST", headers: { "Content-Type": "application/json", "x-piki-customer-sync-secret": secret }, body: JSON.stringify({ action: "list", customerId }) }); return response.ok ? (await response.json() as { messages: Array<{ id: string; senderRole: string; body: string; createdAt: string }> }).messages : null; } catch { return null; }
+}
+export async function sendOperationalMessage(publicCode: string, customerId: string, body: string) {
+  const secret = syncSecret(); if (!secret) return null;
+  try { const response = await fetch(`${apiUrl}/api/v1/internal/customer-orders/${encodeURIComponent(publicCode)}/messages`, { method: "POST", headers: { "Content-Type": "application/json", "x-piki-customer-sync-secret": secret }, body: JSON.stringify({ action: "send", customerId, body }) }); return response.ok ? await response.json() : null; } catch { return null; }
 }
