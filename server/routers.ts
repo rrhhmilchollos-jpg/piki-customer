@@ -56,6 +56,7 @@ import {
   upsertRiderPushSubscription,
   upsertRiderProfile,
 } from "./db";
+import { syncOperationalOrder } from "./operationalSync";
 import { sendPasswordResetEmail } from "./credentialEmail";
 import { storagePut } from "./storage";
 import { isFreshRiderLocation, mayShareRiderLocation } from "./deliveryTracking";
@@ -235,6 +236,7 @@ export const appRouter = router({
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
       const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents });
+      if (stored) void syncOperationalOrder(stored);
       return { id: stored?.publicCode ?? code, restaurant: restaurant.name, eta: restaurant.eta, createdAt: stored?.createdAt?.getTime() ?? Date.now(), status: stored?.status ?? "placed", totalCents: quote.totalCents } as const;
     }),
     checkout: publicProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
@@ -244,6 +246,7 @@ export const appRouter = router({
       const code = publicCode();
       const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending" });
       if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible iniciar el pago; inténtalo de nuevo." });
+      void syncOperationalOrder({ ...stored, paymentMethod: "cash" }, input.deliveryLocation);
       return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash", cashDueAtDelivery: true };
     }),
     get: publicProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input }) => {

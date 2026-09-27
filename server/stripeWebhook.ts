@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import Stripe from "stripe";
 import { recordStripeEvent, updateOrderRecord } from "./db";
 import { stripe } from "./payments";
+import { syncOperationalOrder } from "./operationalSync";
 
 function orderCodeFrom(object: Stripe.Metadata | null | undefined) { return object?.order_code ?? null; }
 
@@ -21,7 +22,8 @@ export function registerStripeWebhook(app: Express) {
     if (!firstDelivery) return res.json({ received: true, duplicate: true });
     if (orderCode && (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded")) {
       const session = object as Stripe.Checkout.Session;
-      await updateOrderRecord(orderCode, { paymentState: "paid", stripeCheckoutSessionId: session.id, stripePaymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null });
+      const paidOrder = await updateOrderRecord(orderCode, { paymentState: "paid", stripeCheckoutSessionId: session.id, stripePaymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null });
+      if (paidOrder) await syncOperationalOrder(paidOrder);
     }
     if (orderCode && (event.type === "checkout.session.async_payment_failed" || event.type === "payment_intent.payment_failed")) await updateOrderRecord(orderCode, { paymentState: "failed" });
     if (orderCode && event.type === "charge.refunded") await updateOrderRecord(orderCode, { paymentState: "refunded" });
