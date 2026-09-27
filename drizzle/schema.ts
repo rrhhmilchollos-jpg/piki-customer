@@ -141,7 +141,7 @@ export const deliveryZones = mysqlTable("deliveryZones", {
   city: varchar("city", { length: 120 }).notNull(),
   managerOpenId: varchar("managerOpenId", { length: 64 }),
   status: mysqlEnum("status", ["active", "paused"]).default("active").notNull(),
-  baseFeeCents: int("baseFeeCents").default(199).notNull(),
+  baseFeeCents: int("baseFeeCents").default(299).notNull(),
   riderPayoutCents: int("riderPayoutCents").default(350).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

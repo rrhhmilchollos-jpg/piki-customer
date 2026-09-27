@@ -57,7 +57,7 @@ export default function Admin() {
   const [fleetModal, setFleetModal] = useState(false);
   const [documentReview, setDocumentReview] = useState<{ rider: any; document: any } | null>(null);
   const [reviewNote, setReviewNote] = useState("");
-  const [zoneDraft, setZoneDraft] = useState({ name: "", city: "", baseFee: "1.99", payout: "3.50" });
+  const [zoneDraft, setZoneDraft] = useState({ name: "", city: "", baseFee: "2.99", payout: "3.50" });
   const [fleetDraft, setFleetDraft] = useState({ name: "", zoneId: "", phone: "" });
   const overview = trpc.ops.overview.useQuery(undefined, { enabled: isOps, refetchInterval: 8_000 });
   const users = trpc.ops.listUsers.useQuery(undefined, { enabled: isAdmin });
@@ -72,7 +72,7 @@ export default function Admin() {
   const updateZone = trpc.ops.updateZone.useMutation({ onSuccess: () => { toast.success("Zona actualizada"); refresh(); } });
   const updateIncident = trpc.ops.updateIncident.useMutation({ onSuccess: () => { toast.success("Incidencia actualizada"); refresh(); } });
   const updateRole = trpc.ops.updateUserRole.useMutation({ onSuccess: () => { toast.success("Rol actualizado"); refresh(); } });
-  const createZone = trpc.ops.createZone.useMutation({ onSuccess: () => { toast.success("Zona operativa creada"); setZoneModal(false); setZoneDraft({ name: "", city: "", baseFee: "1.99", payout: "3.50" }); refresh(); } });
+  const createZone = trpc.ops.createZone.useMutation({ onSuccess: () => { toast.success("Zona operativa creada"); setZoneModal(false); setZoneDraft({ name: "", city: "", baseFee: "2.99", payout: "3.50" }); refresh(); } });
   const createFleet = trpc.ops.createFleet.useMutation({ onSuccess: () => { toast.success("Flota creada y pendiente de activación"); setFleetModal(false); setFleetDraft({ name: "", zoneId: "", phone: "" }); refresh(); } });
   const data = overview.data;
 
