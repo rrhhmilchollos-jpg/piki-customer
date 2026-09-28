@@ -3,6 +3,7 @@ import AccountHub from "@/components/AccountHub";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
 import { MapView } from "@/components/Map";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import CustomerNotificationCenter from "@/components/CustomerNotificationCenter";
 import { PikiSplash } from "@/components/PikiSplash";
 import { useAuth } from "@/_core/hooks/useAuth";
 import QRCode from "qrcode";
@@ -297,6 +298,7 @@ export default function Home() {
           <div className="flex items-center gap-2 sm:gap-3">
             <button onClick={openAddressDialog} className="hidden max-w-[240px] items-center gap-2 rounded-full border border-[#e5dbd0] bg-white px-3 py-2 text-sm font-semibold text-[#304037] shadow-sm transition hover:border-[#bdc9b9] sm:flex"><MapPin className="h-4 w-4 shrink-0 text-[#FFD72E]" /><span className="truncate">{address}</span><ChevronDown className="h-3.5 w-3.5" /></button>
             <ThemeToggle />
+            {isAuthenticated && <CustomerNotificationCenter authenticated />}
             <button onClick={() => setCartOpen(true)} className="relative grid h-10 w-10 place-items-center rounded-full bg-[#171715] text-white transition hover:bg-[#171715] active:scale-95" aria-label="Abrir cesta"><ShoppingBag className="h-4.5 w-4.5" />{cartCount > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#FFD72E] px-1 text-[10px] font-extrabold">{cartCount}</span>}</button>
             <button onClick={() => setMenuOpen(!menuOpen)} className="grid h-10 w-10 place-items-center rounded-full border border-[#e5dbd0] bg-white text-[#171715] md:hidden" aria-label="Abrir menú"><Menu className="h-5 w-5" /></button>
           </div>
