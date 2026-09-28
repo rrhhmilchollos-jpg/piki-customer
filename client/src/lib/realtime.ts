@@ -32,7 +32,7 @@ export function connectCustomerRealtime(onEvent: (event: CustomerRealtimeEvent) 
             try {
               const event = JSON.parse(data) as CustomerRealtimeEvent;
               if (eventId) sessionStorage.setItem(storageKey, eventId);
-              if (event.type) onEvent(event);
+              if (event.type) { window.dispatchEvent(new CustomEvent("piki:realtime", { detail: event })); onEvent(event); }
             } catch { /* ignore malformed frames and retain reconnect behavior */ }
           }
         }
