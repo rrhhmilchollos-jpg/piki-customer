@@ -189,7 +189,7 @@ function PushConsentControl() {
     const permission = "Notification" in window ? Notification.permission : "default";
     if (!shouldShowPushConsent({ supported, authenticated, permission })) {
       setVisible(false);
-      if (permission === "granted") void syncPushSubscription(false).catch((error) => console.warn("No se pudo sincronizar la suscripción de avisos.", error));
+      if (authenticated && permission === "granted") void syncPushSubscription(false).catch((error) => console.warn("No se pudo sincronizar la suscripción de avisos.", error));
       return;
     }
     setVisible(true);
@@ -207,14 +207,14 @@ function PushConsentControl() {
   useEffect(() => {
     if (!supported) return;
     const listener = (event: MessageEvent) => {
-      if (event.data?.type === "PIKI_PUSH_SUBSCRIPTION_CHANGED" && Notification.permission === "granted") void syncPushSubscription(false).catch((error) => {
+      if (event.data?.type === "PIKI_PUSH_SUBSCRIPTION_CHANGED" && Notification.permission === "granted" && (!customerSurface || authEpoch > 0)) void syncPushSubscription(false).catch((error) => {
         console.warn("No se pudo resincronizar la suscripción de avisos.", error);
         setMessage(""); setVisible(false);
       });
     };
     navigator.serviceWorker.addEventListener("message", listener);
     return () => navigator.serviceWorker.removeEventListener("message", listener);
-  }, [supported]);
+  }, [supported, customerSurface, authEpoch]);
   if (!supported || !visible) return null;
   return <aside aria-live="polite" style={{ position: "fixed", right: "16px", bottom: "16px", zIndex: 9999, maxWidth: "320px", padding: "12px", borderRadius: "12px", background: "#111827", color: "white", boxShadow: "0 10px 30px rgba(0,0,0,.25)" }}>
     <button type="button" onClick={() => setVisible(false)} aria-label="Cerrar aviso de PIKI" style={{ float: "right", border: 0, background: "transparent", color: "white", fontSize: "20px", lineHeight: 1, cursor: "pointer" }}>×</button>
