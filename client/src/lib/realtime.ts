@@ -14,6 +14,10 @@ export function connectCustomerRealtime(onEvent: (event: CustomerRealtimeEvent) 
           credentials: "include",
           headers: { "X-PIKI-Surface": "customer", ...(lastId ? { "Last-Event-ID": lastId } : {}) },
         });
+        if (response.status === 401 || response.status === 403) {
+          window.dispatchEvent(new Event("piki:realtime-auth-required"));
+          return;
+        }
         if (!response.ok || !response.body) throw new Error(`SSE_HTTP_${response.status}`);
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
