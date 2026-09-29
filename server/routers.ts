@@ -251,10 +251,11 @@ export const appRouter = router({
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
       const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending" });
-      if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible iniciar el pago; inténtalo de nuevo." });
-      void syncOperationalOrder({ ...stored, paymentMethod: "cash" }, input.deliveryLocation);
+      if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible guardar el pedido; inténtalo de nuevo." });
+      const synced = await syncOperationalOrder({ ...stored, paymentMethod: "cash" }, input.deliveryLocation);
+      if (!synced) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No se pudo sincronizar el pedido con Partner, Admin, Fleet y Rider. No lo hemos confirmado; inténtalo de nuevo." });
       void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
-      return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash", cashDueAtDelivery: true };
+      return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash", paymentState: "pending_cash_collection", cashDueAtDelivery: true };
     }),
     get: publicProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input }) => {
       const row = await getOrderRecord(input.id);
