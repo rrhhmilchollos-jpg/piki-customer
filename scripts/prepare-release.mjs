@@ -23,5 +23,5 @@ const publicDir = path.join(root, "client/public");
 fs.writeFileSync(path.join(publicDir, "release.json"), `${JSON.stringify(release, null, 2)}\n`);
 fs.writeFileSync(path.join(root, "client/src", "release-meta.ts"), `export const PIKI_RELEASE = ${JSON.stringify(release, null, 2)} as const;\n`);
 const template = fs.readFileSync(path.join(publicDir, "sw.template.js"), "utf8");
-fs.writeFileSync(path.join(publicDir, "sw.js"), template.replaceAll("__BUILD_ID__", release.buildId).replaceAll("__CACHE_PREFIX__", "piki-customer").replace("__APP_SHELL__", JSON.stringify(["/", "/manifest.json", "/piki-delivery-192.png", "/piki-delivery-512.png", "/piki-hero.webp"])));
+fs.writeFileSync(path.join(publicDir, "sw.js"), template.replaceAll("__BUILD_ID__", release.buildId).replaceAll("__CACHE_PREFIX__", "piki-customer").replace("__APP_SHELL__", JSON.stringify(["/", "/partners", "/manifest.json", "/manifest-partners.json", "/piki-delivery-192.png", "/piki-delivery-512.png", "/piki-hero.webp"])));
 console.log(`Prepared ${surface} release ${release.version} (${release.buildId})`);

@@ -10,4 +10,7 @@ export const ENV = {
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
   vapidSubject: process.env.VAPID_SUBJECT ?? "",
+  fcmProjectId: process.env.FCM_PROJECT_ID ?? "",
+  fcmClientEmail: process.env.FCM_CLIENT_EMAIL ?? "",
+  fcmPrivateKey: process.env.FCM_PRIVATE_KEY ?? "",
 };

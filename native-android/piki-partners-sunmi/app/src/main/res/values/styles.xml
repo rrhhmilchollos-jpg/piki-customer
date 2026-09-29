@@ -1,0 +1,9 @@
+<resources>
+  <style name="Theme.PikiPartners" parent="android:style/Theme.Material.Light.NoActionBar">
+    <item name="android:fontFamily">sans</item>
+    <item name="android:colorAccent">#FFD72E</item>
+    <item name="android:navigationBarColor">#171715</item>
+    <item name="android:statusBarColor">#171715</item>
+    <item name="android:windowLightStatusBar">false</item>
+  </style>
+</resources>

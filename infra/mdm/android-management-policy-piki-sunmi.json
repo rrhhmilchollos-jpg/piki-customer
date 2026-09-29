@@ -1,0 +1,25 @@
+{
+  "name": "enterprises/ENTERPRISE_ID/policies/piki-sunmi-v2-production",
+  "applications": [
+    {
+      "packageName": "com.pikidelivery.partners",
+      "installType": "KIOSK",
+      "defaultPermissionPolicy": "GRANT",
+      "permissionGrants": [
+        {
+          "permission": "android.permission.POST_NOTIFICATIONS",
+          "policy": "GRANT"
+        }
+      ]
+    }
+  ],
+  "safeBootDisabled": true,
+  "screenCaptureDisabled": true,
+  "factoryResetDisabled": true,
+  "cameraDisabled": true,
+  "systemUpdate": {
+    "type": "WINDOWED",
+    "startMinutes": 120,
+    "endMinutes": 240
+  }
+}

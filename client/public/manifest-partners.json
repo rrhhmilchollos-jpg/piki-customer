@@ -1,0 +1,22 @@
+{
+  "id": "/partners",
+  "name": "PIKI Partners · Comandero",
+  "short_name": "PIKI Partners",
+  "description": "Comandero PIKI para recibir, aceptar y preparar pedidos desde un Sunmi V2.",
+  "start_url": "/partners",
+  "scope": "/partners",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#FFFDF5",
+  "theme_color": "#FFD72E",
+  "lang": "es",
+  "orientation": "portrait",
+  "categories": ["business", "food", "productivity"],
+  "icons": [
+    { "src": "/piki-delivery-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/piki-delivery-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Pedidos entrantes", "short_name": "Pedidos", "url": "/partners", "icons": [{ "src": "/piki-delivery-192.png", "sizes": "192x192" }] }
+  ]
+}

@@ -8,6 +8,7 @@ const copy = {
   delivery: { title: "Instala PIKI Delivery", text: "Pide más rápido desde tu pantalla de inicio.", accent: "#FFD72E", soft: "#fff0e9" },
   riders: { title: "Instala PIKI Riders", text: "Recibe rutas y alertas desde tu pantalla de inicio.", accent: "#171715", soft: "#eaf4e6" },
   admin: { title: "Instala PIKI Admin", text: "Ten el control operativo siempre a mano.", accent: "#143b2b", soft: "#e8f0e7" },
+  partners: { title: "Instala PIKI Partners", text: "Usa este dispositivo como tu comandero de cocina.", accent: "#171715", soft: "#fff4be" },
 } as const;
 
 export function InstallAppBanner({ service }: { service: keyof typeof copy }) {

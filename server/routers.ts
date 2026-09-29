@@ -18,6 +18,7 @@ import {
   createPartnerStoreRecord,
   createResetToken,
   deletePartnerMenuItem,
+  getPartnerOrder,
   getRiderProfile,
   getLatestRiderLocation,
   getOrderRecord,
@@ -33,6 +34,7 @@ import {
   listFleets,
   listOrderRecords,
   listOpsAuditEvents,
+  listPartnerOrders,
   listPartnerStores,
   listRiderProfiles,
   listRiderDocuments,
@@ -53,6 +55,7 @@ import {
   updateSosAlert,
   updateUserRole,
   updateUserPassword,
+  upsertPartnerPushSubscription,
   upsertRiderPushSubscription,
   upsertRiderProfile,
 } from "./db";
@@ -65,7 +68,7 @@ import { ENV } from "./_core/env";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { notifyOwner } from "./_core/notification";
-import { notifyRidersOfReadyOrder, pushConfigured } from "./push";
+import { notifyPartnersOfNewOrder, notifyRidersOfReadyOrder, partnerPushConfigured, pushConfigured } from "./push";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -236,7 +239,10 @@ export const appRouter = router({
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
       const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents });
-      if (stored) void syncOperationalOrder(stored);
+      if (stored) {
+        void syncOperationalOrder(stored);
+        void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
+      }
       return { id: stored?.publicCode ?? code, restaurant: restaurant.name, eta: restaurant.eta, createdAt: stored?.createdAt?.getTime() ?? Date.now(), status: stored?.status ?? "placed", totalCents: quote.totalCents } as const;
     }),
     checkout: publicProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
@@ -247,6 +253,7 @@ export const appRouter = router({
       const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending" });
       if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible iniciar el pago; inténtalo de nuevo." });
       void syncOperationalOrder({ ...stored, paymentMethod: "cash" }, input.deliveryLocation);
+      void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
       return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash", cashDueAtDelivery: true };
     }),
     get: publicProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input }) => {
@@ -584,6 +591,43 @@ export const appRouter = router({
     dashboard: protectedProcedure.query(async ({ ctx }) => {
       assertPartner(ctx.user.role);
       return listPartnerStores(ctx.user.openId);
+    }),
+    orders: protectedProcedure.query(async ({ ctx }) => {
+      assertPartner(ctx.user.role);
+      return listPartnerOrders(ctx.user.openId);
+    }),
+    updateOrder: protectedProcedure.input(z.object({ orderCode: z.string().min(3).max(32), status: z.enum(["accepted", "ready"]), prepMinutes: z.number().int().min(5).max(180).optional() })).mutation(async ({ input, ctx }) => {
+      assertPartner(ctx.user.role);
+      const order = await getPartnerOrder(ctx.user.openId, input.orderCode);
+      if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Este pedido no pertenece a ninguno de tus establecimientos." });
+      if (input.status === "accepted" && !["placed", "accepted"].includes(order.status)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "El pedido ya no está pendiente de aceptación." });
+      if (input.status === "ready" && !["accepted", "ready"].includes(order.status)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "El pedido debe aceptarse antes de marcarlo como listo." });
+      const updated = await updateOrderRecord(input.orderCode, { status: input.status, ...(input.prepMinutes ? { prepMinutes: input.prepMinutes } : {}) });
+      if (!updated) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo actualizar el pedido." });
+      return updated;
+    }),
+    pushConfig: protectedProcedure.query(({ ctx }) => {
+      assertPartner(ctx.user.role);
+      const configured = partnerPushConfigured();
+      return { webPushConfigured: configured.webPush, fcmConfigured: configured.fcm, publicKey: ENV.vapidPublicKey || null };
+    }),
+    subscribePush: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), installationId: z.string().min(12).max(128), endpoint: z.string().url().max(1024), p256dh: z.string().min(20).max(255), auth: z.string().min(8).max(255) })).mutation(async ({ input, ctx }) => {
+      assertPartner(ctx.user.role);
+      if (!pushConfigured()) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Las notificaciones web push aún no están configuradas." });
+      if (!await getPartnerStore(ctx.user.openId, input.storeId)) throw new TRPCError({ code: "NOT_FOUND", message: "No puedes vincular un dispositivo a este establecimiento." });
+      const device = await upsertPartnerPushSubscription({ ownerOpenId: ctx.user.openId, storeId: input.storeId, installationId: input.installationId, transport: "web_push", token: input.endpoint, p256dh: input.p256dh, auth: input.auth });
+      if (!device) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo guardar este dispositivo." });
+      await audit(ctx.user.openId, "subscribe_partner_web_push", "partner_push_device", String(device.id), { storeId: input.storeId });
+      return { subscribed: true, transport: "web_push" as const };
+    }),
+    registerNativeDevice: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), installationId: z.string().min(12).max(128), fcmToken: z.string().min(32).max(1024) })).mutation(async ({ input, ctx }) => {
+      assertPartner(ctx.user.role);
+      if (!partnerPushConfigured().fcm) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Las credenciales FCM del comandero aún no están configuradas." });
+      if (!await getPartnerStore(ctx.user.openId, input.storeId)) throw new TRPCError({ code: "NOT_FOUND", message: "No puedes vincular un dispositivo a este establecimiento." });
+      const device = await upsertPartnerPushSubscription({ ownerOpenId: ctx.user.openId, storeId: input.storeId, installationId: input.installationId, transport: "fcm", token: input.fcmToken });
+      if (!device) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo registrar el comandero." });
+      await audit(ctx.user.openId, "register_partner_sunmi", "partner_push_device", String(device.id), { storeId: input.storeId });
+      return { registered: true, transport: "fcm" as const };
     }),
     createStore: protectedProcedure.input(storeFields.extend({ items: z.array(menuItem).min(1).max(100) })).mutation(async ({ input, ctx }) => {
       assertPartner(ctx.user.role);

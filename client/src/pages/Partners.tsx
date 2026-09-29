@@ -1,8 +1,11 @@
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { InstallAppBanner } from "@/components/InstallAppBanner";
+import { callNative, installationId, nativeBridgeAvailable, type NativeOrderTicket } from "@/lib/nativeBridge";
 import {
   ArrowLeft,
+  BellRing,
   Check,
   ChevronRight,
   Clock3,
@@ -11,15 +14,20 @@ import {
   MenuSquare,
   Package,
   Pencil,
+  PauseCircle,
   Plus,
+  Printer,
   Save,
   ShieldCheck,
   Store,
   Trash2,
   Upload,
+  Volume2,
+  Wifi,
+  WifiOff,
   X,
 } from "lucide-react";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
 
@@ -29,14 +37,21 @@ const money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR
 
 function cents(value: string) { return Math.round(Number(value.replace(",", ".")) * 100); }
 function euro(value: number) { return (value / 100).toFixed(2).replace(".", ","); }
+function decodeVapidKey(value: string) { const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "="); const raw = atob(padded); return Uint8Array.from(raw, (character) => character.charCodeAt(0)); }
+function ticketItems(value: string): NativeOrderTicket["items"] { try { const items = JSON.parse(value) as Array<{ id?: string; quantity?: number; notes?: string }>; return items.map((item) => ({ name: item.id || "Producto", quantity: Math.max(1, item.quantity || 1), notes: item.notes })); } catch { return []; } }
 
 export default function Partners() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const utils = trpc.useUtils();
   const enabled = isAuthenticated && (user?.role === "partner" || user?.role === "admin");
   const { data: stores = [], isLoading } = trpc.partner.dashboard.useQuery(undefined, { enabled });
+  const { data: incomingOrders = [], refetch: refetchOrders, dataUpdatedAt } = trpc.partner.orders.useQuery(undefined, { enabled, refetchInterval: 5000 });
+  const pushConfig = trpc.partner.pushConfig.useQuery(undefined, { enabled });
   const createStore = trpc.partner.createStore.useMutation({ onSuccess: () => { void utils.partner.dashboard.invalidate(); } });
   const updateStore = trpc.partner.updateStore.useMutation({ onSuccess: () => { void utils.partner.dashboard.invalidate(); } });
+  const updateOrder = trpc.partner.updateOrder.useMutation({ onSuccess: () => { void refetchOrders(); } });
+  const subscribePush = trpc.partner.subscribePush.useMutation();
+  const registerNativeDevice = trpc.partner.registerNativeDevice.useMutation();
   const addMenuItem = trpc.partner.addMenuItem.useMutation({ onSuccess: () => { void utils.partner.dashboard.invalidate(); } });
   const updateMenuItem = trpc.partner.updateMenuItem.useMutation({ onSuccess: () => { void utils.partner.dashboard.invalidate(); } });
   const deleteMenuItem = trpc.partner.deleteMenuItem.useMutation({ onSuccess: () => { void utils.partner.dashboard.invalidate(); } });
@@ -49,8 +64,47 @@ export default function Partners() {
   const [newStore, setNewStore] = useState({ name: "", cuisine: "Mediterránea", address: "", phone: "", email: "", description: "", prepMinutes: "20", minimumOrder: "0", coverImageUrl: "" });
   const [newItem, setNewItem] = useState<DraftItem>({ ...emptyItem });
   const [editStore, setEditStore] = useState({ name: "", cuisine: "", address: "", phone: "", email: "", description: "", prepMinutes: "20", minimumOrder: "0", coverImageUrl: "", scheduleJson: "" });
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [online, setOnline] = useState(() => navigator.onLine);
+  const [alertingOrder, setAlertingOrder] = useState<string | null>(null);
+  const [nativeTerminal, setNativeTerminal] = useState(false);
+  const audioContext = useRef<AudioContext | null>(null);
+  const knownOrders = useRef(new Set<string>());
+  useEffect(() => { const onOnline = () => setOnline(true); const onOffline = () => setOnline(false); window.addEventListener("online", onOnline); window.addEventListener("offline", onOffline); return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); }; }, []);
 
   const activeStore = useMemo(() => stores.find((store) => store.id === activeStoreId) ?? stores[0] ?? null, [stores, activeStoreId]);
+  useEffect(() => { setNativeTerminal(nativeBridgeAvailable()); }, []);
+  const playAlert = () => {
+    if (!soundEnabled) return;
+    const AudioCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtor) return;
+    audioContext.current ??= new AudioCtor();
+    const context = audioContext.current;
+    void context.resume();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(880, context.currentTime);
+    oscillator.frequency.setValueAtTime(660, context.currentTime + 0.18);
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.42);
+    oscillator.connect(gain); gain.connect(context.destination); oscillator.start(); oscillator.stop(context.currentTime + 0.45);
+  };
+  useEffect(() => {
+    const pending = incomingOrders.find((order) => order.status === "placed");
+    if (pending && !knownOrders.current.has(pending.publicCode)) {
+      knownOrders.current.add(pending.publicCode);
+      setAlertingOrder(pending.publicCode);
+      playAlert();
+      void callNative({ action: "alert.start", orderCode: pending.publicCode, restaurant: pending.restaurantName, customerName: pending.customerName || "Cliente" }).catch(() => undefined);
+    }
+  }, [incomingOrders, soundEnabled]);
+  useEffect(() => {
+    if (!alertingOrder || !soundEnabled) return;
+    const interval = window.setInterval(playAlert, 1800);
+    return () => window.clearInterval(interval);
+  }, [alertingOrder, soundEnabled]);
   useEffect(() => { if (stores.length && !stores.some((store) => store.id === activeStoreId)) setActiveStoreId(stores[0].id); }, [stores, activeStoreId]);
   useEffect(() => {
     if (!activeStore) return;
@@ -67,6 +121,37 @@ export default function Partners() {
       scheduleJson: activeStore.scheduleJson || "{\n  \"lunes-domingo\": \"12:00–23:30\"\n}",
     });
   }, [activeStore?.id]);
+
+  const stopNativeAlert = (orderCode: string) => { void callNative({ action: "alert.stop", orderCode }).catch(() => undefined); };
+  const printTicket = async (order: typeof incomingOrders[number]) => {
+    const ticket: NativeOrderTicket = { orderCode: order.publicCode, restaurant: order.restaurantName, customerName: order.customerName || "Cliente", address: order.address, totalCents: order.totalCents, items: ticketItems(order.itemsJson) };
+    try {
+      const result = await callNative<{ printed?: boolean }>({ action: "printer.ticket", ticket });
+      if (!result) return toast("Impresión disponible en el comandero SUNMI", { description: "Abre PIKI Partners desde el icono instalado en el terminal." });
+      if (result.printed) toast.success("Ticket enviado a la impresora SUNMI");
+    } catch { toast.error("No se pudo imprimir el ticket", { description: "Comprueba papel, tapa de impresora y conexión del comandero." }); }
+  };
+  const activateBackgroundAlerts = async () => {
+    if (!activeStore) return toast.error("Selecciona un establecimiento antes de activar alertas");
+    try {
+      if (nativeBridgeAvailable()) {
+        if (!pushConfig.data?.fcmConfigured) return toast("FCM pendiente de configuración", { description: "Falta cargar las credenciales seguras del proyecto Android en el servidor." });
+        const result = await callNative<{ token?: string }>({ action: "push.token" });
+        if (!result?.token) throw new Error("No se obtuvo token FCM");
+        registerNativeDevice.mutate({ storeId: activeStore.id, installationId: installationId(), fcmToken: result.token }, { onSuccess: () => toast.success("Alertas nativas activadas", { description: "El SUNMI avisará aunque PIKI esté en segundo plano." }) });
+        return;
+      }
+      if (!pushConfig.data?.webPushConfigured || !pushConfig.data.publicKey) return toast("Alertas en preparación", { description: "El equipo técnico debe activar las credenciales Web Push." });
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return toast.error("Este navegador no admite alertas de fondo");
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return toast.error("Permiso de notificaciones no concedido");
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription() || await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: decodeVapidKey(pushConfig.data.publicKey) });
+      const data = subscription.toJSON();
+      if (!data.endpoint || !data.keys?.p256dh || !data.keys.auth) throw new Error("Suscripción incompleta");
+      subscribePush.mutate({ storeId: activeStore.id, installationId: installationId(), endpoint: data.endpoint, p256dh: data.keys.p256dh, auth: data.keys.auth }, { onSuccess: () => toast.success("Alertas de fondo activadas") });
+    } catch { toast.error("No se pudieron activar las alertas", { description: "Comprueba permisos y conexión WiFi." }); }
+  };
 
   const imageData = async (event: ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
     const file = event.target.files?.[0];
@@ -111,10 +196,20 @@ export default function Partners() {
   return <div className="min-h-screen bg-[#f7f3ed] text-[#171715]">
     <header className="sticky top-0 z-30 border-b border-[#e7ddd2] bg-[#FFFDF5]/95 backdrop-blur"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8"><div className="flex items-center gap-3"><Link href="/" className="grid h-9 w-9 place-items-center rounded-full border border-[#e1d6c9] bg-white"><ArrowLeft className="h-4 w-4" /></Link><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Centro partner</p><h1 className="font-display text-xl font-semibold tracking-[-.04em]">PIKI Partners</h1></div></div><div className="flex items-center gap-2"><span className="hidden items-center gap-2 rounded-full bg-[#e8f1e4] px-3 py-2 text-xs font-bold text-[#171715] sm:flex"><ShieldCheck className="h-3.5 w-3.5" /> Cuenta partner</span><button onClick={() => setShowStoreForm(true)} className="flex items-center gap-2 rounded-full bg-[#FFD72E] px-4 py-2.5 text-sm font-extrabold text-white shadow-sm"><Plus className="h-4 w-4" /> Nuevo local</button></div></div></header>
     <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
+      <InstallAppBanner service="partners" />
+      <section className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-[#ead892] bg-[#fff9dc] p-4"><BellRing className="h-5 w-5 text-[#171715]" /><div className="min-w-0 flex-1"><p className="text-sm font-extrabold">Alertas prioritarias del comandero</p><p className="mt-0.5 text-xs text-[#6f6120]">{nativeTerminal ? "Activa el canal nativo para avisos persistentes aunque la app esté en segundo plano." : "Activa Web Push como respaldo si este dispositivo no usa el wrapper SUNMI."}</p></div><button onClick={() => void activateBackgroundAlerts()} disabled={subscribePush.isPending || registerNativeDevice.isPending} className="rounded-full bg-[#171715] px-3.5 py-2 text-xs font-extrabold text-white disabled:opacity-60">{subscribePush.isPending || registerNativeDevice.isPending ? "Activando…" : nativeTerminal ? "Activar alertas SUNMI" : "Activar alertas"}</button></section>
+      <section className="mb-6 rounded-2xl border border-[#e9dfd5] bg-[#171715] p-5 text-white sm:p-6" aria-live="polite">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#FFD72E]">Operativa de cocina</p><h2 className="mt-1 font-display text-2xl font-semibold tracking-[-.04em]">Pedidos sin perder ninguno</h2><p className="mt-1 text-sm text-[#d8e4d3]">La PWA consulta nuevos pedidos cada 5 segundos y mantiene la alerta activa hasta aceptarlos.</p></div>
+          <div className="flex flex-wrap items-center gap-2"><span className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-extrabold ${online ? "bg-white/15 text-[#d7e8cf]" : "bg-[#8b5846] text-white"}`}>{online ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}{online ? "WiFi conectado" : "Sin conexión"}</span><button onClick={() => { setSoundEnabled(true); setAlertingOrder(null); playAlert(); }} className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-extrabold ${soundEnabled ? "bg-[#d7e8cf] text-[#143B2B]" : "bg-[#FFD72E] text-[#171715]"}`}><Volume2 className="h-4 w-4" />{soundEnabled ? "Sonido activado" : "Activar sonido"}</button></div>
+        </div>
+        <p className="mt-3 text-[11px] text-[#aebead]">Última sincronización: {dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString("es-ES") : "pendiente"} · Si se corta el WiFi, la última bandeja queda visible y se reintenta al recuperar la conexión.</p>
+        {incomingOrders.length > 0 ? <div className="mt-5 space-y-3">{incomingOrders.slice(0, 6).map((order) => <div key={order.publicCode} className="flex flex-wrap items-center gap-3 rounded-xl bg-white/10 p-3"><div className="grid h-10 w-10 place-items-center rounded-lg bg-[#FFD72E] text-[#171715]"><BellRing className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="text-sm font-extrabold">{order.publicCode} · {order.customerName || "Cliente"}</p><p className="truncate text-xs text-[#d8e4d3]">{order.address} · {(order.totalCents / 100).toFixed(2).replace(".", ",")} €</p></div>{order.status === "placed" ? <><button onClick={() => { setAlertingOrder(null); stopNativeAlert(order.publicCode); updateOrder.mutate({ orderCode: order.publicCode, status: "accepted", prepMinutes: activeStore?.prepMinutes || 20 }, { onSuccess: () => void printTicket(order) }); }} disabled={updateOrder.isPending} className="rounded-lg bg-[#FFD72E] px-3 py-2 text-xs font-extrabold text-[#171715]">Aceptar</button><button onClick={() => { setAlertingOrder(null); stopNativeAlert(order.publicCode); }} className="rounded-lg border border-white/25 px-3 py-2 text-xs font-bold text-white">Silenciar</button></> : order.status === "accepted" ? <><button onClick={() => void printTicket(order)} className="flex items-center gap-1 rounded-lg border border-white/25 px-3 py-2 text-xs font-extrabold text-white"><Printer className="h-3.5 w-3.5" /> Ticket</button><button onClick={() => updateOrder.mutate({ orderCode: order.publicCode, status: "ready" })} disabled={updateOrder.isPending} className="rounded-lg bg-[#d7e8cf] px-3 py-2 text-xs font-extrabold text-[#143B2B]">Marcar listo</button></> : <span className="rounded-lg bg-white/15 px-3 py-2 text-xs font-bold">Listo para rider</span>}</div>)}</div> : <p className="mt-5 border-t border-white/15 pt-4 text-sm text-[#d8e4d3]">No hay pedidos activos. Cuando entre uno, aparecerá aquí con alerta sonora.</p>}
+      </section>
       {isLoading ? <div className="grid gap-5 lg:grid-cols-[260px_1fr]"><div className="h-[360px] animate-pulse rounded-2xl bg-[#e9e1d8]" /><div className="h-[680px] animate-pulse rounded-2xl bg-[#e9e1d8]" /></div> : !stores.length ? <div className="mx-auto max-w-2xl rounded-[2rem] border border-[#e9dfd5] bg-white p-8 text-center shadow-[0_12px_40px_rgba(55,45,35,.05)] sm:p-12"><div className="mx-auto grid h-16 w-16 place-items-center rounded-[1.4rem] bg-[#FFF4BE] text-[#171715]"><Store className="h-8 w-8" /></div><p className="mt-7 text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Bienvenido, {user?.name}</p><h2 className="mt-2 font-display text-4xl font-semibold tracking-[-.06em]">Tu primer local empieza aquí</h2><p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-[#67746b]">Añade los datos de tu establecimiento y una primera selección de platos. Lo dejaremos en revisión antes de mostrarlo a los clientes.</p><button onClick={() => setShowStoreForm(true)} className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#FFD72E] px-5 py-3.5 text-sm font-extrabold text-white"><Plus className="h-4 w-4" /> Dar de alta mi local</button></div> : <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
         <aside className="h-fit rounded-2xl border border-[#e9dfd5] bg-white p-3"><p className="px-3 pb-3 pt-2 text-xs font-bold uppercase tracking-[.16em] text-[#8a958b]">Mis establecimientos</p>{stores.map((store) => <button key={store.id} onClick={() => setActiveStoreId(store.id)} className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${activeStore?.id === store.id ? "bg-[#FFF4BE]" : "hover:bg-[#faf6f0]"}`}>{store.coverImageUrl ? <img src={store.coverImageUrl} alt="" className="h-10 w-10 rounded-xl object-cover" /> : <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#f6ead4] text-[#9a692b]"><Store className="h-4 w-4" /></span>}<span className="min-w-0 flex-1"><span className="block truncate text-sm font-extrabold">{store.name}</span><span className="block text-xs text-[#718076]">{store.status === "active" ? "Activo" : store.status === "paused" ? "En pausa" : "En revisión"}</span></span><ChevronRight className="h-4 w-4 text-[#879187]" /></button>)}<button onClick={() => setShowStoreForm(true)} className="mt-2 flex w-full items-center gap-2 rounded-xl border border-dashed border-[#d7cec2] p-3 text-sm font-bold text-[#171715]"><Plus className="h-4 w-4" /> Añadir local</button></aside>
         {activeStore && <section className="space-y-6"><div className="overflow-hidden rounded-2xl border border-[#e9dfd5] bg-white">{activeStore.coverImageUrl && <img src={activeStore.coverImageUrl} alt={`Fachada de ${activeStore.name}`} className="h-44 w-full object-cover" />}<div className="p-5 sm:p-7"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Panel de control</p><h2 className="font-display text-3xl font-semibold tracking-[-.05em]">{activeStore.name}</h2><p className="mt-2 text-sm text-[#68746a]">{activeStore.cuisine} · {activeStore.address}</p></div><button onClick={() => updateStore.mutate({ storeId: activeStore.id, status: activeStore.status === "paused" ? "active" : "paused" }, { onSuccess: () => toast.success(activeStore.status === "paused" ? "Local reactivado" : "Local pausado") })} className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-extrabold ${activeStore.status === "active" ? "bg-[#FFF4BE] text-[#171715]" : activeStore.status === "paused" ? "bg-[#f5e7df] text-[#8b5846]" : "bg-[#f6ead4] text-[#8b6526]"}`}><span className={`h-2 w-2 rounded-full ${activeStore.status === "active" ? "bg-[#56a362]" : activeStore.status === "paused" ? "bg-[#bd765a]" : "bg-[#c99a32]"}`} />{activeStore.status === "active" ? "Abierto" : activeStore.status === "paused" ? "Pausado" : "Pendiente de revisión"}</button></div><div className="mt-6 grid gap-3 sm:grid-cols-3"><Metric icon={Clock3} label="Preparación" value={`${activeStore.prepMinutes} min`} /><Metric icon={MenuSquare} label="Productos" value={String(activeStore.menu.length)} /><Metric icon={Package} label="Pedido mínimo" value={activeStore.minimumOrderCents ? money.format(activeStore.minimumOrderCents / 100) : "Sin mínimo"} /></div></div></div>
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]"><section className="rounded-2xl border border-[#e9dfd5] bg-white p-5 sm:p-7"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Carta digital</p><h3 className="mt-1 font-display text-3xl font-semibold tracking-[-.05em]">Productos y disponibilidad</h3></div><button onClick={() => setShowItemForm(true)} className="flex items-center gap-2 rounded-full bg-[#171715] px-4 py-2.5 text-sm font-extrabold text-white"><Plus className="h-4 w-4" /> Añadir producto</button></div><div className="mt-6 space-y-3">{activeStore.menu.length ? activeStore.menu.map((item) => <div key={item.id} className="flex gap-3 rounded-2xl border border-[#ebe1d7] bg-[#fffdfa] p-3"><div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f5eee5] text-[#9b6d47]">{item.imageUrl ? <img src={item.imageUrl} alt="" className="h-full w-full object-cover" /> : <MenuSquare className="h-5 w-5" />}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-extrabold">{item.name}</p><span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${item.available ? "bg-[#FFF4BE] text-[#171715]" : "bg-[#f5e7df] text-[#8b5846]"}`}>{item.available ? "Disponible" : "Agotado"}</span></div><p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#6b786e]">{item.description || "Sin descripción"}</p><p className="mt-2 text-sm font-extrabold">{money.format(item.priceCents / 100)}</p></div><div className="flex flex-col justify-between gap-2"><button onClick={() => updateMenuItem.mutate({ storeId: activeStore.id, itemId: item.id, available: item.available ? 0 : 1 }, { onSuccess: () => toast.success(item.available ? "Producto marcado como agotado" : "Producto disponible") })} className="grid h-8 w-8 place-items-center rounded-lg bg-white text-[#171715] shadow-sm" aria-label="Cambiar disponibilidad"><Check className="h-4 w-4" /></button><button onClick={() => { if (window.confirm(`¿Eliminar ${item.name} de la carta?`)) deleteMenuItem.mutate({ storeId: activeStore.id, itemId: item.id }, { onSuccess: () => toast.success("Producto eliminado") }); }} className="grid h-8 w-8 place-items-center rounded-lg bg-white text-[#a45b48] shadow-sm" aria-label="Eliminar producto"><Trash2 className="h-4 w-4" /></button></div></div>) : <div className="rounded-2xl border border-dashed border-[#dcd1c5] p-6 text-center text-sm text-[#6a766d]">Todavía no hay productos. Añade el primero para empezar tu carta.</div>}</div></section>
+          <div className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]"><section className="rounded-2xl border border-[#e9dfd5] bg-white p-5 sm:p-7"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Carta digital</p><h3 className="mt-1 font-display text-3xl font-semibold tracking-[-.05em]">Productos y disponibilidad</h3></div><button onClick={() => setShowItemForm(true)} className="flex items-center gap-2 rounded-full bg-[#171715] px-4 py-2.5 text-sm font-extrabold text-white"><Plus className="h-4 w-4" /> Añadir producto</button></div><div className="mt-6 space-y-3">{activeStore.menu.length ? activeStore.menu.map((item) => <div key={item.id} className="flex gap-3 rounded-2xl border border-[#ebe1d7] bg-[#fffdfa] p-3"><div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#f5eee5] text-[#9b6d47]">{item.imageUrl ? <img src={item.imageUrl} alt="" className="h-full w-full object-cover" /> : <MenuSquare className="h-5 w-5" />}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-extrabold">{item.name}</p><span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase ${item.available ? "bg-[#FFF4BE] text-[#171715]" : "bg-[#f5e7df] text-[#8b5846]"}`}>{item.available ? "Disponible" : "Agotado"}</span></div><p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#6b786e]">{item.description || "Sin descripción"}</p><p className="mt-2 text-sm font-extrabold">{money.format(item.priceCents / 100)}</p></div><div className="flex flex-col justify-between gap-2"><button onClick={() => updateMenuItem.mutate({ storeId: activeStore.id, itemId: item.id, available: item.available ? 0 : 1 }, { onSuccess: () => toast.success(item.available ? "Producto marcado como agotado" : "Producto disponible") })} className={`grid h-8 w-8 place-items-center rounded-lg bg-white shadow-sm ${item.available ? "text-[#171715]" : "text-[#4b8b52]"}`} aria-label={item.available ? "Pausar producto" : "Reactivar producto"}>{item.available ? <PauseCircle className="h-4 w-4" /> : <Check className="h-4 w-4" />}</button><button onClick={() => { if (window.confirm(`¿Eliminar ${item.name} de la carta?`)) deleteMenuItem.mutate({ storeId: activeStore.id, itemId: item.id }, { onSuccess: () => toast.success("Producto eliminado") }); }} className="grid h-8 w-8 place-items-center rounded-lg bg-white text-[#a45b48] shadow-sm" aria-label="Eliminar producto"><Trash2 className="h-4 w-4" /></button></div></div>) : <div className="rounded-2xl border border-dashed border-[#dcd1c5] p-6 text-center text-sm text-[#6a766d]">Todavía no hay productos. Añade el primero para empezar tu carta.</div>}</div></section>
             <section className="rounded-2xl border border-[#e9dfd5] bg-white p-5 sm:p-7"><div className="flex items-center gap-2"><Pencil className="h-4 w-4 text-[#dc5c35]" /><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Ficha del local</p><h3 className="font-display text-3xl font-semibold tracking-[-.05em]">Datos y horario</h3></div></div><div className="mt-6 space-y-3"><Input label="Nombre comercial" value={editStore.name} onChange={(value) => setEditStore((current) => ({ ...current, name: value }))} /><div className="grid grid-cols-2 gap-3"><Input label="Tipo de cocina" value={editStore.cuisine} onChange={(value) => setEditStore((current) => ({ ...current, cuisine: value }))} /><Input label="Preparación (min)" value={editStore.prepMinutes} type="number" onChange={(value) => setEditStore((current) => ({ ...current, prepMinutes: value }))} /></div><Input label="Dirección" value={editStore.address} onChange={(value) => setEditStore((current) => ({ ...current, address: value }))} /><div className="grid grid-cols-2 gap-3"><Input label="Teléfono" value={editStore.phone} type="tel" onChange={(value) => setEditStore((current) => ({ ...current, phone: value }))} /><Input label="Pedido mínimo (€)" value={editStore.minimumOrder} type="number" onChange={(value) => setEditStore((current) => ({ ...current, minimumOrder: value }))} /></div><label className="block"><span className="mb-1.5 block text-sm font-bold">Descripción</span><textarea value={editStore.description} onChange={(event) => setEditStore((current) => ({ ...current, description: event.target.value }))} rows={3} className="w-full resize-none rounded-xl border border-[#ded5ca] bg-white px-3 py-2.5 text-sm outline-none focus:border-[#FFD72E]" /></label><label className="block"><span className="mb-1.5 block text-sm font-bold">Horario (JSON)</span><textarea value={editStore.scheduleJson} onChange={(event) => setEditStore((current) => ({ ...current, scheduleJson: event.target.value }))} rows={3} className="w-full resize-none rounded-xl border border-[#ded5ca] bg-white px-3 py-2.5 font-mono text-xs outline-none focus:border-[#FFD72E]" /></label><label className="flex items-center justify-between rounded-xl border border-dashed border-[#d9cec2] bg-[#FFFDF5] p-3 text-sm font-bold text-[#171715]"><span className="flex items-center gap-2"><ImagePlus className="h-4 w-4" /> {uploadImage.isPending ? "Subiendo imagen…" : "Subir foto de portada"}</span><input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={uploadImage.isPending} onChange={(event) => void imageData(event, (url) => setEditStore((current) => ({ ...current, coverImageUrl: url })))} /></label>{editStore.coverImageUrl && <img src={editStore.coverImageUrl} alt="Previsualización de portada" className="h-24 w-full rounded-xl object-cover" />}<button onClick={saveStoreDetails} disabled={updateStore.isPending} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFD72E] py-3.5 text-sm font-extrabold text-white disabled:opacity-60"><Save className="h-4 w-4" /> {updateStore.isPending ? "Guardando…" : "Guardar cambios"}</button></div></section></div>
         </section>}
       </div>}

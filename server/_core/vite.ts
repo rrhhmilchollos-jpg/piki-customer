@@ -8,7 +8,7 @@ import viteConfig from "../../vite.config";
 
 function pwaHtmlForPath(template: string, requestUrl: string) {
   const pathname = requestUrl.split("?")[0];
-  const app = pathname.startsWith("/riders") ? { manifest: "/manifest-riders.json", title: "PIKI Riders", description: "Rutas, pedidos y operaciones de reparto de PIKI.", theme: "#171715" } : pathname.startsWith("/admin") ? { manifest: "/manifest-admin.json", title: "PIKI Admin", description: "Centro de control de reparto, flotas y documentos de PIKI.", theme: "#143b2b" } : { manifest: "/manifest.json", title: "PIKI Delivery", description: "PIKI Delivery: comida local, a tu ritmo.", theme: "#FFD72E" };
+  const app = pathname.startsWith("/riders") ? { manifest: "/manifest-riders.json", title: "PIKI Riders", description: "Rutas, pedidos y operaciones de reparto de PIKI.", theme: "#171715" } : pathname.startsWith("/admin") ? { manifest: "/manifest-admin.json", title: "PIKI Admin", description: "Centro de control de reparto, flotas y documentos de PIKI.", theme: "#143b2b" } : pathname.startsWith("/partners") ? { manifest: "/manifest-partners.json", title: "PIKI Partners", description: "Comandero y pedidos para comercios PIKI.", theme: "#FFD72E" } : { manifest: "/manifest.json", title: "PIKI Delivery", description: "PIKI Delivery: comida local, a tu ritmo.", theme: "#FFD72E" };
   return template
     .replace(/<link rel="manifest" href="[^"]*"\s*\/>/, `<link rel="manifest" href="${app.manifest}" />`)
     .replace(/<meta name="theme-color" content="[^"]*"\s*\/>/, `<meta name="theme-color" content="${app.theme}" />`)

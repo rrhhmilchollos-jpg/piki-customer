@@ -32,6 +32,7 @@ export const orders = mysqlTable("orders", {
   address: text("address").notNull(),
   itemsJson: text("itemsJson").notNull(),
   totalCents: int("totalCents").notNull(),
+  prepMinutes: int("prepMinutes"),
   status: mysqlEnum("status", ["placed", "accepted", "ready", "assigned", "picked_up", "delivering", "delivered", "cancelled"]).default("placed").notNull(),
   paymentState: mysqlEnum("paymentState", ["pending", "paid", "failed", "refunded"]).default("pending").notNull(),
   stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", { length: 255 }),
@@ -116,6 +117,22 @@ export const riderPushSubscriptions = mysqlTable("riderPushSubscriptions", {
   endpoint: varchar("endpoint", { length: 1024 }).notNull().unique(),
   p256dh: varchar("p256dh", { length: 255 }).notNull(),
   auth: varchar("auth", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/** Device registration for a partner command terminal. FCM supports native SUNMI alerts; web_push is the PWA fallback. */
+export const partnerPushSubscriptions = mysqlTable("partnerPushSubscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerOpenId: varchar("ownerOpenId", { length: 64 }).notNull(),
+  storeId: int("storeId").notNull(),
+  installationId: varchar("installationId", { length: 128 }).notNull(),
+  transport: mysqlEnum("transport", ["web_push", "fcm"]).notNull(),
+  token: varchar("token", { length: 1024 }).notNull().unique(),
+  p256dh: varchar("p256dh", { length: 255 }),
+  auth: varchar("auth", { length: 255 }),
+  alertEnabled: int("alertEnabled").default(1).notNull(),
+  lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

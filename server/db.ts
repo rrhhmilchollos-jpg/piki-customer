@@ -9,6 +9,7 @@ import {
   orders,
   orderMessages,
   partnerMenuItems,
+  partnerPushSubscriptions,
   partnerStores,
   passwordResetTokens,
   paymentEvents,
@@ -139,7 +140,7 @@ export async function consumeResetToken(tokenHash: string) {
   return token;
 }
 
-export async function createOrderRecord(input: { publicCode: string; restaurantId: string; restaurantName: string; customerOpenId?: string | null; customerName?: string | null; address: string; itemsJson: string; totalCents: number; paymentState?: "pending" | "paid" | "failed" | "refunded" }) {
+export async function createOrderRecord(input: { publicCode: string; restaurantId: string; restaurantName: string; customerOpenId?: string | null; customerName?: string | null; address: string; itemsJson: string; totalCents: number; prepMinutes?: number | null; paymentState?: "pending" | "paid" | "failed" | "refunded" }) {
   const db = await getDb();
   if (!db) return null;
   const result = await db.insert(orders).values(input);
@@ -260,6 +261,24 @@ export async function listPartnerStores(ownerOpenId: string) {
     ...store,
     menu: await db.select().from(partnerMenuItems).where(eq(partnerMenuItems.storeId, store.id)).orderBy(desc(partnerMenuItems.createdAt)),
   })));
+}
+
+export async function listPartnerOrders(ownerOpenId: string) {
+  const stores = await listPartnerStores(ownerOpenId);
+  if (!stores.length) return [];
+  const storeNames = new Set(stores.map((store) => store.name.trim().toLocaleLowerCase()));
+  const orders = await listOrderRecords(undefined, false);
+  return orders
+    .filter((order) => storeNames.has(order.restaurantName.trim().toLocaleLowerCase()))
+    .filter((order) => !["delivered", "cancelled"].includes(order.status))
+    .slice(0, 50);
+}
+
+export async function getPartnerOrder(ownerOpenId: string, publicCode: string) {
+  const order = await getOrderRecord(publicCode);
+  if (!order) return null;
+  const stores = await listPartnerStores(ownerOpenId);
+  return stores.some((store) => store.name.trim().toLocaleLowerCase() === order.restaurantName.trim().toLocaleLowerCase()) ? order : null;
 }
 
 export async function getPartnerStore(ownerOpenId: string, storeId: number) {
@@ -517,6 +536,31 @@ export async function removeRiderPushSubscription(endpoint: string) {
   const db = await getDb();
   if (!db) return false;
   await db.delete(riderPushSubscriptions).where(eq(riderPushSubscriptions.endpoint, endpoint));
+  return true;
+}
+
+export async function upsertPartnerPushSubscription(input: { ownerOpenId: string; storeId: number; installationId: string; transport: "web_push" | "fcm"; token: string; p256dh?: string | null; auth?: string | null }) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.insert(partnerPushSubscriptions).values({ ...input, p256dh: input.p256dh ?? null, auth: input.auth ?? null, alertEnabled: 1, lastSeenAt: new Date() }).onDuplicateKeyUpdate({ set: { ownerOpenId: input.ownerOpenId, storeId: input.storeId, installationId: input.installationId, transport: input.transport, p256dh: input.p256dh ?? null, auth: input.auth ?? null, alertEnabled: 1, lastSeenAt: new Date() } });
+  const rows = await db.select().from(partnerPushSubscriptions).where(eq(partnerPushSubscriptions.token, input.token)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function listPartnerPushSubscriptionsForRestaurant(restaurantName: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const stores = await db.select().from(partnerStores).where(eq(partnerStores.name, restaurantName)).limit(20);
+  if (!stores.length) return [];
+  const storeIds = new Set(stores.map((store) => store.id));
+  const rows = await db.select().from(partnerPushSubscriptions).limit(1000);
+  return rows.filter((row) => storeIds.has(row.storeId) && row.alertEnabled === 1);
+}
+
+export async function removePartnerPushSubscription(token: string) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.delete(partnerPushSubscriptions).where(eq(partnerPushSubscriptions.token, token));
   return true;
 }
 

@@ -18,7 +18,10 @@ export function connectCustomerRealtime(onEvent: (event: CustomerRealtimeEvent) 
           window.dispatchEvent(new Event("piki:realtime-auth-required"));
           return;
         }
-        if (!response.ok || !response.body) throw new Error(`SSE_HTTP_${response.status}`);
+        const contentType = response.headers.get("content-type") || "";
+        if (!response.ok || !response.body || !contentType.includes("text/event-stream")) {
+          throw new Error(`SSE_HTTP_${response.status}_CONTENT_TYPE`);
+        }
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";

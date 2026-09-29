@@ -44,6 +44,11 @@ function CustomerRealtimeBridge() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const manifest = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    if (!manifest) return;
+    manifest.href = window.location.pathname.startsWith("/partners") ? "/manifest-partners.json" : "/manifest.json";
+  }, []);
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
