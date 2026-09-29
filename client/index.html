@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#FFD72E" />
     <meta name="description" content="PIKI Delivery: comida a domicilio y restaurantes locales en Xàtiva, Canals, El Genovés, La Llosa de Ranes, Novetlè y Montesa. Pide online y recibe tu pedido en casa." />
-    <meta name="keywords" content="comida a domicilio Xàtiva, delivery Xàtiva, restaurantes Xàtiva, pedir comida Canals, delivery El Genovés, restaurantes La Llosa de Ranes, comida Novetlè, delivery Montesa, riders PIKI, partners PIKI" />
+    <meta name="keywords" content="comida a domicilio Xàtiva, delivery Xàtiva, restaurantes Xàtiva, pedir comida Canals, delivery El Genovés, comida La Llosa de Ranes, delivery Novetlè, delivery Montesa" />
     <meta name="author" content="PIKI Delivery" />
     <meta name="application-name" content="PIKI Delivery" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
@@ -33,6 +33,7 @@
     <meta name="twitter:title" content="PIKI Delivery | Comida a domicilio en Xàtiva" />
     <meta name="twitter:description" content="Restaurantes locales y entrega a domicilio en Xàtiva y alrededores." />
     <meta name="twitter:image" content="https://pikidelivery.com/piki-hero.webp" />
+    <meta name="twitter:image:alt" content="PIKI Delivery: comida y reparto local" />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -52,20 +53,18 @@
             "url": "https://pikidelivery.com/",
             "name": "PIKI Delivery",
             "inLanguage": "es-ES",
-            "publisher": { "@id": "https://pikidelivery.com/#organization" },
-            "potentialAction": { "@type": "SearchAction", "target": "https://pikidelivery.com/?q={search_term_string}", "query-input": "required name=search_term_string" }
+            "publisher": { "@id": "https://pikidelivery.com/#organization" }
           },
           {
-            "@type": "FoodEstablishment",
+            "@type": "Service",
             "@id": "https://pikidelivery.com/#service",
             "name": "PIKI Delivery",
             "url": "https://pikidelivery.com/",
             "description": "Servicio local de comida a domicilio y marketplace de restaurantes en Xàtiva y localidades cercanas.",
-            "servesCuisine": "Restaurantes locales y comida a domicilio",
+            "serviceType": "Servicio de comida a domicilio",
             "areaServed": [{ "@type": "City", "name": "Xàtiva" }, { "@type": "AdministrativeArea", "name": "La Costera" }],
             "serviceArea": { "@type": "GeoCircle", "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 38.99, "longitude": -0.519 }, "geoRadius": 30000 },
-            "priceRange": "€€",
-            "parentOrganization": { "@id": "https://pikidelivery.com/#organization" }
+            "provider": { "@id": "https://pikidelivery.com/#organization" }
           }
         ]
       }
