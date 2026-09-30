@@ -59,7 +59,7 @@ import {
   upsertRiderPushSubscription,
   upsertRiderProfile,
 } from "./db";
-import { fetchOperationalMessages, fetchOperationalTracking, sendOperationalMessage, syncOperationalOrder } from "./operationalSync";
+import { createCustomerSupportTicket, fetchOperationalMessages, fetchOperationalTracking, listCustomerSupportTickets, sendOperationalMessage, syncOperationalOrder } from "./operationalSync";
 import { sendPasswordResetEmail } from "./credentialEmail";
 import { storagePut } from "./storage";
 import { isFreshRiderLocation, mayShareRiderLocation } from "./deliveryTracking";
@@ -221,6 +221,14 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => { const cookieOptions = getSessionCookieOptions(ctx.req); ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 }); return { success: true } as const; }),
   }),
   customer: router({
+    support: router({
+      list: protectedProcedure.query(async ({ ctx }) => listCustomerSupportTickets({ customerId: ctx.user.openId, customerEmail: ctx.user.email || "" })),
+      create: protectedProcedure.input(z.object({ orderRef: z.string().trim().max(120).optional(), category: z.enum(["order", "account", "technical", "other"]).default("order"), priority: z.enum(["low", "normal", "high"]).default("normal"), subject: z.string().trim().min(3).max(180), description: z.string().trim().min(3).max(4000) })).mutation(async ({ input, ctx }) => {
+        const ticket = await createCustomerSupportTicket({ ...input, customerId: ctx.user.openId, customerName: ctx.user.name || "Cliente PIKI", customerEmail: ctx.user.email || "" });
+        if (!ticket) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "El servicio de soporte no está disponible temporalmente." });
+        return ticket;
+      }),
+    }),
     deliveryAddress: router({
       get: protectedProcedure.query(() => ({ saved: false as const, address: null as string | null, deliveryLocation: null as { latitude: number; longitude: number } | null, updatedAt: null as Date | null })),
       save: protectedProcedure.input(z.object({ address: z.string().trim().min(5).max(280), deliveryLocation: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }) })).mutation(({ input }) => ({ saved: true as const, address: input.address, deliveryLocation: input.deliveryLocation, updatedAt: new Date() })),
