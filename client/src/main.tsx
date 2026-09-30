@@ -5,6 +5,7 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
+import PikiSplash from "./PikiSplash";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { startLogin } from "./const";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -47,5 +48,5 @@ const trpcClient = trpc.createClient({ links: [httpBatchLink({
   fetch(input, init) { return globalThis.fetch(input, { ...(init ?? {}), credentials: "include" }); },
 })] });
 createRoot(document.getElementById("root")!).render(
-  <PikiReleaseGate><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><ThemeProvider defaultTheme="light" switchable><AppErrorBoundary><App /></AppErrorBoundary></ThemeProvider></QueryClientProvider></trpc.Provider></PikiReleaseGate>,
+  <PikiSplash><PikiReleaseGate><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><ThemeProvider defaultTheme="light" switchable><AppErrorBoundary><App /></AppErrorBoundary></ThemeProvider></QueryClientProvider></trpc.Provider></PikiReleaseGate></PikiSplash>,
 );
