@@ -140,7 +140,7 @@ export async function consumeResetToken(tokenHash: string) {
   return token;
 }
 
-export async function createOrderRecord(input: { publicCode: string; restaurantId: string; restaurantName: string; customerOpenId?: string | null; customerName?: string | null; address: string; itemsJson: string; totalCents: number; prepMinutes?: number | null; paymentState?: "pending" | "paid" | "failed" | "refunded" }) {
+export async function createOrderRecord(input: { publicCode: string; restaurantId: string; restaurantName: string; customerOpenId?: string | null; customerName?: string | null; address: string; itemsJson: string; totalCents: number; prepMinutes?: number | null; paymentState?: "pending" | "paid" | "failed" | "refunded"; paymentMethod?: "stripe" | "cash" }) {
   const db = await getDb();
   if (!db) return null;
   const result = await db.insert(orders).values(input);
@@ -156,11 +156,11 @@ export async function getOrderRecord(publicCode: string) {
   return rows[0] ?? null;
 }
 
-export async function listOrderRecords(statuses?: Array<typeof orders.status.enumValues[number]>, paidOnly = true) {
+export async function listOrderRecords(statuses?: Array<typeof orders.status.enumValues[number]>, paidOnly = true, includeCash = false) {
   const db = await getDb();
   if (!db) return [];
   const rows = await db.select().from(orders).orderBy(desc(orders.createdAt)).limit(100);
-  return rows.filter((row) => (!paidOnly || row.paymentState === "paid") && (!statuses?.length || statuses.includes(row.status)));
+  return rows.filter((row) => (!paidOnly || row.paymentState === "paid" || (includeCash && row.paymentMethod === "cash")) && (!statuses?.length || statuses.includes(row.status)));
 }
 
 export async function updateOrderRecord(publicCode: string, patch: Partial<typeof orders.$inferInsert>) {

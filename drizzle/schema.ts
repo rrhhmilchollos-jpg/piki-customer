@@ -35,6 +35,7 @@ export const orders = mysqlTable("orders", {
   prepMinutes: int("prepMinutes"),
   status: mysqlEnum("status", ["placed", "accepted", "ready", "assigned", "picked_up", "delivering", "delivered", "cancelled"]).default("placed").notNull(),
   paymentState: mysqlEnum("paymentState", ["pending", "paid", "failed", "refunded"]).default("pending").notNull(),
+  paymentMethod: mysqlEnum("paymentMethod", ["stripe", "cash"]).default("stripe").notNull(),
   stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", { length: 255 }),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
   riderOpenId: varchar("riderOpenId", { length: 64 }),
