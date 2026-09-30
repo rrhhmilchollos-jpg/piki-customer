@@ -223,7 +223,7 @@ export const appRouter = router({
   customer: router({
     support: router({
       list: protectedProcedure.query(async ({ ctx }) => listCustomerSupportTickets({ customerId: ctx.user.openId, customerEmail: ctx.user.email || "" })),
-      create: protectedProcedure.input(z.object({ orderRef: z.string().trim().max(120).optional(), category: z.enum(["order", "account", "technical", "other"]).default("order"), priority: z.enum(["low", "normal", "high"]).default("normal"), subject: z.string().trim().min(3).max(180), description: z.string().trim().min(3).max(4000) })).mutation(async ({ input, ctx }) => {
+      create: protectedProcedure.input(z.object({ orderRef: z.string().trim().max(120).optional(), category: z.enum(["order", "account", "technical", "billing", "finance", "other"]).default("order"), priority: z.enum(["low", "normal", "high"]).default("normal"), subject: z.string().trim().min(3).max(180), description: z.string().trim().min(3).max(4000) })).mutation(async ({ input, ctx }) => {
         const ticket = await createCustomerSupportTicket({ ...input, customerId: ctx.user.openId, customerName: ctx.user.name || "Cliente PIKI", customerEmail: ctx.user.email || "" });
         if (!ticket) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "El servicio de soporte no está disponible temporalmente." });
         return ticket;

@@ -37,7 +37,7 @@ export async function syncOperationalOrder(order: OperationalOrderInput, deliver
   } catch (error) { console.warn(`[OperationalSync] Error sincronizando ${order.publicCode}`, error); return false; }
 }
 
-export type CustomerSupportTicketInput = { customerId: string; customerName: string; customerEmail: string; orderRef?: string; category: "order" | "account" | "technical" | "other"; priority: "low" | "normal" | "high"; subject: string; description: string };
+export type CustomerSupportTicketInput = { customerId: string; customerName: string; customerEmail: string; orderRef?: string; category: "order" | "account" | "technical" | "billing" | "finance" | "other"; priority: "low" | "normal" | "high"; subject: string; description: string };
 export type CustomerSupportTicket = { _id: string; ticketNumber: string; subject: string; description: string; category: string; priority: string; status: string; reporterEmail?: string; createdAt?: string; updatedAt?: string; messages?: Array<{ senderRole: string; senderName?: string; body: string; createdAt?: string }> };
 export async function createCustomerSupportTicket(input: CustomerSupportTicketInput): Promise<CustomerSupportTicket | null> {
   const secret = syncSecret(); if (!secret) return null;

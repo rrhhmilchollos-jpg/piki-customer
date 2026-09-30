@@ -3,7 +3,7 @@ import { Loader2, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 
-type SupportCategory = "order" | "account" | "technical" | "other";
+type SupportCategory = "order" | "account" | "technical" | "billing" | "finance" | "other";
 type SupportPriority = "low" | "normal" | "high";
 
 const statusLabels: Record<string, string> = {
@@ -18,6 +18,8 @@ const categoryLabels: Record<SupportCategory, string> = {
   order: "Pedido",
   account: "Cuenta",
   technical: "Problema técnico",
+  billing: "Cobros y facturación",
+  finance: "Finanzas",
   other: "Otro",
 };
 
