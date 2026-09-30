@@ -226,15 +226,16 @@ export default function Home() {
 
   useEffect(() => {
     if (!liveTracking?.status) return;
-    const serverStage: TrackingStage = liveTracking.status === "cancelled"
+    const operationalStatus = liveTracking.status;
+    const serverStage: TrackingStage = ["cancelled"].includes(operationalStatus)
       ? "cancelled"
-      : liveTracking.status === "delivered"
+      : ["delivered"].includes(operationalStatus)
         ? "delivered"
-        : ["placed", "accepted"].includes(liveTracking.status)
-          ? "confirmed"
-          : liveTracking.status === "ready"
+        : ["picked_up", "on_the_way", "delivering", "assigned"].includes(operationalStatus)
+          ? "onway"
+          : ["preparing", "ready", "ready_for_pickup"].includes(operationalStatus)
             ? "preparing"
-            : "onway";
+            : "confirmed";
     setTracking((current) => current ? { ...current, restaurant: liveTracking.restaurant, stage: serverStage } : current);
   }, [liveTracking]);
 

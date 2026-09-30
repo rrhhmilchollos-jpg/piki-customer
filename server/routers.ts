@@ -606,16 +606,8 @@ export const appRouter = router({
       assertPartner(ctx.user.role);
       return listPartnerOrders(ctx.user.openId);
     }),
-    updateOrder: protectedProcedure.input(z.object({ orderCode: z.string().min(3).max(32), status: z.enum(["accepted", "ready"]), prepMinutes: z.number().int().min(5).max(180).optional() })).mutation(async ({ input, ctx }) => {
-      assertPartner(ctx.user.role);
-      const order = await getPartnerOrder(ctx.user.openId, input.orderCode);
-      if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Este pedido no pertenece a ninguno de tus establecimientos." });
-      if (input.status === "accepted" && !["placed", "accepted"].includes(order.status)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "El pedido ya no está pendiente de aceptación." });
-      if (input.status === "ready" && !["accepted", "ready"].includes(order.status)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "El pedido debe aceptarse antes de marcarlo como listo." });
-      const updated = await updateOrderRecord(input.orderCode, { status: input.status, ...(input.prepMinutes ? { prepMinutes: input.prepMinutes } : {}) });
-      if (!updated) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo actualizar el pedido." });
-      return updated;
-    }),
+    // Order status changes are intentionally handled only by the operational REST API used by KitchenScreen.
+    // Keeping a second TRPC mutation here caused the legacy `ready` state to diverge from `ready_for_pickup`.
     pushConfig: protectedProcedure.query(({ ctx }) => {
       assertPartner(ctx.user.role);
       const configured = partnerPushConfigured();
