@@ -57,6 +57,13 @@
       "when": 1790511540544,
       "tag": "0008_delivery_fee_299",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790809700000,
+      "tag": "0011_order_payment_method",
+      "breakpoints": true
     }
   ]
 }

@@ -6,9 +6,8 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 
-function pwaHtmlForPath(template: string, requestUrl: string) {
-  const pathname = requestUrl.split("?")[0];
-  const app = pathname.startsWith("/riders") ? { manifest: "/manifest-riders.json", title: "PIKI Riders", description: "Rutas, pedidos y operaciones de reparto de PIKI.", theme: "#171715" } : pathname.startsWith("/admin") ? { manifest: "/manifest-admin.json", title: "PIKI Admin", description: "Centro de control de reparto, flotas y documentos de PIKI.", theme: "#143b2b" } : pathname.startsWith("/partners") ? { manifest: "/manifest-partners.json", title: "PIKI Partners", description: "Comandero y pedidos para comercios PIKI.", theme: "#FFD72E" } : { manifest: "/manifest.json", title: "PIKI Delivery", description: "PIKI Delivery: comida local, a tu ritmo.", theme: "#FFD72E" };
+function pwaHtmlForPath(template: string) {
+  const app = { manifest: "/manifest.json", title: "PIKI Delivery", description: "PIKI Delivery: comida local, a tu ritmo.", theme: "#FFD72E" };
   return template
     .replace(/<link rel="manifest" href="[^"]*"\s*\/>/, `<link rel="manifest" href="${app.manifest}" />`)
     .replace(/<meta name="theme-color" content="[^"]*"\s*\/>/, `<meta name="theme-color" content="${app.theme}" />`)
@@ -44,7 +43,7 @@ export async function setupVite(app: Express, server: Server) {
 
       // always reload the index.html file from disk incase it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = pwaHtmlForPath(template, url);
+      template = pwaHtmlForPath(template);
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -75,7 +74,7 @@ export function serveStatic(app: Express) {
   app.use("*", async (req, res, next) => {
     try {
       const template = await fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8");
-      res.status(200).set({ "Content-Type": "text/html" }).end(pwaHtmlForPath(template, req.originalUrl));
+      res.status(200).set({ "Content-Type": "text/html" }).end(pwaHtmlForPath(template));
     } catch (error) {
       next(error);
     }

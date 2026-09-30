@@ -2,7 +2,7 @@ const BUILD_ID = "__BUILD_ID__";
 const CACHE_PREFIX = "__CACHE_PREFIX__-";
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID}`;
 const APP_SHELL = __APP_SHELL__;
-const CONTROL_PATHS = new Set(["/sw.js", "/release.json", "/manifest.json", "/manifest-partners.json"]);
+const CONTROL_PATHS = new Set(["/sw.js", "/release.json", "/manifest.json"]);
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {

@@ -84,6 +84,7 @@ const basketInput = z.object({
   deliveryLocation: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }).optional(),
 });
 const orderStatuses = ["placed", "accepted", "ready", "assigned", "picked_up", "delivering", "delivered", "cancelled"] as const;
+const canAdvanceOperationally = (order: { paymentState: string; paymentMethod: string }) => order.paymentState === "paid" || order.paymentMethod === "cash";
 const riderNameInput = z.object({ riderName: z.string().min(2).max(160), vehicle: z.enum(["bike", "moto", "car"]).default("bike"), zone: z.string().min(2).max(120).default("Xàtiva centro") });
 const email = z.string().trim().toLowerCase().email("Introduce un email válido").max(320);
 const password = z.string().min(8, "La contraseña debe tener al menos 8 caracteres").max(128);
@@ -246,7 +247,7 @@ export const appRouter = router({
     create: publicProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
-      const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents });
+      const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentMethod: input.paymentMethod });
       if (stored) {
         void syncOperationalOrder(stored);
         void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
@@ -258,7 +259,7 @@ export const appRouter = router({
       if (!input.deliveryLocation) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Selecciona una dirección validada de la lista para poder despachar el pedido." });
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
-      const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending" });
+      const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod: "cash" });
       if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible guardar el pedido; inténtalo de nuevo." });
       const synced = await syncOperationalOrder({ ...stored, paymentMethod: "cash" }, input.deliveryLocation);
       if (!synced) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No se pudo sincronizar el pedido con Partner, Admin, Fleet y Rider. No lo hemos confirmado; inténtalo de nuevo." });
@@ -271,7 +272,7 @@ export const appRouter = router({
       const live = await fetchOperationalTracking(row.publicCode);
       const localLiveStatus = live?.status === "on_the_way" ? "delivering" : live?.status;
       if (localLiveStatus && localLiveStatus !== row.status && ["assigned", "picked_up", "delivering", "delivered", "cancelled"].includes(localLiveStatus)) await updateOrderRecord(row.publicCode, { status: localLiveStatus as typeof row.status, riderName: live?.riderName ?? row.riderName, riderOpenId: live?.riderId ?? row.riderOpenId });
-      return { id: row.publicCode, status: live?.status ?? row.status, paymentMethod: live?.paymentMethod ?? "cash", paymentState: live?.paymentState ?? row.paymentState, cashDueAtDelivery: live?.cashDueAtDelivery ?? (row.paymentState !== "paid"), totalCents: row.totalCents, restaurant: row.restaurantName, address: row.address, riderName: live?.riderName ?? row.riderName, riderPhotoUrl: live?.riderPhotoUrl ?? null, deliveryVerificationState: row.deliveryVerificationState, updatedAt: live?.updatedAt ?? row.updatedAt.getTime() };
+      return { id: row.publicCode, status: live?.status ?? row.status, paymentMethod: live?.paymentMethod ?? row.paymentMethod, paymentState: live?.paymentState ?? row.paymentState, cashDueAtDelivery: live?.cashDueAtDelivery ?? (row.paymentMethod === "cash" && row.paymentState !== "paid"), totalCents: row.totalCents, restaurant: row.restaurantName, address: row.address, riderName: live?.riderName ?? row.riderName, riderPhotoUrl: live?.riderPhotoUrl ?? null, deliveryVerificationState: row.deliveryVerificationState, updatedAt: live?.updatedAt ?? row.updatedAt.getTime() };
     }),
     deliveryCredentials: protectedProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input, ctx }) => {
       const row = await getOrderRecord(input.id);
@@ -331,12 +332,12 @@ export const appRouter = router({
     }),
     feed: protectedProcedure.input(z.object({ statuses: z.array(z.enum(orderStatuses)).optional() }).optional()).query(async ({ input, ctx }) => {
       if (!["partner", "fleet_manager", "zone_manager", "admin"].includes(ctx.user.role)) throw new TRPCError({ code: "FORBIDDEN", message: "No tienes permisos para consultar el feed operativo." });
-      const rows = await listOrderRecords(input?.statuses);
+      const rows = await listOrderRecords(input?.statuses, true, true);
       return rows.map((row) => ({ id: row.publicCode, restaurant: row.restaurantName, address: row.address, total: row.totalCents / 100, status: row.status, riderName: row.riderName, createdAt: row.createdAt.getTime() }));
     }),
     updateStatus: protectedProcedure.input(z.object({ id: z.string(), status: z.enum(orderStatuses), riderName: z.string().optional() })).mutation(async ({ input, ctx }) => {
       const current = await getOrderRecord(input.id);
-      if (!current || current.paymentState !== "paid") throw new TRPCError({ code: "NOT_FOUND", message: "Pedido pagado no encontrado" });
+      if (!current || !canAdvanceOperationally(current)) throw new TRPCError({ code: "NOT_FOUND", message: "Pedido no disponible para operación" });
       const isOps = ["fleet_manager", "zone_manager", "admin"].includes(ctx.user.role);
       if (ctx.user.role === "rider" && current.riderOpenId !== ctx.user.openId) throw new TRPCError({ code: "FORBIDDEN", message: "Este pedido no está asignado a tu cuenta." });
       if (ctx.user.role !== "rider" && !isOps) throw new TRPCError({ code: "FORBIDDEN", message: "No tienes permisos para actualizar este pedido." });
@@ -353,7 +354,7 @@ export const appRouter = router({
     requestRider: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input, ctx }) => {
       assertPartner(ctx.user.role);
       const current = await getOrderRecord(input.id);
-      if (!current || current.paymentState !== "paid") throw new TRPCError({ code: "NOT_FOUND", message: "Pedido pagado no encontrado" });
+      if (!current || !canAdvanceOperationally(current)) throw new TRPCError({ code: "NOT_FOUND", message: "Pedido no disponible para operación" });
       const updated = await updateOrderRecord(input.id, { status: "ready" });
       await dispatchReadyOrderPush(current);
       await audit(ctx.user.openId, "request_rider", "order", input.id);
@@ -365,7 +366,7 @@ export const appRouter = router({
       if (!rider || rider.status !== "active" || rider.documentsStatus !== "verified") throw new TRPCError({ code: "FORBIDDEN", message: "Tu perfil debe ser validado por operaciones antes de aceptar pedidos." });
       if (rider.availability !== "available") throw new TRPCError({ code: "CONFLICT", message: "Activa tu disponibilidad antes de aceptar un pedido." });
       const current = await getOrderRecord(input.id);
-      if (!current || current.paymentState !== "paid" || current.status !== "ready") throw new TRPCError({ code: "CONFLICT", message: "Este pedido ya no está disponible" });
+      if (!current || !canAdvanceOperationally(current) || current.status !== "ready") throw new TRPCError({ code: "CONFLICT", message: "Este pedido ya no está disponible" });
       const updated = await updateOrderRecord(input.id, { status: "assigned", riderName: rider.displayName, riderOpenId: ctx.user.openId });
       await updateRiderProfile(ctx.user.openId, { availability: "busy" });
       await audit(ctx.user.openId, "claim_order", "order", input.id);
@@ -387,7 +388,7 @@ export const appRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "El código no coincide. Compruébalo con el cliente." });
       }
       const rider = await getRiderProfile(ctx.user.openId);
-      const updated = await updateOrderRecord(current.publicCode, { status: "delivered", deliveryVerificationState: "confirmed", deliveryVerifiedAt: new Date() });
+      const updated = await updateOrderRecord(current.publicCode, { status: "delivered", paymentState: current.paymentMethod === "cash" ? "paid" : current.paymentState, deliveryVerificationState: "confirmed", deliveryVerifiedAt: new Date() });
       await deleteOrderMessages(current.publicCode);
       if (rider) await updateRiderProfile(ctx.user.openId, { availability: "available", earningsCents: rider.earningsCents + Math.max(350, Math.round(current.totalCents * 0.09)) });
       await audit(ctx.user.openId, "confirm_delivery", "order", current.publicCode, { method: input.method });
@@ -445,15 +446,15 @@ export const appRouter = router({
       assertRider(ctx.user.role);
       const rider = await getRiderProfile(ctx.user.openId);
       if (!rider || rider.status !== "active" || rider.documentsStatus !== "verified" || rider.availability !== "available") return [];
-      const active = await listOrderRecords(["assigned", "picked_up", "delivering"]);
+      const active = await listOrderRecords(["assigned", "picked_up", "delivering"], true, true);
       if (active.some((order) => order.riderOpenId === ctx.user.openId)) return [];
-      const rows = await listOrderRecords(["ready"]);
+      const rows = await listOrderRecords(["ready"], true, true);
       const location = await getLatestRiderLocation(ctx.user.openId);
       return rows.map((row) => offerForRider(row, location)).sort((a, b) => b.score - a.score || a.etaMinutes - b.etaMinutes);
     }),
     active: protectedProcedure.query(async ({ ctx }) => {
       assertRider(ctx.user.role);
-      const rows = await listOrderRecords(["assigned", "picked_up", "delivering"]);
+      const rows = await listOrderRecords(["assigned", "picked_up", "delivering"], true, true);
       return rows.filter((row) => row.riderOpenId === ctx.user.openId).map((row) => ({ id: row.publicCode, restaurant: row.restaurantName, address: row.address, total: row.totalCents / 100, status: row.status, deliveryVerificationState: row.deliveryVerificationState }));
     }),
     reportLocation: protectedProcedure.input(z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180), accuracyMeters: z.number().min(0).max(5000).optional() })).mutation(async ({ input, ctx }) => {
@@ -605,16 +606,8 @@ export const appRouter = router({
       assertPartner(ctx.user.role);
       return listPartnerOrders(ctx.user.openId);
     }),
-    updateOrder: protectedProcedure.input(z.object({ orderCode: z.string().min(3).max(32), status: z.enum(["accepted", "ready"]), prepMinutes: z.number().int().min(5).max(180).optional() })).mutation(async ({ input, ctx }) => {
-      assertPartner(ctx.user.role);
-      const order = await getPartnerOrder(ctx.user.openId, input.orderCode);
-      if (!order) throw new TRPCError({ code: "NOT_FOUND", message: "Este pedido no pertenece a ninguno de tus establecimientos." });
-      if (input.status === "accepted" && !["placed", "accepted"].includes(order.status)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "El pedido ya no está pendiente de aceptación." });
-      if (input.status === "ready" && !["accepted", "ready"].includes(order.status)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "El pedido debe aceptarse antes de marcarlo como listo." });
-      const updated = await updateOrderRecord(input.orderCode, { status: input.status, ...(input.prepMinutes ? { prepMinutes: input.prepMinutes } : {}) });
-      if (!updated) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo actualizar el pedido." });
-      return updated;
-    }),
+    // Order status changes are intentionally handled only by the operational REST API used by KitchenScreen.
+    // Keeping a second TRPC mutation here caused the legacy `ready` state to diverge from `ready_for_pickup`.
     pushConfig: protectedProcedure.query(({ ctx }) => {
       assertPartner(ctx.user.role);
       const configured = partnerPushConfigured();
