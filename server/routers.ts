@@ -251,10 +251,11 @@ export const appRouter = router({
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
       const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending" });
-      if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible iniciar el pago; inténtalo de nuevo." });
-      void syncOperationalOrder({ ...stored, paymentMethod: "cash" }, input.deliveryLocation);
+      if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible guardar el pedido; inténtalo de nuevo." });
+      const synced = await syncOperationalOrder({ ...stored, paymentMethod: "cash" }, input.deliveryLocation);
+      if (!synced) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No se pudo sincronizar el pedido con Partner, Admin, Fleet y Rider. No lo hemos confirmado; inténtalo de nuevo." });
       void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
-      return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash", cashDueAtDelivery: true };
+      return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash", paymentState: "pending_cash_collection", cashDueAtDelivery: true };
     }),
     get: publicProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input }) => {
       const row = await getOrderRecord(input.id);
@@ -262,7 +263,7 @@ export const appRouter = router({
       const live = await fetchOperationalTracking(row.publicCode);
       const localLiveStatus = live?.status === "on_the_way" ? "delivering" : live?.status;
       if (localLiveStatus && localLiveStatus !== row.status && ["assigned", "picked_up", "delivering", "delivered", "cancelled"].includes(localLiveStatus)) await updateOrderRecord(row.publicCode, { status: localLiveStatus as typeof row.status, riderName: live?.riderName ?? row.riderName, riderOpenId: live?.riderId ?? row.riderOpenId });
-      return { id: row.publicCode, status: live?.status ?? row.status, paymentState: row.paymentState, restaurant: row.restaurantName, address: row.address, riderName: live?.riderName ?? row.riderName, riderPhotoUrl: live?.riderPhotoUrl ?? null, deliveryVerificationState: row.deliveryVerificationState, updatedAt: live?.updatedAt ?? row.updatedAt.getTime() };
+      return { id: row.publicCode, status: live?.status ?? row.status, paymentMethod: live?.paymentMethod ?? "cash", paymentState: live?.paymentState ?? row.paymentState, cashDueAtDelivery: live?.cashDueAtDelivery ?? (row.paymentState !== "paid"), totalCents: row.totalCents, restaurant: row.restaurantName, address: row.address, riderName: live?.riderName ?? row.riderName, riderPhotoUrl: live?.riderPhotoUrl ?? null, deliveryVerificationState: row.deliveryVerificationState, updatedAt: live?.updatedAt ?? row.updatedAt.getTime() };
     }),
     deliveryCredentials: protectedProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input, ctx }) => {
       const row = await getOrderRecord(input.id);
