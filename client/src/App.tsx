@@ -10,19 +10,11 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "./_core/hooks/useAuth";
 import { connectCustomerRealtime } from "./lib/realtime";
 import Home from "./pages/Home";
-import Partners from "./pages/Partners";
-import Riders from "./pages/Riders";
-import Admin from "./pages/Admin";
-import JoinPiki from "./pages/JoinPiki";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/partners" component={Partners} />
-      <Route path="/riders" component={Riders} />
-      <Route path="/admin" component={Admin} />
-      <Route path="/unete" component={JoinPiki} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
@@ -47,7 +39,7 @@ export default function App() {
   useEffect(() => {
     const manifest = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
     if (!manifest) return;
-    manifest.href = window.location.pathname.startsWith("/partners") ? "/manifest-partners.json" : "/manifest.json";
+    manifest.href = "/manifest.json";
   }, []);
   return (
     <ErrorBoundary>
