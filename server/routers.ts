@@ -149,8 +149,10 @@ function offerForRider(row: Awaited<ReturnType<typeof listOrderRecords>>[number]
   const score = Math.round((100 - Math.min(distance, 12) * 7 + payout * 2) * 100) / 100;
   return { id: row.publicCode, restaurant: row.restaurantName, address: row.address, total: row.totalCents / 100, payout, status: row.status, distanceKm: Math.round(distance * 10) / 10, etaMinutes, score };
 }
-function assertPartner(role: string) {
-  if (role !== "partner" && role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Esta zona está reservada a cuentas partner verificadas." });
+const PARTNER_TEST_EMAILS = new Set((process.env.PARTNER_TEST_EMAILS || "rrhh.milchollos@gmail.com").split(",").map((email) => email.trim().toLowerCase()).filter(Boolean));
+function assertPartner(role: string, email?: string | null) {
+  const isApprovedTestAccount = Boolean(email && PARTNER_TEST_EMAILS.has(email.trim().toLowerCase()));
+  if (role !== "partner" && role !== "admin" && !isApprovedTestAccount) throw new TRPCError({ code: "FORBIDDEN", message: "Esta zona está reservada a cuentas partner verificadas." });
 }
 function assertRider(role: string) {
   if (role !== "rider" && role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Esta zona está reservada a cuentas rider verificadas." });
@@ -351,7 +353,7 @@ export const appRouter = router({
       return { id: updated?.publicCode ?? input.id, status: updated?.status ?? input.status, riderName: updated?.riderName ?? null };
     }),
     requestRider: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input, ctx }) => {
-      assertPartner(ctx.user.role);
+      assertPartner(ctx.user.role, ctx.user.email);
       const current = await getOrderRecord(input.id);
       if (!current || current.paymentState !== "paid") throw new TRPCError({ code: "NOT_FOUND", message: "Pedido pagado no encontrado" });
       const updated = await updateOrderRecord(input.id, { status: "ready" });
@@ -598,7 +600,7 @@ export const appRouter = router({
   }),
   partner: router({
     dashboard: protectedProcedure.query(async ({ ctx }) => {
-      assertPartner(ctx.user.role);
+      assertPartner(ctx.user.role, ctx.user.email);
       return listPartnerStores(ctx.user.openId);
     }),
     orders: protectedProcedure.query(async ({ ctx }) => {
@@ -639,44 +641,44 @@ export const appRouter = router({
       return { registered: true, transport: "fcm" as const };
     }),
     createStore: protectedProcedure.input(storeFields.extend({ items: z.array(menuItem).min(1).max(100) })).mutation(async ({ input, ctx }) => {
-      assertPartner(ctx.user.role);
+      assertPartner(ctx.user.role, ctx.user.email);
       const stored = await createPartnerStoreRecord({ ownerOpenId: ctx.user.openId, ...input });
       if (!stored) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo guardar el establecimiento" });
       return { ok: true, reviewStatus: stored.reviewStatus, storeId: stored.storeId, store: input.name, items: input.items.length };
     }),
     updateStore: protectedProcedure.input(storeFields.partial().extend({ storeId: z.number().int().positive(), status: z.enum(["pending_review", "active", "paused"]).optional() })).mutation(async ({ input, ctx }) => {
-      assertPartner(ctx.user.role);
+      assertPartner(ctx.user.role, ctx.user.email);
       const { storeId, ...patch } = input;
       const store = await updatePartnerStoreRecord(ctx.user.openId, storeId, patch);
       if (!store) throw new TRPCError({ code: "NOT_FOUND", message: "No encontramos este establecimiento." });
       return store;
     }),
     addMenuItem: protectedProcedure.input(menuItem.extend({ storeId: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
-      assertPartner(ctx.user.role);
+      assertPartner(ctx.user.role, ctx.user.email);
       const { storeId, ...item } = input;
       const created = await addPartnerMenuItem(ctx.user.openId, storeId, item);
       if (!created) throw new TRPCError({ code: "NOT_FOUND", message: "No puedes modificar este establecimiento." });
       return created;
     }),
     updateMenuItem: protectedProcedure.input(menuItem.partial().extend({ storeId: z.number().int().positive(), itemId: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
-      assertPartner(ctx.user.role);
+      assertPartner(ctx.user.role, ctx.user.email);
       const { storeId, itemId, ...patch } = input;
       const item = await updatePartnerMenuItem(ctx.user.openId, storeId, itemId, patch);
       if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "No encontramos este producto." });
       return item;
     }),
     deleteMenuItem: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), itemId: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
-      assertPartner(ctx.user.role);
+      assertPartner(ctx.user.role, ctx.user.email);
       const deleted = await deletePartnerMenuItem(ctx.user.openId, input.storeId, input.itemId);
       if (!deleted) throw new TRPCError({ code: "NOT_FOUND", message: "No puedes eliminar este producto." });
       return { ok: true };
     }),
     getStore: protectedProcedure.input(z.object({ storeId: z.number().int().positive() })).query(async ({ input, ctx }) => {
-      assertPartner(ctx.user.role);
+      assertPartner(ctx.user.role, ctx.user.email);
       return getPartnerStore(ctx.user.openId, input.storeId);
     }),
     uploadImage: protectedProcedure.input(z.object({ fileName: z.string().min(1).max(150), mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]), dataUrl: z.string().min(32).max(6_000_000) })).mutation(async ({ input, ctx }) => {
-      assertPartner(ctx.user.role);
+      assertPartner(ctx.user.role, ctx.user.email);
       const [, payload] = input.dataUrl.split(",", 2);
       if (!payload) throw new TRPCError({ code: "BAD_REQUEST", message: "Archivo de imagen no válido." });
       const bytes = Buffer.from(payload, "base64");

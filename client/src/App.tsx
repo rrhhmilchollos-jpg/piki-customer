@@ -43,6 +43,18 @@ function CustomerRealtimeBridge() {
   return null;
 }
 
+function RouteAppManifest() {
+  useEffect(() => {
+    const path = window.location.pathname;
+    const manifest = path.startsWith("/partners") ? "/manifest-partners.json" : path.startsWith("/riders") ? "/manifest-riders.json" : path.startsWith("/admin") ? "/manifest-admin.json" : "/manifest.json";
+    let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    if (!link) { link = document.createElement("link"); link.rel = "manifest"; document.head.appendChild(link); }
+    link.href = manifest;
+    document.documentElement.style.backgroundColor = "#FFD72E";
+  }, []);
+  return null;
+}
+
 export default function App() {
   useEffect(() => {
     const manifest = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
@@ -55,6 +67,7 @@ export default function App() {
         <TooltipProvider>
           <Toaster position="top-center" richColors />
           <CustomerRealtimeBridge />
+          <RouteAppManifest />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

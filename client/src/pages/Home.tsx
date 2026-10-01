@@ -288,7 +288,7 @@ export default function Home() {
       <header className="sticky top-0 z-30 border-b border-[#ece3d9]/80 bg-[#FFFDF5]/92 backdrop-blur-xl">
         <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <button className="flex items-center gap-2" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Inicio de PIKI">
-            <span className="grid h-9 w-9 place-items-center rounded-[13px] bg-[#FFD72E] text-xl font-black text-[#171715] shadow-[0_7px_15px_rgba(255,215,46,.32)]">P</span>
+            <img src="/piki-mascot.png" alt="PIKI" className="h-10 w-10 rounded-[13px] object-cover shadow-[0_7px_15px_rgba(255,215,46,.32)]" />
             <span className="font-display text-2xl font-bold tracking-[-0.06em]">PIKI</span>
           </button>
           <nav className="hidden items-center gap-7 text-sm font-bold text-[#536056] md:flex">

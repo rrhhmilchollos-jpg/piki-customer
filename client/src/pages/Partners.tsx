@@ -43,7 +43,9 @@ function ticketItems(value: string): NativeOrderTicket["items"] { try { const it
 export default function Partners() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const utils = trpc.useUtils();
-  const enabled = isAuthenticated && (user?.role === "partner" || user?.role === "admin");
+  // Cuenta de pruebas autorizada: el servidor aplica la misma allowlist mediante PARTNER_TEST_EMAILS.
+  const isApprovedPartnerTest = user?.email?.trim().toLowerCase() === "rrhh.milchollos@gmail.com";
+  const enabled = isAuthenticated && (user?.role === "partner" || user?.role === "admin" || isApprovedPartnerTest);
   const { data: stores = [], isLoading } = trpc.partner.dashboard.useQuery(undefined, { enabled });
   const { data: incomingOrders = [], refetch: refetchOrders, dataUpdatedAt } = trpc.partner.orders.useQuery(undefined, { enabled, refetchInterval: 5000 });
   const pushConfig = trpc.partner.pushConfig.useQuery(undefined, { enabled });
