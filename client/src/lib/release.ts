@@ -1,7 +1,9 @@
+import { PIKI_RELEASE } from "../release-meta";
+
 export const CUSTOMER_RELEASE = {
-  version: "0.2.2",
-  minimumVersion: "0.2.2",
-  surface: "customer",
+  version: PIKI_RELEASE.version,
+  minimumVersion: PIKI_RELEASE.minimumVersion,
+  surface: PIKI_RELEASE.surface,
 } as const;
 
 export type ServedRelease = {

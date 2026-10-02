@@ -1,4 +1,4 @@
-const BUILD_ID = "03d6767f67c6";
+const BUILD_ID = "458f3f0e4ddf";
 const CACHE_PREFIX = "piki-customer-";
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID}`;
 const APP_SHELL = ["/","/manifest.json","/manifest-partners.json","/piki-mascot-192.png","/piki-mascot-512.png","/piki-hero.webp"];
@@ -7,7 +7,7 @@ const CONTROL_PATHS = new Set(["/sw.js", "/release.json", "/manifest.json", "/ma
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(APP_SHELL);
+    await Promise.allSettled(APP_SHELL.map((asset) => cache.add(asset)));
     await self.skipWaiting();
   })());
 });
