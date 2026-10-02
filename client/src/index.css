@@ -51,3 +51,11 @@ button { -webkit-tap-highlight-color: transparent; }
   .enter-up { animation: enter-up .5s cubic-bezier(.23,1,.32,1) both; }
   @keyframes enter-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 }
+
+
+/* PIKI visual refresh — local, expressive, still effortless */
+.piki-app .hero-shine { background:linear-gradient(96deg,rgba(24,32,27,.96) 0%,rgba(24,32,27,.58) 43%,rgba(24,32,27,.02) 80%); }
+.piki-app .card-lift { border-color:#eee0d3; }
+.piki-app .card-lift:hover { box-shadow:0 22px 42px rgba(45,55,42,.16); }
+.piki-app .brand-spark { display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(23,23,21,.1); background:rgba(255,255,255,.55); }
+@media (prefers-reduced-motion:no-preference) { .piki-app .hero-shine { animation:piki-glow 8s ease-in-out infinite alternate; } @keyframes piki-glow { from{opacity:.88} to{opacity:1} } }

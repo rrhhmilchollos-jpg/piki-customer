@@ -314,8 +314,8 @@ export default function Home() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(255,255,255,.32),transparent_38%)]" />
               <div className="relative max-w-xl">
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-[#171715] px-3 py-1.5 text-xs font-bold text-[#FFD72E]"><Sparkles className="h-3.5 w-3.5 text-[#FFD72E]" /> PIKI Delivery · Cerca de ti.</div>
-                <h1 className="font-display text-[2.8rem] font-semibold leading-[.95] tracking-[-0.065em] text-[#171715] sm:text-6xl lg:text-7xl">Pide lo que quieras.<br /><span className="text-[#171715]">Recibe. Disfruta.</span></h1>
-                <p className="mt-6 max-w-md text-base leading-relaxed text-[#2c2b20] sm:text-lg">Restaurantes, supermercados y tus antojos favoritos. Todo llega rápido, cerca de ti y con la alegría de PIKI.</p>
+                <h1 className="font-display text-[2.8rem] font-semibold leading-[.95] tracking-[-0.065em] text-[#171715] sm:text-6xl lg:text-7xl">Tu barrio, a tu puerta.<br /><span className="text-[#171715]">Come. Comparte. Repite.</span></h1>
+                <p className="mt-6 max-w-md text-base leading-relaxed text-[#2c2b20] sm:text-lg">Restaurantes, supermercados y tus antojos favoritos. Cerca, rápido y con ese punto de alegría que hace especial a PIKI.</p>
                 <button onClick={() => document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" })} className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#171715] px-5 py-3 text-sm font-extrabold text-[#FFD72E] shadow-[0_10px_20px_rgba(31,31,20,.2)] transition hover:bg-black active:scale-[.98]">Pedir ahora <ArrowRight className="h-4 w-4" /></button>
                 <button onClick={openAddressDialog} className="mt-7 flex items-center gap-2 text-sm font-semibold text-[#29281e] transition hover:text-black"><MapPin className="h-4 w-4 text-[#171715]" /> Entregando en <span className="border-b border-dashed border-[#171715]/45">{address}</span></button>
               </div>
