@@ -1,5 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import AccountHub from "@/components/AccountHub";
+import { ProductCustomizer } from "@/components/ProductCustomizer";
+import { getMenuItemUnitPrice, selectedOptionNames, selectionKey } from "@/lib/menu";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
 import { MapView } from "@/components/Map";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -7,7 +9,7 @@ import CustomerNotificationCenter from "@/components/CustomerNotificationCenter"
 import { PikiSplash } from "@/components/PikiSplash";
 import { useAuth } from "@/_core/hooks/useAuth";
 import QRCode from "qrcode";
-import type { MenuItem, Restaurant } from "../../../server/catalog";
+import type { MenuItem, ModifierSelection, Restaurant } from "../../../server/catalog";
 import {
   ArrowLeft,
   Heart,
@@ -43,7 +45,14 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-type CartLine = { item: MenuItem; quantity: number };
+type CartLine = {
+  key: string;
+  item: MenuItem;
+  selections: ModifierSelection[];
+  quantity: number;
+  unitPrice: number;
+};
+type CustomizingProduct = { restaurant: Restaurant; item: MenuItem };
 type TrackingStage = "confirmed" | "preparing" | "onway";
 type TrackingOrder = { id: string; restaurant: string; eta: string; stage: TrackingStage; paymentMethod?: "cash"; totalCents?: number };
 
@@ -139,6 +148,7 @@ export default function Home() {
   const [locationSuggestions, setLocationSuggestions] = useState<Array<{ label: string; latitude: number; longitude: number }>>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [tracking, setTracking] = useState<TrackingOrder | null>(null);
+  const [customizing, setCustomizing] = useState<CustomizingProduct | null>(null);
 
   const catalogInput = useMemo(
     () => ({ category: category === "Todos" ? undefined : category, query: search.trim() || undefined }),
@@ -200,7 +210,7 @@ export default function Home() {
   };
 
   const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
-  const subtotal = cart.reduce((total, line) => total + line.item.price * line.quantity, 0);
+  const subtotal = cart.reduce((total, line) => total + line.unitPrice * line.quantity, 0);
   const deliveryFee = cartRestaurant?.fee ?? 0;
   const serviceFee = cart.length ? 0.79 : 0;
   const total = subtotal + deliveryFee + serviceFee;
@@ -230,25 +240,45 @@ export default function Home() {
     setTracking((current) => current ? { ...current, restaurant: liveTracking.restaurant, stage: serverStage } : current);
   }, [liveTracking]);
 
-  const addItem = (restaurant: Restaurant, item: MenuItem) => {
+  const addItem = (
+    restaurant: Restaurant,
+    item: MenuItem,
+    selections: ModifierSelection[]
+  ) => {
+    const key = selectionKey(item.id, selections);
+    const unitPrice = getMenuItemUnitPrice(item, selections);
+    const newLine: CartLine = { key, item, selections, quantity: 1, unitPrice };
+
     if (cartRestaurant && cartRestaurant.id !== restaurant.id) {
       setCartRestaurant(restaurant);
-      setCart([{ item, quantity: 1 }]);
-      toast("Hemos iniciado una nueva cesta", { description: `Tu pedido ahora será de ${restaurant.name}.` });
+      setCart([newLine]);
+      toast("Hemos iniciado una nueva cesta", {
+        description: `Tu pedido ahora será de ${restaurant.name}.`,
+      });
     } else {
       setCartRestaurant(restaurant);
-      setCart((current) => {
-        const existing = current.find((line) => line.item.id === item.id);
-        if (existing) return current.map((line) => line.item.id === item.id ? { ...line, quantity: line.quantity + 1 } : line);
-        return [...current, { item, quantity: 1 }];
+      setCart(current => {
+        const existing = current.find(line => line.key === key);
+        if (existing)
+          return current.map(line =>
+            line.key === key ? { ...line, quantity: line.quantity + 1 } : line
+          );
+        return [...current, newLine];
       });
       toast.success(`${item.name} añadido`);
     }
+
+    setCustomizing(null);
   };
 
-  const changeQuantity = (itemId: string, quantity: number) => {
-    setCart((current) => {
-      const next = quantity <= 0 ? current.filter((line) => line.item.id !== itemId) : current.map((line) => line.item.id === itemId ? { ...line, quantity } : line);
+  const changeQuantity = (lineKey: string, quantity: number) => {
+    setCart(current => {
+      const next =
+        quantity <= 0
+          ? current.filter(line => line.key !== lineKey)
+          : current.map(line =>
+              line.key === lineKey ? { ...line, quantity } : line
+            );
       if (next.length === 0) setCartRestaurant(null);
       return next;
     });
@@ -263,7 +293,7 @@ export default function Home() {
     }
     if (!deliveryLocation) { toast.error("Selecciona una dirección válida", { description: "El pedido necesita coordenadas para poder asignarse a un Rider." }); setAddressOpen(true); return; }
     checkoutMutation.mutate(
-      { restaurantId: cartRestaurant.id, address, deliveryLocation, items: cart.map((line) => ({ id: line.item.id, quantity: line.quantity })), total, paymentMethod: "cash" },
+      { restaurantId: cartRestaurant.id, address, deliveryLocation, items: cart.map((line) => ({ id: line.item.id, quantity: line.quantity, selections: line.selections })), total, paymentMethod: "cash" },
       {
         onSuccess: ({ checkoutUrl, orderId, totalCents }) => {
           const confirmedTotal = Number.isFinite(totalCents) ? totalCents / 100 : total;
@@ -360,21 +390,296 @@ export default function Home() {
       <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-[#e8ded4] bg-[#FFFDF5]/95 px-4 py-3 backdrop-blur lg:hidden"><button onClick={() => setCartOpen(true)} className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-4 py-3 text-white shadow-lg"><span className="flex items-center gap-2 text-sm font-bold"><ShoppingBag className="h-4 w-4" /> {cartCount ? `${cartCount} en tu cesta` : "Tu cesta está vacía"}</span><span className="text-sm font-extrabold">{cartCount ? money.format(total) : "Ver cesta"}</span></button></div>
 
       {selectedRestaurant && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#171715]/45 p-0 backdrop-blur-sm sm:p-4" onMouseDown={() => setSelectedRestaurant(null)}>
-          <div className="relative flex max-h-[96vh] w-full max-w-[770px] flex-col overflow-hidden rounded-none bg-[#FFFDF5] shadow-2xl sm:rounded-[1.8rem]" onMouseDown={(event) => event.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-[#171715]/45 p-0 backdrop-blur-sm sm:p-4"
+          onMouseDown={() => setSelectedRestaurant(null)}
+        >
+          <div
+            className="relative flex max-h-[96vh] w-full max-w-[770px] flex-col overflow-hidden rounded-none bg-[#FFFDF5] shadow-2xl sm:rounded-[1.8rem]"
+            onMouseDown={event => event.stopPropagation()}
+          >
             <div className="relative h-[260px] shrink-0 overflow-hidden sm:h-[290px]">
-              <img src={selectedRestaurant.image} alt={`Imagen de ${selectedRestaurant.name}`} className="h-full w-full object-cover" />
+              <img
+                src={selectedRestaurant.image}
+                alt={`Imagen de ${selectedRestaurant.name}`}
+                className="h-full w-full object-cover"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-[#171715]/80 via-[#171715]/10 to-black/10" />
-              <button onClick={() => setSelectedRestaurant(null)} className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/95 text-[#171715] shadow-lg" aria-label="Cerrar carta"><X className="h-5 w-5" /></button>
-              <div className="absolute bottom-5 left-6 right-6 text-white sm:left-8 sm:right-8"><p className="mb-2 text-xs font-extrabold uppercase tracking-[.16em] text-[#FFE88A]">{selectedRestaurant.cuisine} · {selectedRestaurant.category}</p><h1 className="font-display text-4xl font-semibold leading-none tracking-[-.05em] sm:text-5xl">{selectedRestaurant.name}</h1><div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-bold"><span className="flex items-center gap-1"><Star className="h-4 w-4 fill-[#f9b43d] text-[#f9b43d]" /> {selectedRestaurant.rating.toFixed(1)} ({selectedRestaurant.reviews})</span><span>·</span><span>{selectedRestaurant.eta}</span><span>·</span><span>{selectedRestaurant.fee === 0 ? "Envío gratis" : `Envío ${money.format(selectedRestaurant.fee)}`}</span></div></div>
+              <button
+                onClick={() => setSelectedRestaurant(null)}
+                className="absolute left-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/95 text-[#171715] shadow-lg"
+                aria-label="Cerrar carta"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <div className="absolute bottom-5 left-6 right-6 text-white sm:left-8 sm:right-8">
+                <p className="mb-2 text-xs font-extrabold uppercase tracking-[.16em] text-[#FFE88A]">
+                  {selectedRestaurant.cuisine} · {selectedRestaurant.category}
+                </p>
+                <h1 className="font-display text-4xl font-semibold leading-none tracking-[-.05em] sm:text-5xl">
+                  {selectedRestaurant.name}
+                </h1>
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-bold">
+                  <span className="flex items-center gap-1">
+                    <Star className="h-4 w-4 fill-[#f9b43d] text-[#f9b43d]" />{" "}
+                    {selectedRestaurant.rating.toFixed(1)} (
+                    {selectedRestaurant.reviews})
+                  </span>
+                  <span>·</span>
+                  <span>{selectedRestaurant.eta}</span>
+                  <span>·</span>
+                  <span>
+                    {selectedRestaurant.fee === 0
+                      ? "Envío gratis"
+                      : `Envío ${money.format(selectedRestaurant.fee)}`}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-8 sm:py-7"><div className="flex items-start justify-between gap-4"><p className="max-w-2xl text-sm leading-relaxed text-[#647166] sm:text-base">{selectedRestaurant.tagline}</p><span className="hidden shrink-0 rounded-full bg-[#FFF2AD] px-3 py-1.5 text-xs font-bold text-[#171715] sm:inline-flex">Entrega sostenible</span></div><div className="mt-7 flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Carta completa</p><h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">Lo más pedido</h2></div><span className="text-xs font-bold text-[#7a887b]">{selectedRestaurant.menu.length} productos</span></div><div className="mt-5 space-y-3">{selectedRestaurant.menu.map((item) => { const quantity = cart.find((line) => line.item.id === item.id)?.quantity ?? 0; return <article key={item.id} className="flex gap-4 rounded-2xl border border-[#e5dbd0] bg-white p-4 shadow-[0_4px_12px_rgba(61,49,36,.04)] transition hover:border-[#c9d5bf]"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-base font-extrabold text-[#263229]">{item.name}</h3>{item.popular && <span className="rounded-full bg-[#ffe6dc] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#c14f2d]">Top</span>}{item.vegetarian && <Leaf className="h-3.5 w-3.5 text-[#4f883c]" />}</div><p className="mt-1 text-sm leading-relaxed text-[#68746a]">{item.description || "Preparado al momento con ingredientes seleccionados."}</p><p className="mt-2 text-sm font-extrabold text-[#263229]">{money.format(item.price)}</p></div>{quantity ? <QuantityControl quantity={quantity} onChange={(next) => changeQuantity(item.id, next)} /> : <button onClick={() => addItem(selectedRestaurant, item)} className="grid h-10 w-10 shrink-0 place-items-center self-center rounded-full bg-[#171715] text-white transition hover:bg-black active:scale-95" aria-label={`Añadir ${item.name}`}><Plus className="h-5 w-5" /></button>}</article>; })}</div></div>
-            {cartCount > 0 && <div className="shrink-0 border-t border-[#e8ded4] bg-[#FFFDF5] p-4 sm:p-5"><button onClick={() => { setSelectedRestaurant(null); setCartOpen(true); }} className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-5 py-3.5 text-sm font-extrabold text-white shadow-lg transition hover:bg-black"><span>Añade productos a la cesta · {cartCount}</span><span className="flex items-center gap-2">Ver cesta <ArrowRight className="h-4 w-4" /></span></button></div>}
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-8 sm:py-7">
+              <div className="flex items-start justify-between gap-4">
+                <p className="max-w-2xl text-sm leading-relaxed text-[#647166] sm:text-base">
+                  {selectedRestaurant.tagline}
+                </p>
+                <span className="hidden shrink-0 rounded-full bg-[#FFF2AD] px-3 py-1.5 text-xs font-bold text-[#171715] sm:inline-flex">
+                  Entrega sostenible
+                </span>
+              </div>
+              <div className="mt-7 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">
+                    Carta completa
+                  </p>
+                  <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.04em]">
+                    Lo más pedido
+                  </h2>
+                </div>
+                <span className="text-xs font-bold text-[#7a887b]">
+                  {selectedRestaurant.menu.length} productos
+                </span>
+              </div>
+              <div className="mt-5 space-y-3">
+                {selectedRestaurant.menu.map(item => {
+                  const quantity = cart
+                    .filter(line => line.item.id === item.id)
+                    .reduce((sum, line) => sum + line.quantity, 0);
+                  const customizable = Boolean(item.modifierGroups?.length);
+                  return (
+                    <article
+                      key={item.id}
+                      className="flex gap-4 rounded-2xl border border-[#e5dbd0] bg-white p-4 shadow-[0_4px_12px_rgba(61,49,36,.04)] transition hover:border-[#c9d5bf]"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-base font-extrabold text-[#263229]">
+                            {item.name}
+                          </h3>
+                          {item.popular && (
+                            <span className="rounded-full bg-[#ffe6dc] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#c14f2d]">
+                              Top
+                            </span>
+                          )}
+                          {item.vegetarian && (
+                            <Leaf className="h-3.5 w-3.5 text-[#4f883c]" />
+                          )}
+                        </div>
+                        <p className="mt-1 text-sm leading-relaxed text-[#68746a]">
+                          {item.description ||
+                            "Preparado al momento con ingredientes seleccionados."}
+                        </p>
+                        <p className="mt-2 text-sm font-extrabold text-[#263229]">
+                          Desde {money.format(item.price)}
+                        </p>
+                        {quantity > 0 && (
+                          <p className="mt-1 text-xs font-bold text-[#526952]">
+                            {quantity} en tu cesta
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() =>
+                          customizable
+                            ? setCustomizing({
+                                restaurant: selectedRestaurant,
+                                item,
+                              })
+                            : addItem(selectedRestaurant, item, [])
+                        }
+                        className="flex shrink-0 self-center items-center gap-1.5 rounded-xl bg-[#171715] px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-black active:scale-95"
+                        aria-label={`${customizable ? "Personalizar" : "Añadir"} ${item.name}`}
+                      >
+                        <Plus className="h-4 w-4" />
+                        {customizable ? "Personalizar" : "Añadir"}
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+            {cartCount > 0 && (
+              <div className="shrink-0 border-t border-[#e8ded4] bg-[#FFFDF5] p-4 sm:p-5">
+                <button
+                  onClick={() => {
+                    setSelectedRestaurant(null);
+                    setCartOpen(true);
+                  }}
+                  className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-5 py-3.5 text-sm font-extrabold text-white shadow-lg transition hover:bg-black"
+                >
+                  <span>Añade productos a la cesta · {cartCount}</span>
+                  <span className="flex items-center gap-2">
+                    Ver cesta <ArrowRight className="h-4 w-4" />
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {cartOpen && <div className="fixed inset-0 z-50 bg-[#171715]/35 backdrop-blur-sm" onMouseDown={() => setCartOpen(false)}><aside onMouseDown={(event) => event.stopPropagation()} className="ml-auto flex h-full w-full max-w-md flex-col bg-[#FFFDF5] shadow-2xl"><div className="flex items-center justify-between border-b border-[#ece2d8] p-5"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Tu selección</p><h2 className="font-display text-3xl font-semibold tracking-[-.05em]">La cesta</h2></div><button onClick={() => setCartOpen(false)} className="grid h-10 w-10 place-items-center rounded-full border border-[#e5dbd0] bg-white"><X className="h-5 w-5" /></button></div>{cartRestaurant && cart.length ? <><div className="flex-1 overflow-y-auto p-5"><div className="mb-5 flex items-center gap-3 rounded-2xl bg-[#FFF4BE] p-3"><div className="grid h-9 w-9 place-items-center rounded-xl bg-[#171715] text-white"><Store className="h-4 w-4" /></div><div><p className="text-xs font-bold text-[#617162]">Pedido de</p><p className="text-sm font-extrabold">{cartRestaurant.name}</p></div></div><div className="space-y-4">{cart.map((line) => <div key={line.item.id} className="flex gap-3"><div className="min-w-0 flex-1"><p className="font-bold">{line.item.name}</p><p className="mt-0.5 text-sm text-[#68746a]">{money.format(line.item.price)} · unidad</p></div><div className="flex flex-col items-end gap-2"><p className="text-sm font-extrabold">{money.format(line.item.price * line.quantity)}</p><QuantityControl quantity={line.quantity} onChange={(next) => changeQuantity(line.item.id, next)} /></div></div>)}</div></div><div className="border-t border-[#ece2d8] p-5"><div className="mb-4 space-y-2 text-sm"><div className="flex justify-between text-[#667267]"><span>Productos</span><span>{money.format(subtotal)}</span></div><div className="flex justify-between text-[#667267]"><span>Entrega</span><span>{deliveryFee ? money.format(deliveryFee) : "Gratis"}</span></div><div className="flex justify-between text-[#667267]"><span>Servicio</span><span>{money.format(serviceFee)}</span></div><div className="mt-3 flex justify-between border-t border-[#e6ddd2] pt-3 text-base font-extrabold text-[#171715]"><span>Total</span><span>{money.format(total)}</span></div></div><button onClick={() => { setCartOpen(false); setCheckoutOpen(true); }} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFD72E] py-3.5 text-sm font-extrabold text-white shadow-[0_10px_20px_rgba(255,107,61,.22)] transition hover:bg-[#E8C600] active:scale-[.98]">Continuar al pago <ArrowRight className="h-4 w-4" /></button></div></> : <div className="flex flex-1 flex-col items-center justify-center px-9 text-center"><div className="grid h-16 w-16 place-items-center rounded-[1.4rem] bg-[#f2e9df] text-[#b5724c]"><ShoppingBag className="h-7 w-7" /></div><h3 className="mt-5 font-display text-3xl font-semibold tracking-[-.05em]">Aún no hay nada</h3><p className="mt-2 text-sm leading-relaxed text-[#68746a]">Explora los restaurantes de tu barrio y guarda algo rico para luego.</p><button onClick={() => { setCartOpen(false); document.getElementById("restaurantes")?.scrollIntoView({ behavior: "smooth" }); }} className="mt-6 rounded-full bg-[#171715] px-5 py-2.5 text-sm font-bold text-white">Explorar restaurantes</button></div>}</aside></div>}
+      {customizing && (
+        <ProductCustomizer
+          item={customizing.item}
+          onClose={() => setCustomizing(null)}
+          onAdd={selections =>
+            addItem(customizing.restaurant, customizing.item, selections)
+          }
+        />
+      )}
+
+      {cartOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-[#171715]/35 backdrop-blur-sm"
+          onMouseDown={() => setCartOpen(false)}
+        >
+          <aside
+            onMouseDown={event => event.stopPropagation()}
+            className="ml-auto flex h-full w-full max-w-md flex-col bg-[#FFFDF5] shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-[#ece2d8] p-5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">
+                  Tu selección
+                </p>
+                <h2 className="font-display text-3xl font-semibold tracking-[-.05em]">
+                  La cesta
+                </h2>
+              </div>
+              <button
+                onClick={() => setCartOpen(false)}
+                className="grid h-10 w-10 place-items-center rounded-full border border-[#e5dbd0] bg-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {cartRestaurant && cart.length ? (
+              <>
+                <div className="flex-1 overflow-y-auto p-5">
+                  <div className="mb-5 flex items-center gap-3 rounded-2xl bg-[#FFF4BE] p-3">
+                    <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#171715] text-white">
+                      <Store className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-[#617162]">
+                        Pedido de
+                      </p>
+                      <p className="text-sm font-extrabold">
+                        {cartRestaurant.name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    {cart.map(line => {
+                      const options = selectedOptionNames(
+                        line.item,
+                        line.selections
+                      );
+                      return (
+                        <div key={line.key} className="flex gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold">{line.item.name}</p>
+                            {options.length > 0 && (
+                              <p className="mt-0.5 text-xs leading-relaxed text-[#68746a]">
+                                {options.join(" · ")}
+                              </p>
+                            )}
+                            <p className="mt-1 text-sm text-[#68746a]">
+                              {money.format(line.unitPrice)} · unidad
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <p className="text-sm font-extrabold">
+                              {money.format(line.unitPrice * line.quantity)}
+                            </p>
+                            <QuantityControl
+                              quantity={line.quantity}
+                              onChange={next => changeQuantity(line.key, next)}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="border-t border-[#ece2d8] p-5">
+                  <div className="mb-4 space-y-2 text-sm">
+                    <div className="flex justify-between text-[#667267]">
+                      <span>Productos</span>
+                      <span>{money.format(subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-[#667267]">
+                      <span>Entrega</span>
+                      <span>
+                        {deliveryFee ? money.format(deliveryFee) : "Gratis"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[#667267]">
+                      <span>Servicio</span>
+                      <span>{money.format(serviceFee)}</span>
+                    </div>
+                    <div className="mt-3 flex justify-between border-t border-[#e6ddd2] pt-3 text-base font-extrabold text-[#171715]">
+                      <span>Total</span>
+                      <span>{money.format(total)}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setCartOpen(false);
+                      setCheckoutOpen(true);
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFD72E] py-3.5 text-sm font-extrabold text-white shadow-[0_10px_20px_rgba(255,107,61,.22)] transition hover:bg-[#E8C600] active:scale-[.98]"
+                  >
+                    Continuar al pago <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-1 flex-col items-center justify-center px-9 text-center">
+                <div className="grid h-16 w-16 place-items-center rounded-[1.4rem] bg-[#f2e9df] text-[#b5724c]">
+                  <ShoppingBag className="h-7 w-7" />
+                </div>
+                <h3 className="mt-5 font-display text-3xl font-semibold tracking-[-.05em]">
+                  Aún no hay nada
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#68746a]">
+                  Explora los restaurantes de tu barrio y guarda algo rico para
+                  luego.
+                </p>
+                <button
+                  onClick={() => {
+                    setCartOpen(false);
+                    document
+                      .getElementById("restaurantes")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="mt-6 rounded-full bg-[#171715] px-5 py-2.5 text-sm font-bold text-white"
+                >
+                  Explorar restaurantes
+                </button>
+              </div>
+            )}
+          </aside>
+        </div>
+      )}
 
       {checkoutOpen && <div className="fixed inset-0 z-[60] grid place-items-end bg-[#171715]/45 p-0 backdrop-blur-sm sm:place-items-center sm:p-6"><div className="w-full max-w-lg rounded-t-[2rem] bg-[#FFFDF5] p-6 shadow-2xl sm:rounded-[2rem] sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Revisión final</p><h2 className="font-display text-3xl font-semibold tracking-[-.05em]">Casi en camino</h2></div><button onClick={() => setCheckoutOpen(false)} className="grid h-9 w-9 place-items-center rounded-full border border-[#e5dbd0] bg-white"><X className="h-4 w-4" /></button></div><div className="mt-6 space-y-4"><div className="rounded-2xl border border-[#e9dfd5] bg-white p-4"><div className="flex items-center gap-3"><MapPin className="h-5 w-5 text-[#FFD72E]" /><div className="min-w-0 flex-1"><p className="text-xs font-bold text-[#69756a]">Entregar en</p><p className="truncate text-sm font-extrabold">{address}</p></div><button onClick={() => { setCheckoutOpen(false); setAddressOpen(true); }} className="text-xs font-extrabold text-[#171715]">Cambiar</button></div></div><section className="rounded-2xl border border-[#e9dfd5] bg-white p-4"><div className="mb-3 flex items-center gap-3"><CreditCard className="h-5 w-5 text-[#171715]" /><div><p className="text-xs font-bold text-[#69756a]">Método de pago</p><p className="text-sm font-extrabold">Elige cómo quieres pagar</p></div></div><div className="space-y-2">{([
   ["stripe", "Tarjeta, Apple Pay o Google Pay", "Temporalmente no disponible. Los pagos online se activarán tras la configuración aprobada de la pasarela.", CreditCard, false],

@@ -1,4 +1,5 @@
-import { findRestaurant } from "./catalog";
+import { buildOrderQuote } from "./catalog";
+import type { CheckoutLine } from "./catalog";
 
 const apiUrl = (process.env.PIKI_API_URL ?? "https://api.pikidelivery.com").replace(/\/$/, "");
 const syncSecret = () => process.env.PIKI_CUSTOMER_SYNC_SECRET || "";
@@ -16,25 +17,88 @@ export type OperationalOrderInput = {
   stripePaymentIntentId?: string | null;
 };
 
-export async function syncOperationalOrder(order: OperationalOrderInput, deliveryLocation?: { latitude: number; longitude: number } | null): Promise<boolean> {
+export async function syncOperationalOrder(
+  order: OperationalOrderInput,
+  deliveryLocation?: { latitude: number; longitude: number } | null
+): Promise<boolean> {
   const secret = process.env.PIKI_CUSTOMER_SYNC_SECRET;
-  if (!secret) { console.warn("[OperationalSync] PIKI_CUSTOMER_SYNC_SECRET no configurado"); return false; }
-  const restaurant = findRestaurant(order.restaurantId);
-  if (!restaurant) { console.warn(`[OperationalSync] Restaurante desconocido: ${order.restaurantId}`); return false; }
-  let requestedItems: Array<{ id: string; quantity: number }>;
-  try { requestedItems = JSON.parse(order.itemsJson) as Array<{ id: string; quantity: number }>; } catch { console.warn(`[OperationalSync] itemsJson inválido para ${order.publicCode}`); return false; }
-  const items = requestedItems.map((line) => {
-    const item = restaurant.menu.find((candidate) => candidate.id === line.id);
-    return item ? { itemId: item.id, name: item.name, quantity: line.quantity, unitPriceCents: Math.round(item.price * 100) } : null;
-  });
-  if (items.some((item) => !item)) { console.warn(`[OperationalSync] Producto desconocido para ${order.publicCode}`); return false; }
-  const subtotalCents = (items as Array<{ quantity: number; unitPriceCents: number }>).reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
-  const deliveryFeeCents = Math.max(0, order.totalCents - subtotalCents - 79);
+  if (!secret) {
+    console.warn("[OperationalSync] PIKI_CUSTOMER_SYNC_SECRET no configurado");
+    return false;
+  }
+
+  let requestedItems: CheckoutLine[];
   try {
-    const response = await fetch(`${apiUrl}/api/v1/internal/customer-orders/sync`, { method: "POST", headers: { "Content-Type": "application/json", "x-piki-customer-sync-secret": secret }, body: JSON.stringify({ publicCode: order.publicCode, restaurantSlug: order.restaurantId, customerId: order.customerOpenId ?? null, deliveryAddress: order.address, deliveryLocation: deliveryLocation ?? null, items, subtotalCents, deliveryFeeCents, serviceFeeCents: 79, totalCents: order.totalCents, paymentMethod: order.paymentMethod ?? "stripe", paymentState: order.paymentState, stripeCheckoutSessionId: order.stripeCheckoutSessionId ?? null, stripePaymentIntentId: order.stripePaymentIntentId ?? null }) });
-    if (!response.ok) { console.warn(`[OperationalSync] API respondió ${response.status} para ${order.publicCode}: ${await response.text()}`); return false; }
+    requestedItems = JSON.parse(order.itemsJson) as CheckoutLine[];
+  } catch {
+    console.warn(
+      `[OperationalSync] itemsJson inválido para ${order.publicCode}`
+    );
+    return false;
+  }
+
+  let quoteResult: ReturnType<typeof buildOrderQuote>;
+  try {
+    quoteResult = buildOrderQuote(order.restaurantId, requestedItems);
+  } catch (error) {
+    console.warn(
+      `[OperationalSync] Opciones no válidas para ${order.publicCode}`,
+      error
+    );
+    return false;
+  }
+
+  const { restaurant, quote } = quoteResult;
+  // The central API already accepts itemId/name/quantity/unitPriceCents. The name carries the
+  // selected option labels, keeping the partner-facing order readable without a contract break.
+  const items = quote.displayLines.map(line => ({
+    itemId: line.itemId,
+    name: line.name,
+    quantity: line.quantity,
+    unitPriceCents: line.unitCents,
+  }));
+
+  try {
+    const response = await fetch(
+      `${apiUrl}/api/v1/internal/customer-orders/sync`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-piki-customer-sync-secret": secret,
+        },
+        body: JSON.stringify({
+          publicCode: order.publicCode,
+          restaurantSlug: restaurant.id,
+          customerId: order.customerOpenId ?? null,
+          deliveryAddress: order.address,
+          deliveryLocation: deliveryLocation ?? null,
+          items,
+          subtotalCents: quote.subtotalCents,
+          deliveryFeeCents: quote.deliveryCents,
+          serviceFeeCents: quote.serviceCents,
+          totalCents: quote.totalCents,
+          paymentMethod: order.paymentMethod ?? "stripe",
+          paymentState: order.paymentState,
+          stripeCheckoutSessionId: order.stripeCheckoutSessionId ?? null,
+          stripePaymentIntentId: order.stripePaymentIntentId ?? null,
+        }),
+      }
+    );
+    if (!response.ok) {
+      console.warn(
+        `[OperationalSync] API respondió ${response.status} para ${order.publicCode}: ${await response.text()}`
+      );
+      return false;
+    }
     return true;
-  } catch (error) { console.warn(`[OperationalSync] Error sincronizando ${order.publicCode}`, error); return false; }
+  } catch (error) {
+    console.warn(
+      `[OperationalSync] Error sincronizando ${order.publicCode}`,
+      error
+    );
+    return false;
+  }
 }
 
 export type CustomerSupportTicketInput = { customerId: string; customerName: string; customerEmail: string; orderRef?: string; category: "order" | "account" | "technical" | "billing" | "finance" | "other"; priority: "low" | "normal" | "high"; subject: string; description: string };

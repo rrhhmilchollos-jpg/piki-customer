@@ -73,10 +73,14 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 
+const modifierSelectionInput = z.object({
+  groupId: z.string().min(1).max(80),
+  optionIds: z.array(z.string().min(1).max(80)).max(12),
+});
 const basketInput = z.object({
   restaurantId: z.string().min(1),
   address: z.string().min(5),
-  items: z.array(z.object({ id: z.string(), quantity: z.number().int().min(1).max(20) })).min(1),
+  items: z.array(z.object({ id: z.string(), quantity: z.number().int().min(1).max(20), selections: z.array(modifierSelectionInput).max(12).optional() })).min(1),
   // Kept only for backward compatible callers; never trusted by the server.
   total: z.number().positive().optional(),
   customerName: z.string().max(160).optional(),
