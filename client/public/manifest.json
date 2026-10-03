@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "PIKI Delivery",
-  "short_name": "PIKI",
-  "description": "Pide. Recibe. Disfruta. PIKI Delivery, cerca de ti.",
+  "name": "PIKI Clientes",
+  "short_name": "Clientes",
+  "description": "App de clientes para pedir comida a domicilio con PIKI Delivery.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
