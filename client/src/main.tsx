@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { COOKIE_NAME, UNAUTHED_ERR_MSG } from '@shared/const';
+import { Capacitor } from "@capacitor/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
@@ -15,6 +16,11 @@ import "./index.css";
 
 installPikiReleaseHeaders();
 const queryClient = new QueryClient();
+// Android WebViews use https://localhost, which does not receive the Vercel
+// rewrite for /api/trpc. The production API explicitly permits that origin.
+const trpcApiOrigin = Capacitor.isNativePlatform()
+  ? (import.meta.env.VITE_API_URL ?? "https://api.pikidelivery.com").replace(/\/$/, "")
+  : "";
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError) || typeof window === "undefined") return;
   if (error.message === UNAUTHED_ERR_MSG) startLogin();
@@ -32,7 +38,7 @@ queryClient.getMutationCache().subscribe((event) => {
   }
 });
 const trpcClient = trpc.createClient({ links: [httpBatchLink({
-  url: "/api/trpc", transformer: superjson,
+  url: `${trpcApiOrigin}/api/trpc`, transformer: superjson,
   headers() {
     try {
       const raw = sessionStorage.getItem("manus-cookie");
