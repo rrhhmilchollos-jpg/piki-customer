@@ -19,6 +19,7 @@ export type MenuItem = {
   name: string;
   description: string;
   price: number;
+  allergens?: string[];
   vegetarian?: boolean;
   popular?: boolean;
   modifierGroups?: MenuModifierGroup[];

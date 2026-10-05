@@ -487,6 +487,11 @@ export default function Home() {
                           {item.description ||
                             "Preparado al momento con ingredientes seleccionados."}
                         </p>
+                        {item.allergens?.length ? (
+                          <p className="mt-2 text-[11px] leading-relaxed text-[#8a5a35]">
+                            <strong>Alérgenos:</strong> {item.allergens.join(" · ")} · Puede contener trazas
+                          </p>
+                        ) : null}
                         <p className="mt-2 text-sm font-extrabold text-[#263229]">
                           Desde {money.format(item.price)}
                         </p>
