@@ -59,7 +59,7 @@ import {
   upsertRiderPushSubscription,
   upsertRiderProfile,
 } from "./db";
-import { createCustomerSupportTicket, fetchOperationalMessages, fetchOperationalTracking, listCustomerSupportTickets, sendOperationalMessage, syncOperationalOrder } from "./operationalSync";
+import { createCustomerSupportTicket, fetchOperationalMessages, fetchOperationalTracking, listCustomerSupportTickets, sendOperationalMessage, syncOperationalOrder, writeCanonicalOrder } from "./operationalSync";
 import { sendPasswordResetEmail } from "./credentialEmail";
 import { storagePut } from "./storage";
 import { isFreshRiderLocation, mayShareRiderLocation } from "./deliveryTracking";
@@ -252,9 +252,10 @@ export const appRouter = router({
     create: publicProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
+      const canonicalWritten = await writeCanonicalOrder({ publicCode: code, restaurantId: restaurant.id, customerOpenId: ctx.user?.openId ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod: input.paymentMethod === "cash" ? "cash" : "stripe", deliveryLocation: input.deliveryLocation });
+      if (!canonicalWritten) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "La API central no está disponible; el pedido no se ha confirmado." });
       const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents });
       if (stored) {
-        void syncOperationalOrder(stored);
         void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
       }
       return { id: stored?.publicCode ?? code, restaurant: restaurant.name, eta: restaurant.eta, createdAt: stored?.createdAt?.getTime() ?? Date.now(), status: stored?.status ?? "placed", totalCents: quote.totalCents } as const;
@@ -264,10 +265,10 @@ export const appRouter = router({
       if (!input.deliveryLocation) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Selecciona una dirección validada de la lista para poder despachar el pedido." });
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
+      const canonicalWritten = await writeCanonicalOrder({ publicCode: code, restaurantId: restaurant.id, customerOpenId: ctx.user?.openId ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod: "cash", deliveryLocation: input.deliveryLocation });
+      if (!canonicalWritten) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "La API central no está disponible; el pedido no se ha confirmado." });
       const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending" });
       if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible guardar el pedido; inténtalo de nuevo." });
-      const synced = await syncOperationalOrder({ ...stored, paymentMethod: "cash" }, input.deliveryLocation);
-      if (!synced) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No se pudo sincronizar el pedido con Partner, Admin, Fleet y Rider. No lo hemos confirmado; inténtalo de nuevo." });
       void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
       return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash", paymentState: "pending_cash_collection", cashDueAtDelivery: true };
     }),

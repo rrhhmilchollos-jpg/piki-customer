@@ -101,6 +101,11 @@ export async function syncOperationalOrder(
   }
 }
 
+/** Canonical write used by the tRPC compatibility layer during the cutover. */
+export async function writeCanonicalOrder(input: OperationalOrderInput & { deliveryLocation?: { latitude: number; longitude: number } | null }): Promise<boolean> {
+  return syncOperationalOrder(input, input.deliveryLocation);
+}
+
 export type CustomerSupportTicketInput = { customerId: string; customerName: string; customerEmail: string; orderRef?: string; category: "order" | "account" | "technical" | "billing" | "finance" | "other"; priority: "low" | "normal" | "high"; subject: string; description: string };
 export type CustomerSupportTicket = { _id: string; ticketNumber: string; subject: string; description: string; category: string; priority: string; status: string; reporterEmail?: string; createdAt?: string; updatedAt?: string; messages?: Array<{ senderRole: string; senderName?: string; body: string; createdAt?: string }> };
 export async function createCustomerSupportTicket(input: CustomerSupportTicketInput): Promise<CustomerSupportTicket | null> {
