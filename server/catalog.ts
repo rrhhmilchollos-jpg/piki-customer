@@ -112,6 +112,26 @@ const mealAddOns: MenuModifierGroup[] = [
 
 export const restaurants: Restaurant[] = [
   {
+    id: "kfc-xativa",
+    name: "KFC XATIVA QA",
+    cuisine: "Pollo · Americana",
+    category: "Pollo",
+    tagline: "Pedido de validación operativa PIKI en Xàtiva.",
+    eta: "20–30 min",
+    fee: 2.99,
+    rating: 4.5,
+    reviews: 0,
+    promoted: true,
+    image: "https://images.unsplash.com/photo-1562967916-eb82221dfb92?auto=format&fit=crop&w=1200&q=80",
+    accent: "#D71920",
+    menu: [
+      { id: "kfc-bucket", name: "Bucket de pollo crujiente", description: "Piezas de pollo crujiente estilo KFC.", price: 14.95, popular: true },
+      { id: "kfc-burger", name: "Burger de pollo", description: "Filete de pollo crujiente, lechuga y salsa.", price: 8.95 },
+      { id: "kfc-wings", name: "Alitas picantes", description: "Alitas de pollo con salsa picante.", price: 7.95 },
+      { id: "kfc-fries", name: "Patatas clásicas", description: "Patatas crujientes.", price: 3.25, vegetarian: true },
+    ],
+  },
+  {
     id: "solera",
     name: "Solera Cocina Viva",
     cuisine: "Mediterránea · Tapas",
