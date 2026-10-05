@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, Bike, CheckCircle2, Handshake, Loader2, MapPin, Store, Zap } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -16,6 +16,13 @@ const vehicles: Record<Vehicle, string> = {
 };
 
 export default function JoinPiki() {
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id === "riders" || id === "partners") {
+      const frame = requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: "start" }));
+      return () => cancelAnimationFrame(frame);
+    }
+  }, []);
   const [rider, setRider] = useState({ name: "", email: "", phone: "", city: "Xàtiva", vehicle: "electric_bike" as Vehicle, availability: "Tardes y fines de semana", privacyNoticeAccepted: false });
   const [partner, setPartner] = useState({ name: "", email: "", phone: "", address: "", city: "Xàtiva", privacyNoticeAccepted: false });
   const [riderState, setRiderState] = useState<LeadStatus>("idle");
@@ -64,7 +71,7 @@ export default function JoinPiki() {
         <div className="mt-10 grid gap-4 sm:grid-cols-3"><Benefit icon={MapPin} title="Operación local" text="Trabaja con comercios y equipos de tu zona." /><Benefit icon={Zap} title="Proceso por etapas" text="Primero revisamos el contacto; después solicitamos la información necesaria." /><Benefit icon={Handshake} title="Seguimiento" text="El equipo responsable te contactará con los siguientes pasos." /></div>
       </section>
       <section className="mx-auto grid max-w-7xl gap-8 px-5 pb-20 sm:px-8 lg:grid-cols-2">
-        <FormShell icon={Bike} eyebrow="Para repartidores" title="Solicita tu alta como rider" description="Comparte tus datos básicos y disponibilidad. Fleet te contactará para completar documentación y verificaciones." success={riderState === "success"}>
+        <FormShell id="riders" icon={Bike} eyebrow="Para repartidores" title="Solicita tu alta como rider" description="Comparte tus datos básicos y disponibilidad. Fleet te contactará para completar documentación y verificaciones." success={riderState === "success"}>
           <form onSubmit={submitRider} className="space-y-4">
             <Field label="Nombre y apellidos" value={rider.name} onChange={(value) => setRider({ ...rider, name: value })} required />
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Email" type="email" value={rider.email} onChange={(value) => setRider({ ...rider, email: value })} required /><Field label="Teléfono" type="tel" value={rider.phone} onChange={(value) => setRider({ ...rider, phone: value })} required /></div>
@@ -75,7 +82,7 @@ export default function JoinPiki() {
             <button disabled={riderState === "loading" || !rider.privacyNoticeAccepted} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#171715] px-5 py-3.5 text-sm font-black text-white disabled:opacity-60">{riderState === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bike className="h-4 w-4" />} {riderState === "loading" ? "Enviando…" : "Enviar solicitud de rider"}</button>
           </form>
         </FormShell>
-        <FormShell icon={Store} eyebrow="Para restaurantes y comercios" title="Hazte partner de PIKI" description="Déjanos los datos de contacto del negocio. El equipo comercial revisará la solicitud y te pedirá la información fiscal y documental necesaria." success={partnerState === "success"}>
+        <FormShell id="partners" icon={Store} eyebrow="Para restaurantes y comercios" title="Hazte partner de PIKI" description="Déjanos los datos de contacto del negocio. El equipo comercial revisará la solicitud y te pedirá la información fiscal y documental necesaria." success={partnerState === "success"}>
           <form onSubmit={submitPartner} className="space-y-4">
             <Field label="Nombre del establecimiento" value={partner.name} onChange={(value) => setPartner({ ...partner, name: value })} required />
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Email de contacto" type="email" value={partner.email} onChange={(value) => setPartner({ ...partner, email: value })} required /><Field label="Teléfono" type="tel" value={partner.phone} onChange={(value) => setPartner({ ...partner, phone: value })} required /></div>
@@ -93,7 +100,7 @@ export default function JoinPiki() {
 }
 
 function Benefit({ icon: Icon, title, text }: { icon: typeof MapPin; title: string; text: string }) { return <div className="flex gap-3 rounded-2xl border border-[#eadfd3] bg-white p-5"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#fff4be]"><Icon className="h-5 w-5" /></div><div><p className="font-black">{title}</p><p className="mt-1 text-sm leading-relaxed text-[#6c786e]">{text}</p></div></div>; }
-function FormShell({ icon: Icon, eyebrow, title, description, success, children }: { icon: typeof MapPin; eyebrow: string; title: string; description: string; success: boolean; children: React.ReactNode }) { return <article className="rounded-[2rem] border border-[#eadfd3] bg-white p-6 shadow-[0_12px_40px_rgba(55,45,35,.05)] sm:p-8"><div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#fff4be]"><Icon className="h-6 w-6" /></div><div><p className="text-xs font-black uppercase tracking-[.16em] text-[#dc5c35]">{eyebrow}</p><h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.06em]">{title}</h2><p className="mt-2 text-sm leading-relaxed text-[#6c786e]">{description}</p></div></div>{success ? <div className="mt-8 flex items-start gap-3 rounded-2xl bg-[#e8f1e4] p-5 text-sm leading-relaxed"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#43834d]" /><p><strong>Solicitud recibida.</strong> El equipo responsable tiene tus datos y se pondrá en contacto contigo.</p></div> : <div className="mt-8">{children}</div>}</article>; }
+function FormShell({ id, icon: Icon, eyebrow, title, description, success, children }: { id: string; icon: typeof MapPin; eyebrow: string; title: string; description: string; success: boolean; children: React.ReactNode }) { return <article id={id} className="scroll-mt-8 rounded-[2rem] border border-[#eadfd3] bg-white p-6 shadow-[0_12px_40px_rgba(55,45,35,.05)] sm:p-8"><div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#fff4be]"><Icon className="h-6 w-6" /></div><div><p className="text-xs font-black uppercase tracking-[.16em] text-[#dc5c35]">{eyebrow}</p><h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.06em]">{title}</h2><p className="mt-2 text-sm leading-relaxed text-[#6c786e]">{description}</p></div></div>{success ? <div className="mt-8 flex items-start gap-3 rounded-2xl bg-[#e8f1e4] p-5 text-sm leading-relaxed"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#43834d]" /><p><strong>Solicitud recibida.</strong> El equipo responsable tiene tus datos y se pondrá en contacto contigo.</p></div> : <div className="mt-8">{children}</div>}</article>; }
 function Field({ label, value, onChange, type = "text", required = false }: { label: string; value: string; onChange: (value: string) => void; type?: string; required?: boolean }) { return <label className="grid gap-2 text-sm font-bold">{label}<input type={type} value={value} onChange={(event) => onChange(event.target.value)} required={required} className="rounded-xl border border-[#e2d8cd] bg-white px-3 py-3 font-normal outline-none focus:border-[#dc5c35]" /></label>; }
 function PrivacyConsent({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) { return <label className="flex items-start gap-3 rounded-xl border border-[#eadfd3] bg-[#fffaf0] p-3 text-xs leading-relaxed"><input className="mt-0.5" type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /><span>He leído la <a className="underline" href="https://pikidelivery.com/legal/politica-privacidad" target="_blank" rel="noopener noreferrer">información de privacidad para solicitudes</a> y entiendo que STARTBOOKING, S.L. tratará estos datos para gestionar y responder a esta solicitud. Enviarla no garantiza su aceptación ni crea un alta.</span></label>; }
 function Honeypot() { return <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}><label>No rellenar<input name="website" tabIndex={-1} autoComplete="off" /></label></div>; }
