@@ -1,6 +1,6 @@
 # PIKI Customer
 
-Aplicación web/PWA para clientes de PIKI Delivery. La experiencia sigue la referencia visual proporcionada: amarillo PIKI, negro carbón, navegación móvil, categorías, restaurantes, cesta, dirección, checkout y seguimiento.
+Aplicación web/PWA para clientes de Piki: comida a domicilio. La experiencia sigue la referencia visual proporcionada: amarillo PIKI, negro carbón, navegación móvil, categorías, restaurantes, cesta, dirección, checkout y seguimiento.
 
 ## Estado funcional
 

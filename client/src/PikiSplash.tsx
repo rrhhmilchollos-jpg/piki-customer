@@ -15,7 +15,7 @@ export default function PikiSplash({ children }: Props) {
 
   return (
     <main
-      aria-label="PIKI Delivery"
+      aria-label="Piki: comida a domicilio"
       role="status"
       style={{
         alignItems: "center",
@@ -33,7 +33,7 @@ export default function PikiSplash({ children }: Props) {
     >
       <img
         src="/piki-splash.webp"
-        alt="PIKI Delivery"
+        alt="Piki: comida a domicilio"
         style={{ display: "block", height: "min(74dvh, 620px)", maxWidth: "92vw", objectFit: "contain", width: "min(92vw, 930px)" }}
       />
       <span style={{ color: "#172238", fontFamily: "Arial, sans-serif", fontSize: "clamp(18px, 3vw, 28px)", fontWeight: 800, letterSpacing: "0.12em", marginTop: "-2dvh", textTransform: "uppercase" }}>Pikidelivery.com</span>

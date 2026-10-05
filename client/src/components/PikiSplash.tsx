@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 type Service = "delivery" | "riders" | "admin";
 
 const config = {
-  delivery: { title: "PIKI Delivery", eyebrow: "Pedidos cerca de ti", accent: "#FFD72E", soft: "#fff0e9", logo: "/piki-mascot.png" },
+  delivery: { title: "Piki: comida a domicilio", eyebrow: "Pedidos cerca de ti", accent: "#FFD72E", soft: "#fff0e9", logo: "/piki-mascot.png" },
   riders: { title: "PIKI Riders", eyebrow: "Tu ruta, tu ritmo", accent: "#171715", soft: "#eaf4e6", logo: "/piki-riders-512.png" },
   admin: { title: "PIKI Admin", eyebrow: "Centro de operaciones", accent: "#143b2b", soft: "#e8f0e7", logo: "/piki-admin-512.png" },
 } as const;

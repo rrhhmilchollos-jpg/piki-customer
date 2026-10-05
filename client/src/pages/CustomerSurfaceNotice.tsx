@@ -8,13 +8,13 @@ export default function CustomerSurfaceNotice() {
         <div className="mx-auto grid h-16 w-16 place-items-center rounded-[1.4rem] bg-[#FFF4BE] text-[#171715]">
           <ShieldCheck className="h-8 w-8" />
         </div>
-        <p className="mt-7 text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">PIKI Delivery</p>
+        <p className="mt-7 text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Piki: comida a domicilio</p>
         <h1 className="mt-2 font-display text-4xl font-semibold tracking-[-.06em]">Esta es la app de clientes</h1>
         <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-[#68746a]">
           La gestión de restaurantes, reparto y operaciones se realiza desde aplicaciones independientes. Aquí solo puedes crear una cuenta de cliente y hacer pedidos.
         </p>
         <Link href="/" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#171715] px-5 py-3.5 text-sm font-extrabold text-white">
-          <ArrowLeft className="h-4 w-4" /> Ir a PIKI Delivery
+          <ArrowLeft className="h-4 w-4" /> Ir a Piki: comida a domicilio
         </Link>
       </section>
     </main>

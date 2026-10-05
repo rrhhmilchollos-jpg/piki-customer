@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "PIKI Clientes",
-  "short_name": "Clientes",
-  "description": "App de clientes para pedir comida a domicilio con PIKI Delivery.",
+  "name": "Piki: comida a domicilio",
+  "short_name": "Piki",
+  "description": "Pide a restaurantes y comercios locales de Xàtiva con Piki: comida a domicilio.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
