@@ -5,7 +5,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { cn } from "@/lib/utils";
 
-type MapPoint = { lat: number; lng: number; label?: string; kind?: "rider" | "pickup" | "dropoff" | "restaurant" };
+type MapPoint = { lat: number; lng: number; label?: string; kind?: "rider" | "pickup" | "dropoff" | "restaurant"; vehicle?: string };
 
 export interface MapViewProps {
   className?: string;
@@ -40,6 +40,17 @@ function markerIcon(color: string, label: string) {
   });
 }
 
+function vehicleGlyph(vehicle?: string) {
+  if (vehicle === "car") return "🚗";
+  if (["motorcycle", "scooter", "moto"].includes(vehicle || "")) return "🏍️";
+  if (vehicle === "electric_scooter") return "🛴";
+  return "🚲";
+}
+
+function riderMarkerIcon(vehicle?: string) {
+  return L.divIcon({ className: "piki-map-pin", html: `<span style="display:grid;place-items:center;width:42px;height:42px;border-radius:15px;background:#143b2b;color:#fff;border:3px solid #FFD72E;box-shadow:0 6px 18px rgba(20,59,43,.4);font:22px/1 sans-serif">${vehicleGlyph(vehicle)}</span>`, iconSize: [42, 42], iconAnchor: [21, 21] });
+}
+
 export function MapView({ className, initialCenter = { lat: 38.9908, lng: -0.5185 }, initialZoom = 14, onMapReady, points = [], route = [], interactive = true }: MapViewProps) {
   const center = useMemo<LatLngExpression>(() => [initialCenter.lat, initialCenter.lng], [initialCenter.lat, initialCenter.lng]);
   const path = route.map((point) => [point.lat, point.lng] as LatLngTuple);
@@ -47,7 +58,7 @@ export function MapView({ className, initialCenter = { lat: 38.9908, lng: -0.518
     <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
     <MapReady onMapReady={onMapReady} center={initialCenter} />
     {path.length > 1 && <Polyline positions={path} pathOptions={{ color: "#171715", weight: 5, opacity: 0.85, lineCap: "round", lineJoin: "round" }} />}
-    {points.map((point, index) => { const color = palette[point.kind || "restaurant"]; const text = point.kind === "rider" ? "R" : point.kind === "pickup" ? "P" : point.kind === "dropoff" ? "D" : String(index + 1); return <Marker key={`${point.label || "point"}-${index}`} position={[point.lat, point.lng]} icon={markerIcon(color, text)}><Tooltip direction="top" offset={[0, -12]} opacity={1}>{point.label || "Punto de ruta"}</Tooltip></Marker>; })}
+    {points.map((point, index) => { const color = palette[point.kind || "restaurant"]; const text = point.kind === "rider" ? "R" : point.kind === "pickup" ? "P" : point.kind === "dropoff" ? "D" : String(index + 1); return <Marker key={`${point.label || "point"}-${index}`} position={[point.lat, point.lng]} icon={point.kind === "rider" ? riderMarkerIcon(point.vehicle) : markerIcon(color, text)}><Tooltip direction="top" offset={[0, -12]} opacity={1}>{point.label || "Punto de ruta"}</Tooltip></Marker>; })}
   </MapContainer>;
 }
 
