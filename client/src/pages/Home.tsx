@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import CustomerNotificationCenter from "@/components/CustomerNotificationCenter";
 import { PikiSplash } from "@/components/PikiSplash";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
 import type { MenuItem, Restaurant } from "../../../server/catalog";
 import {
@@ -139,6 +140,7 @@ export default function Home() {
   const [locationSuggestions, setLocationSuggestions] = useState<Array<{ label: string; latitude: number; longitude: number }>>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [tracking, setTracking] = useState<TrackingOrder | null>(null);
+  const queryClient = useQueryClient();
 
   const catalogInput = useMemo(
     () => ({ category: category === "Todos" ? undefined : category, query: search.trim() || undefined }),
@@ -159,6 +161,14 @@ export default function Home() {
   const { data: liveTracking } = trpc.order.get.useQuery(trackingInput, { enabled: Boolean(tracking) && isAuthenticated, refetchInterval: 3000, retry: false });
   const customerTracking = trpc.order.customerTracking.useQuery(trackingInput, { enabled: Boolean(tracking) && isAuthenticated, refetchInterval: 8_000, retry: false });
   const trackingTotalCents = tracking?.totalCents ?? liveTracking?.totalCents;
+  useEffect(() => {
+    if (!liveTracking?.status || !["delivered", "cancelled"].includes(liveTracking.status)) return;
+    setChatOpen(false);
+    if (tracking?.id) {
+      void queryClient.removeQueries({ queryKey: [["order", "messages"], { input: { id: tracking.id } }] });
+      void queryClient.removeQueries({ queryKey: [["order", "customerTracking"], { input: { id: tracking.id } }] });
+    }
+  }, [liveTracking?.status, queryClient, tracking?.id]);
   useEffect(() => {
     const saved = savedDeliveryAddress.data;
     if (!saved?.saved || !saved.address || !saved.deliveryLocation) return;
