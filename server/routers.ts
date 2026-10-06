@@ -80,6 +80,7 @@ const modifierSelectionInput = z.object({
 const basketInput = z.object({
   restaurantId: z.string().min(1),
   address: z.string().min(5),
+  deliveryNote: z.string().trim().max(500).default(""),
   items: z.array(z.object({ id: z.string(), quantity: z.number().int().min(1).max(20), selections: z.array(modifierSelectionInput).max(12).optional() })).min(1),
   // Kept only for backward compatible callers; never trusted by the server.
   total: z.number().positive().optional(),
@@ -252,9 +253,9 @@ export const appRouter = router({
     create: publicProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
-      const canonicalWritten = await writeCanonicalOrder({ publicCode: code, restaurantId: restaurant.id, customerOpenId: ctx.user?.openId ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod: input.paymentMethod === "cash" ? "cash" : "stripe", deliveryLocation: input.deliveryLocation });
+      const canonicalWritten = await writeCanonicalOrder({ publicCode: code, restaurantId: restaurant.id, customerOpenId: ctx.user?.openId ?? null, address: input.address, deliveryNote: input.deliveryNote, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod: input.paymentMethod === "cash" ? "cash" : "stripe", deliveryLocation: input.deliveryLocation });
       if (!canonicalWritten) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "La API central no está disponible; el pedido no se ha confirmado." });
-      const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents });
+      const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, deliveryNote: input.deliveryNote, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents });
       if (stored) {
         void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
       }
@@ -265,9 +266,9 @@ export const appRouter = router({
       if (!input.deliveryLocation) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Selecciona una dirección validada de la lista para poder despachar el pedido." });
       const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
       const code = publicCode();
-      const canonicalWritten = await writeCanonicalOrder({ publicCode: code, restaurantId: restaurant.id, customerOpenId: ctx.user?.openId ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod: "cash", deliveryLocation: input.deliveryLocation });
+      const canonicalWritten = await writeCanonicalOrder({ publicCode: code, restaurantId: restaurant.id, customerOpenId: ctx.user?.openId ?? null, address: input.address, deliveryNote: input.deliveryNote, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod: "cash", deliveryLocation: input.deliveryLocation });
       if (!canonicalWritten) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "La API central no está disponible; el pedido no se ha confirmado." });
-      const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending" });
+      const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, deliveryNote: input.deliveryNote, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending" });
       if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible guardar el pedido; inténtalo de nuevo." });
       void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
       return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash", paymentState: "pending_cash_collection", cashDueAtDelivery: true };

@@ -30,6 +30,7 @@ export const orders = mysqlTable("orders", {
   customerOpenId: varchar("customerOpenId", { length: 64 }),
   customerName: varchar("customerName", { length: 160 }),
   address: text("address").notNull(),
+  deliveryNote: varchar("deliveryNote", { length: 500 }),
   itemsJson: text("itemsJson").notNull(),
   totalCents: int("totalCents").notNull(),
   prepMinutes: int("prepMinutes"),

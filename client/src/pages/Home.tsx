@@ -139,6 +139,7 @@ export default function Home() {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"cash">("cash");
+  const [deliveryNote, setDeliveryNote] = useState("");
   const [addressOpen, setAddressOpen] = useState(false);
   const [address, setAddress] = useState("Carrer de Montcada, Xàtiva");
   const [addressDraft, setAddressDraft] = useState(address);
@@ -293,14 +294,14 @@ export default function Home() {
     }
     if (!deliveryLocation) { toast.error("Selecciona una dirección válida", { description: "El pedido necesita coordenadas para poder asignarse a un Rider." }); setAddressOpen(true); return; }
     checkoutMutation.mutate(
-      { restaurantId: cartRestaurant.id, address, deliveryLocation, items: cart.map((line) => ({ id: line.item.id, quantity: line.quantity, selections: line.selections })), total, paymentMethod: "cash" },
+      { restaurantId: cartRestaurant.id, address, deliveryLocation, deliveryNote: deliveryNote.trim(), items: cart.map((line) => ({ id: line.item.id, quantity: line.quantity, selections: line.selections })), total, paymentMethod: "cash" },
       {
         onSuccess: ({ checkoutUrl, orderId, totalCents }) => {
           const confirmedTotal = Number.isFinite(totalCents) ? totalCents / 100 : total;
           setCheckoutOpen(false);
           if (paymentMethod === "cash" || !checkoutUrl) {
             setTracking({ id: orderId, restaurant: cartRestaurant.name, eta: "actualizando…", stage: "confirmed", paymentMethod: "cash", totalCents: Number.isFinite(totalCents) ? totalCents : Math.round(total * 100) });
-            setCart([]); setCartRestaurant(null);
+            setCart([]); setCartRestaurant(null); setDeliveryNote("");
             toast.success("Pedido confirmado", { description: `Paga ${money.format(confirmedTotal)} en efectivo al Rider cuando te lo entregue. No se ha cobrado online.` });
             return;
           }
@@ -686,7 +687,7 @@ export default function Home() {
         </div>
       )}
 
-      {checkoutOpen && <div className="fixed inset-0 z-[60] grid place-items-end bg-[#171715]/45 p-0 backdrop-blur-sm sm:place-items-center sm:p-6"><div className="w-full max-w-lg rounded-t-[2rem] bg-[#FFFDF5] p-6 shadow-2xl sm:rounded-[2rem] sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Revisión final</p><h2 className="font-display text-3xl font-semibold tracking-[-.05em]">Casi en camino</h2></div><button onClick={() => setCheckoutOpen(false)} className="grid h-9 w-9 place-items-center rounded-full border border-[#e5dbd0] bg-white"><X className="h-4 w-4" /></button></div><div className="mt-6 space-y-4"><div className="rounded-2xl border border-[#e9dfd5] bg-white p-4"><div className="flex items-center gap-3"><MapPin className="h-5 w-5 text-[#FFD72E]" /><div className="min-w-0 flex-1"><p className="text-xs font-bold text-[#69756a]">Entregar en</p><p className="truncate text-sm font-extrabold">{address}</p></div><button onClick={() => { setCheckoutOpen(false); setAddressOpen(true); }} className="text-xs font-extrabold text-[#171715]">Cambiar</button></div></div><section className="rounded-2xl border border-[#e9dfd5] bg-white p-4"><div className="mb-3 flex items-center gap-3"><CreditCard className="h-5 w-5 text-[#171715]" /><div><p className="text-xs font-bold text-[#69756a]">Método de pago</p><p className="text-sm font-extrabold">Elige cómo quieres pagar</p></div></div><div className="space-y-2">{([
+      {checkoutOpen && <div className="fixed inset-0 z-[60] grid place-items-end bg-[#171715]/45 p-0 backdrop-blur-sm sm:place-items-center sm:p-6"><div className="w-full max-w-lg rounded-t-[2rem] bg-[#FFFDF5] p-6 shadow-2xl sm:rounded-[2rem] sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">Revisión final</p><h2 className="font-display text-3xl font-semibold tracking-[-.05em]">Casi en camino</h2></div><button onClick={() => setCheckoutOpen(false)} className="grid h-9 w-9 place-items-center rounded-full border border-[#e5dbd0] bg-white"><X className="h-4 w-4" /></button></div><div className="mt-6 space-y-4"><div className="rounded-2xl border border-[#e9dfd5] bg-white p-4"><div className="flex items-center gap-3"><MapPin className="h-5 w-5 text-[#FFD72E]" /><div className="min-w-0 flex-1"><p className="text-xs font-bold text-[#69756a]">Entregar en</p><p className="truncate text-sm font-extrabold">{address}</p></div><button onClick={() => { setCheckoutOpen(false); setAddressOpen(true); }} className="text-xs font-extrabold text-[#171715]">Cambiar</button></div></div><label className="block rounded-2xl border border-[#e9dfd5] bg-white p-4"><span className="block text-sm font-extrabold text-[#314037]">Nota para el Rider <span className="font-semibold text-[#718076]">(opcional)</span></span><span className="mt-1 block text-xs leading-relaxed text-[#718076]">Solo la verá el Rider asignado y Soporte si hay una incidencia.</span><textarea value={deliveryNote} onChange={(event) => setDeliveryNote(event.target.value)} maxLength={500} rows={3} placeholder="Ej.: llamar al timbre, dejar en recepción…" className="mt-3 w-full resize-none rounded-xl border border-[#e1e7de] bg-[#fbfdf8] px-3 py-2.5 text-sm outline-none focus:border-[#FFD72E]" /></label><section className="rounded-2xl border border-[#e9dfd5] bg-white p-4"><div className="mb-3 flex items-center gap-3"><CreditCard className="h-5 w-5 text-[#171715]" /><div><p className="text-xs font-bold text-[#69756a]">Método de pago</p><p className="text-sm font-extrabold">Elige cómo quieres pagar</p></div></div><div className="space-y-2">{([
   ["stripe", "Tarjeta, Apple Pay o Google Pay", "Temporalmente no disponible. Los pagos online se activarán tras la configuración aprobada de la pasarela.", CreditCard, false],
   ["bizum", "Bizum", "Temporalmente no disponible. PIKI avisará cuando Bizum esté habilitado.", CreditCard, false],
   ["cash", "Contrarreembolso · efectivo al Rider", `No pagas ahora. El Rider cobrará ${money.format(total)} en efectivo al entregar.`, Banknote, true],

@@ -24,6 +24,7 @@ import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _chatTableReady = false;
+let _orderNoteReady = false;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
@@ -32,6 +33,10 @@ export async function getDb() {
       if (!_chatTableReady) {
         await _db.execute(sql.raw("CREATE TABLE IF NOT EXISTS `orderMessages` (`id` int AUTO_INCREMENT NOT NULL, `orderCode` varchar(32) NOT NULL, `senderOpenId` varchar(64) NOT NULL, `senderRole` enum('customer','rider') NOT NULL, `body` text NOT NULL, `createdAt` timestamp NOT NULL DEFAULT (now()), PRIMARY KEY (`id`), INDEX `orderMessages_orderCode_idx` (`orderCode`))"));
         _chatTableReady = true;
+      }
+      if (!_orderNoteReady) {
+        try { await _db.execute(sql.raw("ALTER TABLE `orders` ADD COLUMN `deliveryNote` varchar(500) NULL")); } catch { /* La columna ya existe en instalaciones migradas. */ }
+        _orderNoteReady = true;
       }
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
@@ -140,7 +145,7 @@ export async function consumeResetToken(tokenHash: string) {
   return token;
 }
 
-export async function createOrderRecord(input: { publicCode: string; restaurantId: string; restaurantName: string; customerOpenId?: string | null; customerName?: string | null; address: string; itemsJson: string; totalCents: number; prepMinutes?: number | null; paymentState?: "pending" | "paid" | "failed" | "refunded" }) {
+export async function createOrderRecord(input: { publicCode: string; restaurantId: string; restaurantName: string; customerOpenId?: string | null; customerName?: string | null; address: string; deliveryNote?: string; itemsJson: string; totalCents: number; prepMinutes?: number | null; paymentState?: "pending" | "paid" | "failed" | "refunded" }) {
   const db = await getDb();
   if (!db) return null;
   const result = await db.insert(orders).values(input);
