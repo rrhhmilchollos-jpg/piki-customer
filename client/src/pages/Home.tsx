@@ -42,7 +42,7 @@ import {
   Utensils,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type CartLine = {
@@ -168,7 +168,7 @@ export default function Home() {
   });
   const trackingInput = useMemo(() => ({ id: tracking?.id ?? "" }), [tracking?.id]);
   const { data: liveTracking } = trpc.order.get.useQuery(trackingInput, { enabled: Boolean(tracking) && isAuthenticated, refetchInterval: 3000, retry: false });
-  const customerTracking = trpc.order.customerTracking.useQuery(trackingInput, { enabled: Boolean(tracking) && isAuthenticated, refetchInterval: 8_000, retry: false });
+  const customerTracking = trpc.order.customerTracking.useQuery(trackingInput, { enabled: Boolean(tracking) && isAuthenticated, refetchInterval: 5_000, retry: false });
   const trackingTotalCents = tracking?.totalCents ?? liveTracking?.totalCents;
   useEffect(() => {
     const saved = savedDeliveryAddress.data;
@@ -235,11 +235,17 @@ export default function Home() {
     }
   }, []);
 
+  const previousDeliveryStatus = useRef<string | null>(null);
   useEffect(() => {
     if (!liveTracking?.status) return;
-    const serverStage: TrackingStage = ["placed", "accepted"].includes(liveTracking.status) ? "confirmed" : liveTracking.status === "ready" ? "preparing" : "onway";
+    const status = liveTracking.status;
+    const serverStage: TrackingStage = ["placed", "accepted"].includes(status) ? "confirmed" : status === "ready" ? "preparing" : "onway";
+    const becameAvailable = ["picked_up", "on_the_way"].includes(status) && !["picked_up", "on_the_way"].includes(previousDeliveryStatus.current || "");
+    if (becameAvailable && isAuthenticated) setChatOpen(true);
+    if (["delivered", "cancelled"].includes(status)) setChatOpen(false);
+    previousDeliveryStatus.current = status;
     setTracking((current) => current ? { ...current, restaurant: liveTracking.restaurant, stage: serverStage } : current);
-  }, [liveTracking]);
+  }, [isAuthenticated, liveTracking]);
 
   const addItem = (
     restaurant: Restaurant,
@@ -712,7 +718,7 @@ function OrderChat({ orderId, isAuthenticated, onClose }: { orderId: string; isA
   if (!isAuthenticated) return null;
   return <div className="fixed inset-0 z-[95] grid place-items-center bg-[#171715]/55 p-4 backdrop-blur-sm"><section role="dialog" aria-modal="true" aria-label="Chat con el rider" className="flex max-h-[78vh] w-full max-w-md flex-col overflow-hidden rounded-[1.75rem] bg-[#FFFDF5] shadow-2xl"><div className="flex items-center justify-between border-b border-[#e2eadf] p-4"><div className="flex items-center gap-2"><MessageCircle className="h-4 w-4 text-[#315b3f]" /><div><p className="text-sm font-extrabold">Chat con tu rider</p><p className="text-xs text-[#6c786e]">Mensajes privados mientras el pedido está en reparto.</p></div></div><button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full border border-[#dce6d8] bg-white" aria-label="Cerrar chat"><X className="h-4 w-4" /></button></div><div className="p-4"><div className="mt-3 max-h-36 space-y-2 overflow-y-auto">{isLoading ? <p className="text-xs text-[#718076]">Cargando conversación…</p> : messages.length ? messages.map((message) => <div key={message.id} className={`rounded-xl px-3 py-2 text-xs ${message.senderRole === "customer" ? "ml-8 bg-[#fff4be]" : "mr-8 bg-[#f2f6ef]"}`}><p>{message.body}</p><span className="mt-1 block text-[10px] text-[#718076]">{new Date(message.createdAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span></div>) : <p className="text-xs text-[#718076]">Todavía no hay mensajes.</p>}</div><form className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); if (body.trim()) send.mutate({ id: orderId, body: body.trim() }); }}><input value={body} onChange={(event) => setBody(event.target.value)} maxLength={500} placeholder="Escribe un mensaje…" className="min-w-0 flex-1 rounded-xl border border-[#e2eadf] px-3 py-2 text-xs outline-none focus:border-[#315b3f]" disabled={send.isPending} /><button className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#171715] text-white disabled:opacity-50" disabled={!body.trim() || send.isPending} aria-label="Enviar mensaje"><MessageCircle className="h-4 w-4" /></button></form></div></section></div>;
 }
-function CustomerLiveTracking({ isAuthenticated, tracking, loading }: { isAuthenticated: boolean; tracking: { available: boolean; riderName?: string; riderPhotoUrl?: string | null; vehicle?: string; phase?: string; etaMinutes?: number | null; latitude?: number; longitude?: number; accuracyMeters?: number | null; updatedAt?: number } | undefined; loading: boolean }) {
+function CustomerLiveTracking({ isAuthenticated, tracking, loading }: { isAuthenticated: boolean; tracking: { available: boolean; riderName?: string; riderPhotoUrl?: string | null; vehicle?: string | null; phase?: string; etaMinutes?: number | null; latitude?: number; longitude?: number; accuracyMeters?: number | null; updatedAt?: number } | undefined; loading: boolean }) {
   if (!isAuthenticated) return <div className="mt-7 rounded-2xl border border-[#dfe6dc] bg-[#f5f8f3] p-4 text-xs leading-relaxed text-[#647166]">Inicia sesión con la cuenta que realizó el pedido para ver la ubicación del rider en tiempo real.</div>;
   if (loading) return <div className="mt-7 h-28 animate-pulse rounded-2xl bg-[#edf2ea]" />;
   const riderPhoto = tracking?.riderPhotoUrl || (tracking?.riderName ? `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(tracking.riderName)}&backgroundColor=143b2b&fontFamily=Arial` : "");

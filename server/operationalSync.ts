@@ -124,7 +124,7 @@ export async function listCustomerSupportTickets(input: { customerId: string; cu
     return response.ok ? (await response.json() as { tickets: CustomerSupportTicket[] }).tickets : [];
   } catch { return []; }
 }
-export type OperationalTracking = { publicCode: string; status: string; assignmentState: string; paymentMethod?: "stripe" | "cash"; paymentState?: string; cashDueAtDelivery?: boolean; riderId: string | null; riderName: string | null; riderPhotoUrl: string | null; vehicle: string; chatAvailable: boolean; locationAvailable: boolean; latitude: number | null; longitude: number | null; updatedAt: number | null };
+export type OperationalTracking = { publicCode: string; status: string; assignmentState: string; paymentMethod?: "stripe" | "cash"; paymentState?: string; cashDueAtDelivery?: boolean; riderId: string | null; riderName: string | null; riderPhotoUrl: string | null; vehicle: string | null; chatAvailable: boolean; locationAvailable: boolean; latitude: number | null; longitude: number | null; updatedAt: number | null };
 export async function fetchOperationalTracking(publicCode: string): Promise<OperationalTracking | null> {
   const secret = syncSecret(); if (!secret) return null;
   try { const response = await fetch(`${apiUrl}/api/v1/internal/customer-orders/${encodeURIComponent(publicCode)}/tracking`, { headers: { "x-piki-customer-sync-secret": secret } }); return response.ok ? await response.json() as OperationalTracking : null; } catch { return null; }
