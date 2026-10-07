@@ -114,10 +114,10 @@ const mealAddOns: MenuModifierGroup[] = [
 export const restaurants: Restaurant[] = [
   {
     id: "kfc-xativa",
-    name: "KFC XATIVA QA",
+    name: "KFC Xàtiva",
     cuisine: "Pollo · Americana",
     category: "Pollo",
-    tagline: "Pedido de validación operativa PIKI en Xàtiva.",
+    tagline: "Pollo crujiente y favoritos para compartir.",
     eta: "20–30 min",
     fee: 2.99,
     rating: 4.5,

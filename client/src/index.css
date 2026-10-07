@@ -59,3 +59,6 @@ button { -webkit-tap-highlight-color: transparent; }
 .piki-app .card-lift:hover { box-shadow:0 22px 42px rgba(45,55,42,.16); }
 .piki-app .brand-spark { display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(23,23,21,.1); background:rgba(255,255,255,.55); }
 @media (prefers-reduced-motion:no-preference) { .piki-app .hero-shine { animation:piki-glow 8s ease-in-out infinite alternate; } @keyframes piki-glow { from{opacity:.88} to{opacity:1} } }
+
+html, body, #root { max-width: 100%; overflow-x: hidden; }
+@media (max-width: 520px) { .piki-app { width: 100%; min-width: 0; overflow-x: hidden; } .piki-app img, .piki-app video, .piki-app iframe { max-width: 100%; } .piki-app button, .piki-app a { -webkit-tap-highlight-color: transparent; } }
