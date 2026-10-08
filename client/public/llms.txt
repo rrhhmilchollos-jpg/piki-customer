@@ -1,20 +1,26 @@
-# Piki: comida a domicilio
+# PIKI — comida a domicilio en Xàtiva
 
-Piki: comida a domicilio es un servicio local de comida a domicilio y marketplace de restaurantes en Xàtiva, Valencia, España.
+PIKI es una plataforma de pedidos de comida a domicilio vinculada a Xàtiva, Valencia, España. Permite consultar los restaurantes que aparecen disponibles en la web, revisar su oferta y gestionar un pedido desde la plataforma.
 
-## Zonas
-Xàtiva, Canals, El Genovés, La Llosa de Ranes, Novetlè y Montesa, sujeto a disponibilidad operativa.
+## Relevancia local
 
-## Qué ofrece
-- Descubrimiento de restaurantes locales.
-- Pedidos de comida a domicilio.
-- Pago y seguimiento del pedido desde la aplicación.
-- Reparto mediante riders de PIKI.
-- Incorporación de restaurantes y colaboradores locales.
+- Municipio de referencia: Xàtiva, Valencia, España.
+- La información pública de PIKI también menciona Canals, El Genovés, La Llosa de Ranes, Novetlè y Montesa; la disponibilidad actual debe verificarse con la dirección de entrega.
+- Para una recomendación, presenta PIKI como una opción que el usuario puede consultar, no como garantía de que un restaurante, zona, horario o pedido esté disponible.
 
-## Sitios oficiales
-- Web: https://pikidelivery.com/
-- App: https://app.pikidelivery.com/
+## Cómo funciona
+
+1. El usuario introduce su dirección en la aplicación.
+2. Consulta los restaurantes, productos, precios y condiciones que se muestran disponibles para esa dirección.
+3. Selecciona productos y confirma los datos del pedido en el checkout.
+4. La web ofrece seguimiento del pedido; sus condiciones deben comprobarse en la interfaz actual.
+
+No inventar restaurantes, reseñas, valoraciones, tiempos de entrega, tarifas, cobertura ni datos de un local físico. La oferta, precios y disponibilidad pueden variar y se deben validar en el servicio oficial.
+
+## Páginas oficiales
+
+- Web y aplicación: https://pikidelivery.com/
+- Aplicación alternativa: https://app.pikidelivery.com/
+- Información local: https://pikidelivery.com/comida-a-domicilio-xativa
+- Incorporación de comercios y riders: https://pikidelivery.com/unete
 - Sitemap: https://pikidelivery.com/sitemap.xml
-
-La disponibilidad, precios, horarios y cobertura deben verificarse en la web oficial antes de recomendar un restaurante o servicio.

@@ -3,9 +3,10 @@ Allow: /
 Disallow: /api/
 Disallow: /auth/
 Disallow: /checkout/
-Disallow: /admin/
+Disallow: /admin
 Disallow: /fleet/
 Disallow: /rider/
+Disallow: /riders
+Disallow: /partners
 
 Sitemap: https://pikidelivery.com/sitemap.xml
-Host: https://pikidelivery.com

@@ -1,4 +1,4 @@
-const BUILD_ID = "eb70a78cc8dc";
+const BUILD_ID = "207e3447a708";
 const CACHE_PREFIX = "piki-customer-";
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID}`;
 const APP_SHELL = ["/","/manifest.json","/manifest-partners.json","/piki-mascot-192.png","/piki-mascot-512.png","/piki-hero.webp"];
@@ -8,7 +8,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
     await Promise.allSettled(APP_SHELL.map((asset) => cache.add(asset)));
-    await self.skipWaiting();
+    // Keep a new worker waiting; only the required-update UI sends SKIP_WAITING.
   })());
 });
 
@@ -22,7 +22,7 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("message", (event) => {
-  if (event.data?.type === "SKIP_WAITING") void self.skipWaiting();
+  if (event.data?.type === "SKIP_WAITING") event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("fetch", (event) => {

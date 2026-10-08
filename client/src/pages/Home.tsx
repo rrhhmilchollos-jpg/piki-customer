@@ -706,7 +706,7 @@ export default function Home() {
 
       <AccountHub />
 
-      <footer className="hidden border-t border-[#ede3d9] bg-[#f6efe6] px-6 py-10 lg:block"><div className="mx-auto flex max-w-7xl items-center justify-between"><div><div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-[11px] bg-[#FFD72E] text-sm font-black text-[#171715]">P</span><span className="font-display text-xl font-bold tracking-[-.06em]">PIKI</span></div><p className="mt-2 text-sm text-[#68756a]">Comida local, a tu ritmo.</p></div><p className="text-sm font-medium text-[#7a857b]">PIKI · Pago digital seguro</p></div></footer>
+      <footer className="block border-t border-[#ede3d9] bg-[#f6efe6] px-4 py-8 sm:px-6 sm:py-10"><div className="mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between"><div><div className="flex items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-[11px] bg-[#FFD72E] text-sm font-black text-[#171715]">P</span><span className="font-display text-xl font-bold tracking-[-.06em]">PIKI</span></div><p className="mt-2 text-sm text-[#68756a]">Comida a domicilio en Xàtiva. Consulta la cobertura, oferta y condiciones actuales.</p></div><a href="/comida-a-domicilio-xativa" className="text-sm font-extrabold text-[#171715] underline decoration-[#FFD72E] decoration-2 underline-offset-4">Comida a domicilio en Xàtiva · Cómo funciona PIKI</a></div></footer>
     </div>
   );
 }
