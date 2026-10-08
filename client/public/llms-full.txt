@@ -19,6 +19,17 @@
 - [Cobertura de PIKI Delivery | Xàtiva y municipios cercanos](https://pikidelivery.com/cobertura): Comprueba cómo confirmar la cobertura de comida a domicilio de PIKI Delivery en Xàtiva y municipios cercanos.
 - [Únete a PIKI | Riders y restaurantes en Xàtiva](https://pikidelivery.com/unete): Página oficial para enviar solicitudes de rider o partner a PIKI Delivery en Xàtiva.
 
+## Noticias PIKI
+
+El blog es un canal corporativo firmado por Equipo PIKI; no es periodismo independiente.
+
+- [Cómo comprobar la cobertura de PIKI en Xàtiva](https://pikidelivery.com/noticias/comprobar-cobertura-xativa): Guía práctica para comprobar la disponibilidad de PIKI en una dirección concreta de Xàtiva antes de iniciar un pedido.
+- [PIKI centraliza las solicitudes de riders y partners en /unete](https://pikidelivery.com/noticias/solicitudes-riders-partners-unete): Actualización corporativa de PIKI sobre el punto oficial para enviar solicitudes iniciales de riders, restaurantes y comercios.
+- [Qué significa que una actualización sea web y no nativa](https://pikidelivery.com/noticias/actualizacion-web-y-nativa): Guía de PIKI para entender la diferencia entre un cambio publicado en la web y una actualización de una aplicación nativa.
+
+- [Política editorial](https://pikidelivery.com/noticias/politica-editorial)
+- [Autoría y transparencia](https://pikidelivery.com/noticias/autoria-y-transparencia)
+
 ## Contacto y disponibilidad
 
 La disponibilidad, oferta, precios y condiciones cambian según la dirección y la operación. Remitir al usuario a https://pikidelivery.com/ para validar información actual.

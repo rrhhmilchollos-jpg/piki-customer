@@ -87,6 +87,7 @@ export function LocalSeoPage({ page }: { page: PageKey }) {
           <Link href="/" className="font-display text-2xl font-black tracking-[-.06em]" aria-label="PIKI Delivery, inicio">PIKI<span className="text-[#dc5c35]">.</span></Link>
           <nav className="flex items-center gap-4 text-sm font-bold text-[#56635a]" aria-label="Navegación principal">
             <Link href="/comida-a-domicilio-xativa" className="hover:text-[#171715]">Comida a domicilio</Link>
+            <Link href="/noticias" className="hover:text-[#171715]">Noticias</Link>
             <Link href="/unete" className="hover:text-[#171715]">Únete a PIKI</Link>
           </nav>
         </div>
@@ -103,9 +104,9 @@ export function LocalSeoPage({ page }: { page: PageKey }) {
         {content.sections.map((section) => <article key={section.title} className="rounded-[1.5rem] border border-[#eadfd4] bg-white p-6 shadow-[0_6px_18px_rgba(48,40,28,.04)]"><h2 className="font-display text-2xl font-semibold tracking-[-.04em]">{section.title}</h2><p className="mt-3 text-sm leading-relaxed text-[#637166]">{section.body}</p></article>)}
       </section>
       <section className="border-y border-[#eee2d6] bg-[#f7f1e7] px-5 py-12">
-        <div className="mx-auto max-w-6xl"><p className="text-xs font-black uppercase tracking-[.16em] text-[#b95231]">Enlaces útiles</p><div className="mt-4 flex flex-wrap gap-3 text-sm font-bold"><Link href="/comida-a-domicilio-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Comida a domicilio en Xàtiva</Link><Link href="/restaurantes-a-domicilio-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Restaurantes y comercios</Link><Link href="/trabajo-rider-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Trabajar como rider</Link><Link href="/cobertura" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Cobertura</Link></div></div>
+        <div className="mx-auto max-w-6xl"><p className="text-xs font-black uppercase tracking-[.16em] text-[#b95231]">Enlaces útiles</p><div className="mt-4 flex flex-wrap gap-3 text-sm font-bold"><Link href="/comida-a-domicilio-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Comida a domicilio en Xàtiva</Link><Link href="/restaurantes-a-domicilio-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Restaurantes y comercios</Link><Link href="/trabajo-rider-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Trabajar como rider</Link><Link href="/cobertura" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Cobertura</Link><Link href="/noticias" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Noticias PIKI</Link></div></div>
       </section>
-      <footer className="px-5 py-10"><div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-[#66736a]"><span>PIKI Delivery · Xàtiva, Valencia</span><Link href="/" className="font-bold text-[#171715]">Web oficial</Link></div></footer>
+      <footer className="px-5 py-10"><div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-[#66736a]"><span>PIKI Delivery · Xàtiva, Valencia</span><div className="flex gap-4"><Link href="/noticias" className="font-bold text-[#171715]">Noticias PIKI</Link><Link href="/" className="font-bold text-[#171715]">Web oficial</Link></div></div></footer>
     </main>
   );
 }

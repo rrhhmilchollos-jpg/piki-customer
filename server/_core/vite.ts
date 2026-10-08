@@ -95,6 +95,7 @@ export function serveStatic(app: Express) {
     "/trabajo-rider-xativa",
     "/cobertura",
     "/unete",
+    "/noticias",
     "/riders",
     "/partners",
     "/admin",
@@ -102,6 +103,18 @@ export function serveStatic(app: Express) {
   app.get(generatedPageRoutes, (req, res, next) => {
     const segment = req.path.slice(1);
     const page = path.resolve(distPath, segment, "index.html");
+    res.sendFile(page, (error) => {
+      if (error) next(error);
+    });
+  });
+
+  // Blog articles are generated from shared/blog-posts.json. This generic
+  // static route keeps new article slugs out of server source code while
+  // rejecting path traversal or arbitrary file names.
+  app.get("/noticias/:slug", (req, res, next) => {
+    const { slug } = req.params;
+    if (!/^[a-z0-9-]+$/.test(slug)) return next();
+    const page = path.resolve(distPath, "noticias", slug, "index.html");
     res.sendFile(page, (error) => {
       if (error) next(error);
     });

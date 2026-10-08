@@ -1,0 +1,139 @@
+{
+  "site": {
+    "name": "Noticias PIKI",
+    "description": "Información corporativa y guías prácticas publicadas por el Equipo PIKI.",
+    "publisher": "PIKI Delivery",
+    "author": "Equipo PIKI",
+    "language": "es-ES"
+  },
+  "articles": [
+    {
+      "slug": "comprobar-cobertura-xativa",
+      "title": "Cómo comprobar la cobertura de PIKI en Xàtiva",
+      "description": "Guía práctica para comprobar la disponibilidad de PIKI en una dirección concreta de Xàtiva antes de iniciar un pedido.",
+      "summary": "La cobertura no se presupone por municipio: se consulta para la dirección concreta y el momento en que se realiza la comprobación.",
+      "type": "Guía local",
+      "author": "Equipo PIKI",
+      "datePublished": "2026-10-09",
+      "dateModified": "2026-10-09",
+      "newsEligible": false,
+      "sections": [
+        {
+          "heading": "Introduce la dirección completa",
+          "paragraphs": [
+            "Para comprobar la cobertura, abre PIKI e introduce la dirección donde quieres recibir el pedido. Una calle, portal o referencia incompleta puede no ofrecer una respuesta útil.",
+            "La página de cobertura y la aplicación sirven como punto de consulta; la disponibilidad que se muestra para la dirección es la referencia antes de pedir."
+          ]
+        },
+        {
+          "heading": "Revisa la oferta y las condiciones visibles",
+          "paragraphs": [
+            "Una vez indicada la dirección, revisa qué establecimientos y artículos aparecen, junto con las condiciones que se muestran en ese momento.",
+            "La oferta, los horarios, los importes, la tarifa de entrega y los tiempos pueden variar. Por eso conviene confirmarlos en el checkout antes de finalizar el pedido."
+          ]
+        },
+        {
+          "heading": "Si no aparece disponibilidad",
+          "paragraphs": [
+            "Que una dirección no muestre opciones no permite concluir que una zona esté abierta o cerrada de forma permanente. Puede depender de la dirección introducida, de comercios activos y de la operación del momento.",
+            "No publicamos una promesa general de cobertura por municipio. Vuelve a consultar desde PIKI cuando necesites comprobar una dirección concreta."
+          ]
+        }
+      ],
+      "callsToAction": [
+        {
+          "label": "Consultar cobertura en PIKI",
+          "href": "/",
+          "description": "Abre PIKI para introducir una dirección y ver la información disponible."
+        }
+      ]
+    },
+    {
+      "slug": "solicitudes-riders-partners-unete",
+      "title": "PIKI centraliza las solicitudes de riders y partners en /unete",
+      "description": "Actualización corporativa de PIKI sobre el punto oficial para enviar solicitudes iniciales de riders, restaurantes y comercios.",
+      "summary": "El formulario de /unete reúne solicitudes iniciales; enviarlo no garantiza un alta, una colaboración ni una activación automática.",
+      "type": "Actualidad de PIKI",
+      "author": "Equipo PIKI",
+      "datePublished": "2026-10-09",
+      "dateModified": "2026-10-09",
+      "newsEligible": true,
+      "sections": [
+        {
+          "heading": "Un punto oficial para solicitudes iniciales",
+          "paragraphs": [
+            "PIKI publica /unete como página oficial para que personas interesadas en repartir y establecimientos interesados en conocer el proceso puedan enviar sus datos iniciales.",
+            "Esta comunicación es información corporativa de PIKI, no una oferta de empleo ni una promesa de colaboración para quien complete el formulario."
+          ]
+        },
+        {
+          "heading": "Para riders",
+          "paragraphs": [
+            "La solicitud de rider recoge datos básicos, municipio, vehículo y disponibilidad. El equipo responsable puede revisar el contacto y solicitar información adicional si procede.",
+            "Enviar una solicitud no garantiza alta, asignación de pedidos, volumen de trabajo ni una fecha de activación."
+          ]
+        },
+        {
+          "heading": "Para restaurantes y comercios",
+          "paragraphs": [
+            "La solicitud de partner permite facilitar los datos de contacto y del establecimiento para una revisión inicial. No equivale a la incorporación del comercio a la plataforma.",
+            "No se anuncian mediante esta actualización tarifas, comisiones, precios, número de partners ni aperturas de zonas. Cualquier condición aplicable se tratará de forma directa si el proceso avanza."
+          ]
+        }
+      ],
+      "callsToAction": [
+        {
+          "label": "Enviar solicitud de rider",
+          "href": "/unete#riders",
+          "description": "Accede al formulario inicial para personas interesadas en repartir."
+        },
+        {
+          "label": "Solicitar información para un negocio",
+          "href": "/unete#partners",
+          "description": "Accede al formulario inicial para restaurantes y comercios."
+        }
+      ]
+    },
+    {
+      "slug": "actualizacion-web-y-nativa",
+      "title": "Qué significa que una actualización sea web y no nativa",
+      "description": "Guía de PIKI para entender la diferencia entre un cambio publicado en la web y una actualización de una aplicación nativa.",
+      "summary": "Una actualización web se publica en el servicio web; una actualización nativa depende de la versión instalada desde una tienda de aplicaciones.",
+      "type": "Guía local",
+      "author": "Equipo PIKI",
+      "datePublished": "2026-10-09",
+      "dateModified": "2026-10-09",
+      "newsEligible": false,
+      "sections": [
+        {
+          "heading": "Actualización web",
+          "paragraphs": [
+            "Un cambio web se publica en la versión que visitas con el navegador. Al abrir o recargar la web, puedes recibir la versión disponible sin instalar un paquete desde una tienda.",
+            "Esto no significa que una funcionalidad concreta esté disponible en todos los dispositivos, cuentas o direcciones; cada pantalla debe mostrar sus propias condiciones y estados."
+          ]
+        },
+        {
+          "heading": "Actualización nativa",
+          "paragraphs": [
+            "Una actualización nativa corresponde a una aplicación instalada desde una tienda de aplicaciones. Normalmente requiere que esa tienda distribuya y el dispositivo instale una versión nueva.",
+            "La fecha de publicación, la disponibilidad y el proceso de actualización pueden depender de la plataforma y de la configuración del dispositivo."
+          ]
+        },
+        {
+          "heading": "Qué no debe deducirse de la etiqueta",
+          "paragraphs": [
+            "Una actualización, sea web o nativa, no anuncia por sí sola nuevos restaurantes, zonas de reparto, precios ni condiciones de trabajo. Esos datos se confirman donde correspondan y cuando estén disponibles.",
+            "PIKI usa esta explicación para describir el canal técnico de un cambio, no para presentar una mejora como una noticia independiente."
+          ]
+        }
+      ],
+      "callsToAction": [
+        {
+          "label": "Leer la política editorial",
+          "href": "/noticias/politica-editorial",
+          "description": "Consulta cómo identificamos las guías y actualizaciones corporativas de este blog."
+        }
+      ]
+    }
+  ]
+}

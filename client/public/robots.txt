@@ -10,3 +10,4 @@ Disallow: /riders
 Disallow: /partners
 
 Sitemap: https://pikidelivery.com/sitemap.xml
+Sitemap: https://pikidelivery.com/news-sitemap.xml
