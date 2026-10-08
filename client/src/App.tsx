@@ -17,6 +17,10 @@ const Riders = lazy(() => import("./pages/Riders"));
 const Admin = lazy(() => import("./pages/Admin"));
 const JoinPiki = lazy(() => import("./pages/JoinPiki"));
 const LocalSeoPage = lazy(() => import("./pages/LocalSeoPage").then((module) => ({ default: module.LocalSeoPage })));
+const NoticiasIndex = lazy(() => import("./pages/Noticias").then((module) => ({ default: module.NoticiasIndex })));
+const NoticiasArticle = lazy(() => import("./pages/Noticias").then((module) => ({ default: module.NoticiasArticle })));
+const PoliticaEditorial = lazy(() => import("./pages/Noticias").then((module) => ({ default: module.PoliticaEditorial })));
+const AutoriaYTransparencia = lazy(() => import("./pages/Noticias").then((module) => ({ default: module.AutoriaYTransparencia })));
 
 function Router() {
   return (
@@ -32,6 +36,10 @@ function Router() {
         <Route path="/hazte-partner-xativa"><LocalSeoPage page="partners" /></Route>
         <Route path="/trabajo-rider-xativa"><LocalSeoPage page="riders" /></Route>
         <Route path="/cobertura"><LocalSeoPage page="coverage" /></Route>
+        <Route path="/noticias" component={NoticiasIndex} />
+        <Route path="/noticias/politica-editorial" component={PoliticaEditorial} />
+        <Route path="/noticias/autoria-y-transparencia" component={AutoriaYTransparencia} />
+        <Route path="/noticias/:slug">{({ slug }) => <NoticiasArticle slug={slug ?? ""} />}</Route>
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
