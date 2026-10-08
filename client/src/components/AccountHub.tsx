@@ -40,7 +40,7 @@ function PasswordField({ value, onChange, label = "Contraseña", placeholder = "
   return <label className="block"><span className="mb-1.5 block text-sm font-bold text-[#314037]">{label}</span><span className="relative block"><input value={value} onChange={(event) => onChange(event.target.value)} type={visible ? "text" : "password"} placeholder={placeholder} className="w-full rounded-xl border border-[#ded5ca] bg-white px-3.5 py-3 pr-11 text-sm outline-none transition focus:border-[#FFD72E] focus:ring-4 focus:ring-[#FFD72E]/10" /><button type="button" onClick={() => setVisible((current) => !current)} className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-xl text-[#667267] hover:text-[#171715]" aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}>{visible ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}</button></span></label>;
 }
 
-export default function AccountHub() {
+export default function AccountHub({ initialView }: { initialView?: "auth" } = {}) {
   const [panel, setPanel] = useState<View>(null);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -76,6 +76,10 @@ export default function AccountHub() {
   }, [panel]);
 
   useEffect(() => {
+    if (initialView === "auth") {
+      setAuthMode("login");
+      setPanel("auth");
+    }
     const params = new URLSearchParams(window.location.search);
     const token = params.get("reset_token");
     if (token) {
@@ -98,7 +102,7 @@ export default function AccountHub() {
     };
     window.addEventListener("piki:open-customer-auth", openCustomerAuth);
     return () => window.removeEventListener("piki:open-customer-auth", openCustomerAuth);
-  }, []);
+  }, [initialView]);
 
   const favoriteRestaurants = useMemo(() => restaurants.filter((restaurant) => favorites.includes(restaurant.id)), [favorites, restaurants]);
   const toggleFavorite = (id: string) => {

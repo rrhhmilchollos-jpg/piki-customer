@@ -52,12 +52,20 @@
       "source": "/api/v1/:path*",
       "destination": "https://api.pikidelivery.com/api/v1/:path*"
     },
-    { "source": "/partners", "destination": "/index.html" },
-    { "source": "/riders", "destination": "/index.html" },
-    { "source": "/admin", "destination": "/index.html" },
+    { "source": "/partners", "destination": "/partners/index.html" },
+    { "source": "/riders", "destination": "/riders/index.html" },
+    { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/unete", "destination": "/unete/index.html" },
     { "source": "/unete/", "destination": "/unete/index.html" },
     { "source": "/comida-a-domicilio-xativa", "destination": "/comida-a-domicilio-xativa/index.html" },
-    { "source": "/comida-a-domicilio-xativa/", "destination": "/comida-a-domicilio-xativa/index.html" }
+    { "source": "/comida-a-domicilio-xativa/", "destination": "/comida-a-domicilio-xativa/index.html" },
+    { "source": "/restaurantes-a-domicilio-xativa", "destination": "/restaurantes-a-domicilio-xativa/index.html" },
+    { "source": "/restaurantes-a-domicilio-xativa/", "destination": "/restaurantes-a-domicilio-xativa/index.html" },
+    { "source": "/hazte-partner-xativa", "destination": "/hazte-partner-xativa/index.html" },
+    { "source": "/hazte-partner-xativa/", "destination": "/hazte-partner-xativa/index.html" },
+    { "source": "/trabajo-rider-xativa", "destination": "/trabajo-rider-xativa/index.html" },
+    { "source": "/trabajo-rider-xativa/", "destination": "/trabajo-rider-xativa/index.html" },
+    { "source": "/cobertura", "destination": "/cobertura/index.html" },
+    { "source": "/cobertura/", "destination": "/cobertura/index.html" }
   ]
 }
