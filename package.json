@@ -8,6 +8,7 @@
     "build": "node scripts/prepare-release.mjs && vite build && node scripts/copy-join-route.mjs && node scripts/generate-seo-static.mjs && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
+    "test:seo-static": "node scripts/test-seo-static.mjs",
     "format": "prettier --write .",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "test": "vitest run"
