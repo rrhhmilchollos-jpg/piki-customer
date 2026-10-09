@@ -98,7 +98,7 @@ export function NoticiasIndex() {
       <BlogHeader />
       <section className="relative overflow-hidden border-b border-[#eee2d7] bg-[#ffd72e] px-5 py-14 sm:px-8 sm:py-20">
         <div className="absolute -right-10 -top-14 h-56 w-56 rounded-full border-[26px] border-white/30" aria-hidden="true" />
-        <img src="/piki-mascot.png" alt="" className="pointer-events-none absolute -bottom-7 right-0 w-36 opacity-35 drop-shadow-[0_14px_18px_rgba(92,72,0,.18)] sm:bottom-0 sm:right-8 sm:w-52 sm:opacity-100" />
+        <img src="/piki-mascot.png" alt="" className="pointer-events-none absolute -bottom-7 right-0 w-36 opacity-10 drop-shadow-[0_14px_18px_rgba(92,72,0,.18)] sm:bottom-0 sm:right-8 sm:w-52 sm:opacity-100" />
         <div className="relative mx-auto max-w-6xl">
           <p className="inline-flex items-center gap-2 rounded-full bg-white/65 px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-[#5c4a00]"><Sparkles className="h-3.5 w-3.5" />PIKI por dentro</p>
           <h1 className="mt-5 max-w-4xl font-display text-5xl font-semibold leading-[.92] tracking-[-.075em] sm:text-7xl">Noticias y guías de PIKI</h1>
