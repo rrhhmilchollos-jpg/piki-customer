@@ -85,7 +85,8 @@ const basketInput = z.object({
   // Kept only for backward compatible callers; never trusted by the server.
   total: z.number().positive().optional(),
   customerName: z.string().max(160).optional(),
-  paymentMethod: z.literal("cash").default("cash"),
+  paymentMethod: z.enum(["cash", "stripe"]).default("stripe"),
+  origin: z.string().url().optional(),
   deliveryLocation: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }).optional(),
 });
 const orderStatuses = ["placed", "accepted", "ready", "assigned", "picked_up", "delivering", "delivered", "cancelled"] as const;
