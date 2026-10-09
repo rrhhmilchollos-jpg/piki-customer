@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { compare, hash } from "bcryptjs";
-import { createHash, createHmac, randomBytes } from "crypto";
+import { createHash, createHmac, randomBytes, randomInt } from "crypto";
 import { buildOrderQuote, findRestaurant, restaurants } from "./catalog";
 import {
   addPartnerMenuItem,
@@ -114,7 +114,9 @@ const menuItem = z.object({
   available: z.number().int().min(0).max(1).default(1),
 });
 
-function publicCode() { return `MG-${nanoid(8).toUpperCase()}`; }
+function publicCode() {
+  return String(randomInt(10_000_000, 100_000_000));
+}
 function requestOrigin(headers: Record<string, string | string[] | undefined>) {
   const origin = headers.origin;
   return typeof origin === "string" && origin.startsWith("http") ? origin : "https://mesagodeliv-gdrjgnii.manus.space";
