@@ -8,6 +8,7 @@ export type OperationalOrderInput = {
   publicCode: string;
   restaurantId: string;
   customerOpenId?: string | null;
+  customerName?: string | null;
   address: string;
   deliveryNote?: string | null;
   itemsJson: string;
@@ -72,6 +73,7 @@ export async function syncOperationalOrder(
           publicCode: order.publicCode,
           restaurantSlug: restaurant.id,
           customerId: order.customerOpenId ?? null,
+          customerName: order.customerName ?? null,
           deliveryAddress: order.address,
           deliveryNote: order.deliveryNote ?? "",
           deliveryLocation: deliveryLocation ?? null,
