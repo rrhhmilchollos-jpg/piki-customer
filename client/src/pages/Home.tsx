@@ -356,10 +356,10 @@ export default function Home() {
             <div className="relative z-10 p-7 sm:p-10 lg:p-14">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(255,255,255,.32),transparent_38%)]" />
               <div className="relative max-w-xl">
-                <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-[#171715] px-3 py-1.5 text-xs font-bold text-[#FFD72E]"><Sparkles className="h-3.5 w-3.5 text-[#FFD72E]" /> Piki: comida a domicilio · Cerca de ti.</div>
-                <h1 className="font-display text-[2.8rem] font-semibold leading-[.95] tracking-[-0.065em] text-[#171715] sm:text-6xl lg:text-7xl">Tu barrio, a tu puerta.<br /><span className="text-[#171715]">Come. Comparte. Repite.</span></h1>
-                <p className="mt-6 max-w-md text-base leading-relaxed text-[#2c2b20] sm:text-lg">Restaurantes, supermercados y tus antojos favoritos. Cerca, rápido y con ese punto de alegría que hace especial a PIKI.</p>
-                <button onClick={() => document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" })} className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#171715] px-5 py-3 text-sm font-extrabold text-[#FFD72E] shadow-[0_10px_20px_rgba(31,31,20,.2)] transition hover:bg-black active:scale-[.98]">Pedir ahora <ArrowRight className="h-4 w-4" /></button>
+                <div className="brand-spark mb-5 rounded-full px-3 py-1.5 text-xs font-bold text-[#171715]"><Sparkles className="h-3.5 w-3.5 text-[#dc5c35]" /> PIKI: pide, recibe, disfruta.</div>
+                <h1 className="font-display text-[2.8rem] font-semibold leading-[.95] tracking-[-0.065em] text-[#171715] sm:text-6xl lg:text-7xl">El mejor bocado<br /><span className="text-[#dc5c35]">a tu mesa.</span></h1>
+                <p className="mt-6 max-w-md text-base leading-relaxed text-[#2c2b20] sm:text-lg">Restaurantes, supermercados y antojos locales. Pide fácil, sigue tu pedido y disfruta de Xàtiva con una sonrisa.</p>
+                <button onClick={() => document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" })} className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#171715] px-5 py-3 text-sm font-extrabold text-[#FFD72E] shadow-[0_10px_20px_rgba(31,31,20,.2)] transition hover:-translate-y-0.5 hover:bg-black active:scale-[.98]">¡Quiero mi bocado! <ArrowRight className="h-4 w-4" /></button>
                 <button onClick={openAddressDialog} className="mt-7 flex items-center gap-2 text-sm font-semibold text-[#29281e] transition hover:text-black"><MapPin className="h-4 w-4 text-[#171715]" /> Entregando en <span className="border-b border-dashed border-[#171715]/45">{address}</span></button>
               </div>
             </div>

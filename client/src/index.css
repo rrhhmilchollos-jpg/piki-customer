@@ -60,5 +60,11 @@ button { -webkit-tap-highlight-color: transparent; }
 .piki-app .brand-spark { display:inline-flex; align-items:center; gap:8px; border:1px solid rgba(23,23,21,.1); background:rgba(255,255,255,.55); }
 @media (prefers-reduced-motion:no-preference) { .piki-app .hero-shine { animation:piki-glow 8s ease-in-out infinite alternate; } @keyframes piki-glow { from{opacity:.88} to{opacity:1} } }
 
+.piki-app .brand-spark { box-shadow: 4px 4px 0 rgba(220,92,53,.22); transform: rotate(-1deg); }
+.piki-app .campaign-sticker { border: 3px solid #171715; box-shadow: 5px 5px 0 #dc5c35; transform: rotate(-2deg); }
+.piki-app .campaign-sticker:hover { transform: rotate(1deg) translateY(-2px); }
+.piki-app .piki-grid { background-color: #fffdf5; }
+@media (prefers-reduced-motion: no-preference) { .piki-app .brand-spark { animation: piki-wiggle 5s ease-in-out infinite; } @keyframes piki-wiggle { 0%,100%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} } }
+
 html, body, #root { max-width: 100%; overflow-x: hidden; }
 @media (max-width: 520px) { .piki-app { width: 100%; min-width: 0; overflow-x: hidden; } .piki-app img, .piki-app video, .piki-app iframe { max-width: 100%; } .piki-app button, .piki-app a { -webkit-tap-highlight-color: transparent; } }

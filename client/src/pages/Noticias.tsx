@@ -101,8 +101,9 @@ export function NoticiasIndex() {
         <img src="/piki-mascot.png" alt="" className="pointer-events-none absolute -bottom-7 right-0 w-36 opacity-10 drop-shadow-[0_14px_18px_rgba(92,72,0,.18)] sm:bottom-0 sm:right-8 sm:w-52 sm:opacity-100" />
         <div className="relative mx-auto max-w-6xl">
           <p className="inline-flex items-center gap-2 rounded-full bg-white/65 px-3 py-1.5 text-xs font-black uppercase tracking-[.16em] text-[#5c4a00]"><Sparkles className="h-3.5 w-3.5" />PIKI por dentro</p>
-          <h1 className="mt-5 max-w-4xl font-display text-5xl font-semibold leading-[.92] tracking-[-.075em] sm:text-7xl">Noticias y guías de PIKI</h1>
-          <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-[#5c531f] sm:text-lg">Información corporativa identificada como tal y guías prácticas para usar PIKI con datos y expectativas claras.</p>
+          <h1 className="mt-5 max-w-4xl font-display text-5xl font-semibold leading-[.92] tracking-[-.075em] sm:text-7xl">Noticias, ideas y buen rollo</h1>
+          <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-[#5c531f] sm:text-lg">Actualidad de PIKI, guías locales y novedades para pedir, repartir y colaborar con más alegría.</p>
+          <div className="mt-7 inline-flex rotate-[-1deg] rounded-2xl bg-[#171715] px-4 py-3 text-sm font-black text-[#ffd72e] shadow-[6px_6px_0_rgba(220,92,53,.45)]">¡Pide. Recibe. Disfruta!</div>
         </div>
       </section>
       <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">

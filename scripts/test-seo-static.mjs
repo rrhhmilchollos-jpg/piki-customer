@@ -31,7 +31,7 @@ try {
   const newsSitemap = read("news-sitemap.xml");
   const rss = read("noticias/rss.xml");
 
-  assert.match(index, /Noticias y guías de PIKI/);
+  assert.match(index, /Noticias, ideas y buen rollo/);
   assert.match(index, /piki-mascot\.png/);
   assert.match(article, /<link rel="canonical" href="https:\/\/pikidelivery\.com\/noticias\/solicitudes-riders-partners-unete">/);
   assert.match(article, /<meta property="og:type" content="article">/);

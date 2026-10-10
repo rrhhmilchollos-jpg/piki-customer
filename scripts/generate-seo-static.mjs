@@ -299,7 +299,7 @@ function blogIndexHtml() {
   return `${blogHead({ itemPath, title, description, json })}
 <body>
 ${blogNav()}
-<section class="blog-hero"><div class="blog-hero-inner"><span class="badge">PIKI por dentro</span><h1>Noticias y guías de PIKI</h1><p>Información corporativa identificada como tal y guías prácticas para usar PIKI con datos y expectativas claras.</p><img class="mascot" src="/piki-mascot.png" alt="" width="220" height="220"></div></section>
+<section class="blog-hero"><div class="blog-hero-inner"><span class="badge">PIKI por dentro</span><h1>Noticias, ideas y buen rollo</h1><p>Actualidad de PIKI, guías locales y novedades para pedir, repartir y colaborar con más alegría.</p><div style="display:inline-block;margin-top:22px;border:3px solid #171715;border-radius:16px;background:#171715;padding:11px 15px;color:#ffd72e;font-weight:900;box-shadow:5px 5px 0 #dc5c35;transform:rotate(-2deg)">¡Pide. Recibe. Disfruta!</div><img class="mascot" src="/piki-mascot.png" alt="" width="220" height="220"></div></section>
 <main class="blog-wrap posts">${cards}<section class="transparency"><span class="badge">Transparencia</span><h2>Este es un blog corporativo de PIKI.</h2><p>No presentamos nuestras comunicaciones como periodismo independiente ni prometemos inclusión en Google News, indexación o posiciones en buscadores.</p><a class="more" href="/noticias/autoria-y-transparencia">Cómo publicamos →</a></section></main>
 ${blogFooter()}
 </body></html>`;
