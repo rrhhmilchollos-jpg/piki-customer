@@ -1,8 +1,8 @@
-const BUILD_ID = "2a08594bbebd";
+const BUILD_ID = "df360f3b0c6f";
 const CACHE_PREFIX = "piki-customer-";
 const CACHE_NAME = `${CACHE_PREFIX}${BUILD_ID}`;
-const APP_SHELL = ["/","/manifest.json","/manifest-partners.json","/piki-mascot-192.png","/piki-mascot-512.png","/piki-hero.webp"];
-const CONTROL_PATHS = new Set(["/sw.js", "/release.json", "/manifest.json", "/manifest-partners.json", "/piki-mascot-192.png", "/piki-mascot-512.png"]);
+const APP_SHELL = ["/","/riders","/partners","/admin","/manifest.json","/manifest-riders.json","/manifest-partners.json","/manifest-admin.json","/piki-mascot-192.png","/piki-mascot-512.png","/piki-hero.webp"];
+const CONTROL_PATHS = new Set(["/sw.js", "/release.json", "/manifest.json", "/manifest-riders.json", "/manifest-partners.json", "/manifest-admin.json", "/piki-mascot-192.png", "/piki-mascot-512.png"]);
 
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
@@ -29,9 +29,20 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || CONTROL_PATHS.has(url.pathname) || url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/") || request.headers.has("authorization")) return;
+  if (url.origin !== self.location.origin || CONTROL_PATHS.has(url.pathname) || url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/") || request.headers.has("authorization") || request.headers.get("cache-control") === "no-store") return;
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(async () => (await caches.match("/")) || Response.error()));
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request, { cache: "no-store" });
+        if (response.ok && response.type === "basic") {
+          const cache = await caches.open(CACHE_NAME);
+          event.waitUntil(cache.put("/", response.clone()));
+        }
+        return response;
+      } catch {
+        return (await caches.match("/")) || Response.error();
+      }
+    })());
     return;
   }
   event.respondWith((async () => {
