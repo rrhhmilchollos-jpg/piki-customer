@@ -16,6 +16,8 @@ import {
   ArrowRight,
   Bike,
   Banknote,
+  Boxes,
+  BriefcaseBusiness,
   Check,
   ChevronDown,
   ChevronRight,
@@ -26,12 +28,15 @@ import {
   Home as HomeIcon,
   Leaf,
   MapPin,
+  Hammer,
   MessageCircle,
   Menu,
   Minus,
   Navigation,
   PackageCheck,
   Pizza,
+  Pill,
+  PawPrint,
   Plus,
   Salad,
   Search,
@@ -39,6 +44,9 @@ import {
   Sparkles,
   Star,
   Store,
+  ShoppingBasket,
+  Dumbbell,
+  Truck,
   Utensils,
   X,
 } from "lucide-react";
@@ -58,6 +66,13 @@ type TrackingOrder = { id: string; restaurant: string; eta: string; stage: Track
 
 const categories = [
   { label: "Todos", icon: Sparkles, hue: "bg-[#ffe9df] text-[#bd4f2e]" },
+  { label: "Supermercados", icon: ShoppingBasket, hue: "bg-[#e5f1df] text-[#3e733c]" },
+  { label: "Farmacias", icon: Pill, hue: "bg-[#e2f0f4] text-[#246175]" },
+  { label: "Ferretería y hogar", icon: Hammer, hue: "bg-[#f4e8d5] text-[#8a5a28]" },
+  { label: "Mascotas", icon: PawPrint, hue: "bg-[#f3e4ef] text-[#8b4d79]" },
+  { label: "Deporte", icon: Dumbbell, hue: "bg-[#e8e4f4] text-[#5c4b91]" },
+  { label: "B2B y logística", icon: BriefcaseBusiness, hue: "bg-[#e5e9ec] text-[#3e5364]" },
+  { label: "Paquetería", icon: Boxes, hue: "bg-[#f0e7db] text-[#78583c]" },
   { label: "Mediterránea", icon: Utensils, hue: "bg-[#e6f0df] text-[#3a633d]" },
   { label: "Hamburguesas", icon: Flame, hue: "bg-[#ffe8cf] text-[#a44b24]" },
   { label: "Pizza", icon: Pizza, hue: "bg-[#fae0de] text-[#a44639]" },
@@ -65,6 +80,16 @@ const categories = [
   { label: "Japonesa", icon: Salad, hue: "bg-[#dcebef] text-[#245866]" },
   { label: "Desayuno", icon: Coffee, hue: "bg-[#f6ead4] text-[#9a692b]" },
 ];
+
+const expandingPartners = [
+  ["Leroy Merlin", "Hogar y reforma"],
+  ["Decathlon", "Deporte"],
+  ["Sprinter", "Deporte"],
+  ["Supermercados", "Compra diaria"],
+  ["Farmacias", "Parafarmacia"],
+  ["Tiendas de animales", "Mascotas"],
+  ["B2B y logística", "Suministros profesionales"],
+] as const;
 
 const money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
 
@@ -103,7 +128,7 @@ function RestaurantCard({ restaurant, onOpen }: { restaurant: Restaurant; onOpen
     <article className="card-lift group relative overflow-hidden rounded-[1.55rem] border border-[#eee4da] bg-white shadow-[0_5px_16px_rgba(55,45,35,.05)]">
       <button className="block w-full text-left" onClick={() => onOpen(restaurant)}>
         <div className="relative h-44 overflow-hidden">
-          <img src={restaurant.image} alt={`Plato de ${restaurant.name}`} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+          <img src={restaurant.image} alt={`Productos de ${restaurant.name}`} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-transparent" />
           {restaurant.promoted && <span className="absolute left-3 top-3 rounded-full bg-[#fff7ed] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#bd4f2e] shadow-sm">Favorito local</span>}
           <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-[#171715] shadow-sm"><Star className="h-3.5 w-3.5 fill-[#f5aa31] text-[#f5aa31]" /> {restaurant.rating.toFixed(1)} <span className="font-medium text-[#6a746b]">({restaurant.reviews})</span></div>
@@ -377,6 +402,18 @@ export default function Home() {
               </button>
             ))}
           </div>
+          <div className="mt-7 overflow-hidden rounded-[1.7rem] border border-[#dfe8da] bg-[#f3f8ef] p-5 sm:p-7">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-xl">
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#5b795f]">PIKI se expande</p>
+                <h3 className="mt-1 font-display text-2xl font-semibold tracking-[-0.04em] text-[#171715] sm:text-3xl">Mucho más que restaurantes</h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#5f7062]">Ya puedes explorar alimentación, parafarmacia, hogar, mascotas, deporte y suministros B2B. Las marcas externas se activarán por zona cuando su catálogo y operación estén conectados.</p>
+              </div>
+              <div className="flex max-w-2xl flex-wrap gap-2">
+                {expandingPartners.map(([name, label]) => <button key={name} onClick={() => { const match = categories.find((categoryItem) => categoryItem.label === label); if (match) setCategory(match.label); else if (name === "Leroy Merlin") setCategory("Ferretería y hogar"); }} className="rounded-full border border-[#d7e3d2] bg-white px-3.5 py-2 text-xs font-extrabold text-[#3c5942] transition hover:-translate-y-0.5 hover:border-[#a9c19f]">{name}<span className="ml-1.5 font-medium text-[#829286]">· {label}</span></button>)}
+              </div>
+            </div>
+          </div>
         </section>
 
         <section aria-labelledby="cobertura-piki" className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
@@ -391,9 +428,9 @@ export default function Home() {
         </section>
 
         <section id="restaurantes" className="mx-auto max-w-7xl px-4 pb-28 pt-2 sm:px-6 lg:px-8">
-          <SectionTitle eyebrow="Ahora cerca de ti" title="Comida que merece el desvío" action="Ver todos" />
+          <SectionTitle eyebrow="Ahora cerca de ti" title="Comercios que te lo acercan" action="Ver todos" />
           <div className="mb-7 flex flex-col gap-3 rounded-2xl border border-[#e9dfd5] bg-white p-3 shadow-[0_8px_20px_rgba(54,42,31,.04)] sm:flex-row sm:items-center">
-            <div className="flex flex-1 items-center gap-3 rounded-xl bg-[#faf6f0] px-3.5 py-3"><Search className="h-5 w-5 text-[#718073]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Busca un restaurante o tipo de comida" className="w-full bg-transparent text-sm font-medium outline-none placeholder:text-[#9aa49b]" aria-label="Buscar restaurantes" /></div>
+            <div className="flex flex-1 items-center gap-3 rounded-xl bg-[#faf6f0] px-3.5 py-3"><Search className="h-5 w-5 text-[#718073]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Busca un comercio, producto o categoría" className="w-full bg-transparent text-sm font-medium outline-none placeholder:text-[#9aa49b]" aria-label="Buscar comercios" /></div>
             <button onClick={() => { setSearch(""); setCategory("Todos"); }} className="flex items-center justify-center gap-2 rounded-xl border border-[#e8ded4] px-4 py-3 text-sm font-bold text-[#3a473d] transition hover:bg-[#faf6f0]" aria-label="Buscar en todos los comercios"><Search className="h-4 w-4 text-[#FFD72E]" /> Buscar <ChevronDown className="h-4 w-4" /></button>
           </div>
           {isLoading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{[1, 2, 3, 4, 5, 6].map((index) => <div key={index} className="h-[280px] animate-pulse rounded-[1.55rem] bg-[#eee6dd]" />)}</div> : restaurants?.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{restaurants.map((restaurant) => <RestaurantCard key={restaurant.id} restaurant={restaurant} onOpen={setSelectedRestaurant} />)}</div> : <div className="rounded-[1.6rem] border border-dashed border-[#d9d0c5] bg-[#fffcf8] px-6 py-16 text-center"><Search className="mx-auto h-8 w-8 text-[#a3afa2]" /><h3 className="mt-4 text-lg font-extrabold">No encontramos ese sabor</h3><p className="mt-1 text-sm text-[#68746a]">Prueba con otra búsqueda o vuelve a ver todo el barrio.</p><button onClick={() => { setSearch(""); setCategory("Todos"); }} className="mt-5 rounded-full bg-[#171715] px-4 py-2 text-sm font-bold text-white">Ver todos</button></div>}

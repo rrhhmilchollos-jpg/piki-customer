@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildOrderQuote } from "./catalog";
+import { buildOrderQuote, restaurants } from "./catalog";
 
 describe("buildOrderQuote", () => {
   it("calcula complementos y bebida solo con precios validados en servidor", () => {
@@ -46,5 +46,18 @@ describe("buildOrderQuote", () => {
         },
       ])
     ).toThrow("Puedes elegir hasta 1 opción");
+  });
+
+  it("incluye verticales retail y B2B sin requerir datos privados del cliente", () => {
+    expect(restaurants.map((restaurant) => restaurant.category)).toEqual(expect.arrayContaining([
+      "Supermercados",
+      "Farmacias",
+      "Ferretería y hogar",
+      "Mascotas",
+      "Deporte",
+      "B2B y logística",
+    ]));
+    const { quote } = buildOrderQuote("piki-market-xativa", [{ id: "market-1", quantity: 1 }]);
+    expect(quote.totalCents).toBe(1123);
   });
 });

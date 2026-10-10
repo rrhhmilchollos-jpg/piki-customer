@@ -247,7 +247,7 @@ export const appRouter = router({
   catalog: router({
     list: publicProcedure.input(z.object({ category: z.string().optional(), query: z.string().optional() })).query(({ input }) => {
       const query = input.query?.trim().toLocaleLowerCase();
-      return restaurants.filter((restaurant) => (!input.category || restaurant.category === input.category) && (!query || `${restaurant.name} ${restaurant.cuisine} ${restaurant.category}`.toLowerCase().includes(query)));
+      return restaurants.filter((restaurant) => (!input.category || restaurant.category === input.category) && (!query || `${restaurant.name} ${restaurant.cuisine} ${restaurant.category} ${restaurant.tagline}`.toLowerCase().includes(query)));
     }),
     byId: publicProcedure.input(z.object({ id: z.string() })).query(({ input }) => findRestaurant(input.id) ?? null),
     quote: publicProcedure.input(basketInput).query(({ input }) => buildOrderQuote(input.restaurantId, input.items).quote),
