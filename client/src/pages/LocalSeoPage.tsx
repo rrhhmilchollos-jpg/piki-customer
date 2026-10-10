@@ -1,7 +1,7 @@
 import { ArrowRight, Bike, MapPin, Store, Utensils } from "lucide-react";
 import { Link } from "wouter";
 
-type PageKey = "food" | "restaurants" | "riders" | "partners" | "coverage";
+type PageKey = "food" | "restaurants" | "riders" | "partners" | "coverage" | "canals" | "alberic";
 
 type LocalPage = {
   eyebrow: string;
@@ -73,11 +73,35 @@ const pages: Record<PageKey, LocalPage> = {
     primaryHref: "/",
     primaryLabel: "Comprobar mi dirección",
   },
+  canals: {
+    eyebrow: "PIKI Delivery · Canals",
+    title: "Comida a domicilio en Canals",
+    description: "Consulta si PIKI muestra restaurantes y reparto disponibles para una dirección concreta de Canals.",
+    sections: [
+      { title: "Comprueba tu dirección", body: "La cobertura se valida con la dirección completa. Introduce calle y número para consultar la oferta que PIKI muestre en ese momento." },
+      { title: "Información local y transparente", body: "Los restaurantes, horarios, tarifas y tiempos pueden cambiar. Revisa siempre la información visible antes de confirmar un pedido." },
+      { title: "Una zona cercana a Xàtiva", body: "Canals forma parte de la estrategia de expansión local de PIKI. Esta página no garantiza disponibilidad permanente ni activación de todos los comercios." },
+    ],
+    primaryHref: "/",
+    primaryLabel: "Comprobar mi dirección",
+  },
+  alberic: {
+    eyebrow: "PIKI Delivery · Alberic",
+    title: "Comida a domicilio en Alberic",
+    description: "Consulta si PIKI muestra opciones de comida y reparto para una dirección concreta de Alberic.",
+    sections: [
+      { title: "Consulta la cobertura real", body: "Introduce la dirección completa en PIKI para comprobar qué opciones aparecen disponibles para ese punto y momento." },
+      { title: "Antes de confirmar", body: "Revisa restaurante, carta, precio total, tarifa y tiempo estimado en el checkout. La disponibilidad puede variar según la operación." },
+      { title: "Expansión responsable", body: "Alberic es una localidad objetivo de expansión local. La mención de esta zona no equivale a una promesa de reparto activo." },
+    ],
+    primaryHref: "/",
+    primaryLabel: "Comprobar mi dirección",
+  },
 };
 
 export function LocalSeoPage({ page }: { page: PageKey }) {
   const content = pages[page];
-  const icon = page === "riders" ? Bike : page === "restaurants" || page === "partners" ? Store : page === "coverage" ? MapPin : Utensils;
+  const icon = page === "riders" ? Bike : page === "restaurants" || page === "partners" ? Store : page === "coverage" || page === "canals" || page === "alberic" ? MapPin : Utensils;
   const Icon = icon;
 
   return (
@@ -103,8 +127,9 @@ export function LocalSeoPage({ page }: { page: PageKey }) {
       <section className="mx-auto grid max-w-6xl gap-5 px-5 pb-16 md:grid-cols-3">
         {content.sections.map((section) => <article key={section.title} className="rounded-[1.5rem] border border-[#eadfd4] bg-white p-6 shadow-[0_6px_18px_rgba(48,40,28,.04)]"><h2 className="font-display text-2xl font-semibold tracking-[-.04em]">{section.title}</h2><p className="mt-3 text-sm leading-relaxed text-[#637166]">{section.body}</p></article>)}
       </section>
+      {(page === "food" || page === "coverage" || page === "canals" || page === "alberic") && <section className="mx-auto max-w-6xl px-5 pb-16"><div className="rounded-[1.5rem] bg-[#fff4be] p-6 sm:p-8"><p className="text-xs font-black uppercase tracking-[.16em] text-[#8d6d00]">Preguntas frecuentes</p><h2 className="mt-2 font-display text-3xl font-semibold tracking-[-.05em]">Sobre el reparto local de PIKI</h2><div className="mt-6 grid gap-5 md:grid-cols-3"><div><h3 className="font-bold">¿PIKI reparte en mi calle?</h3><p className="mt-2 text-sm leading-relaxed text-[#665f35]">La respuesta depende de la dirección completa, los comercios activos y la operativa del momento. Compruébala en la web.</p></div><div><h3 className="font-bold">¿Cuánto tarda el pedido?</h3><p className="mt-2 text-sm leading-relaxed text-[#665f35]">El tiempo estimado se muestra para cada opción disponible y puede cambiar según restaurante, distancia y demanda.</p></div><div><h3 className="font-bold">¿Puedo colaborar con PIKI?</h3><p className="mt-2 text-sm leading-relaxed text-[#665f35]">Sí, puedes enviar una solicitud inicial como restaurante o rider desde la página de incorporación.</p></div></div></div></section>}
       <section className="border-y border-[#eee2d6] bg-[#f7f1e7] px-5 py-12">
-        <div className="mx-auto max-w-6xl"><p className="text-xs font-black uppercase tracking-[.16em] text-[#b95231]">Enlaces útiles</p><div className="mt-4 flex flex-wrap gap-3 text-sm font-bold"><Link href="/comida-a-domicilio-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Comida a domicilio en Xàtiva</Link><Link href="/restaurantes-a-domicilio-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Restaurantes y comercios</Link><Link href="/trabajo-rider-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Trabajar como rider</Link><Link href="/cobertura" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Cobertura</Link><Link href="/noticias" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Noticias PIKI</Link></div></div>
+        <div className="mx-auto max-w-6xl"><p className="text-xs font-black uppercase tracking-[.16em] text-[#b95231]">Enlaces útiles</p><div className="mt-4 flex flex-wrap gap-3 text-sm font-bold"><Link href="/comida-a-domicilio-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Comida a domicilio en Xàtiva</Link><Link href="/comida-a-domicilio-canals" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Comida a domicilio en Canals</Link><Link href="/comida-a-domicilio-alberic" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Comida a domicilio en Alberic</Link><Link href="/restaurantes-a-domicilio-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Restaurantes y comercios</Link><Link href="/trabajo-rider-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Trabajar como rider</Link><Link href="/cobertura" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Cobertura</Link><Link href="/noticias" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Noticias PIKI</Link></div></div>
       </section>
       <footer className="px-5 py-10"><div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-[#66736a]"><span>PIKI Delivery · Xàtiva, Valencia</span><div className="flex gap-4"><Link href="/noticias" className="font-bold text-[#171715]">Noticias PIKI</Link><Link href="/" className="font-bold text-[#171715]">Web oficial</Link></div></div></footer>
     </main>

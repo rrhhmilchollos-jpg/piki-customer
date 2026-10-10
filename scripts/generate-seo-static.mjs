@@ -23,6 +23,7 @@ const pages = [
       ["Cobertura", "La plataforma muestra la disponibilidad real según la dirección. Consulta la cobertura de Xàtiva y municipios cercanos desde la aplicación."],
     ],
     cta: ["Consultar opciones disponibles", "/"],
+    faqs: [["¿PIKI reparte en toda Xàtiva?", "La cobertura se comprueba para la dirección completa y depende de los comercios y riders disponibles en ese momento."], ["¿Qué puedo pedir en PIKI?", "La oferta depende de tu dirección, los establecimientos activos, sus horarios y la operación del momento."], ["¿Cómo colaboro con PIKI?", "Restaurantes, comercios y personas interesadas en repartir pueden enviar una solicitud inicial desde /unete."]],
   },
   {
     path: "/comida-a-domicilio-xativa",
@@ -95,6 +96,28 @@ const pages = [
     cta: ["Comprobar mi dirección", "/"],
   },
   {
+    path: "/comida-a-domicilio-canals",
+    title: "Comida a domicilio en Canals | PIKI Delivery",
+    description: "Comprueba si PIKI muestra opciones de comida y reparto para una dirección concreta de Canals.",
+    heading: "Comida a domicilio en Canals",
+    eyebrow: "PIKI Delivery · Canals",
+    lead: "Consulta la disponibilidad real para tu dirección. La mención de Canals como zona de expansión no garantiza reparto activo en todo momento.",
+    sections: [["Comprueba tu dirección", "Introduce calle y número para consultar los restaurantes y condiciones que PIKI muestre para ese punto."], ["Revisa el checkout", "La carta, los precios, la tarifa y el tiempo estimado pueden cambiar. Confirma siempre la información visible antes de pedir."], ["Expansión local responsable", "Canals es una zona objetivo de expansión de PIKI. La disponibilidad se valida por dirección, comercio y operación real."]],
+    cta: ["Comprobar mi dirección", "/"],
+    faqs: [["¿PIKI está disponible en Canals?", "La disponibilidad se confirma introduciendo la dirección completa en la plataforma; no se presupone por municipio."], ["¿Puedo solicitar un restaurante de Canals?", "Sí, un comercio puede enviar una solicitud inicial desde la página de incorporación."], ["¿Dónde consulto las condiciones?", "En la aplicación y el checkout, antes de confirmar el pedido."]],
+  },
+  {
+    path: "/comida-a-domicilio-alberic",
+    title: "Comida a domicilio en Alberic | PIKI Delivery",
+    description: "Comprueba si PIKI muestra opciones de comida y reparto para una dirección concreta de Alberic.",
+    heading: "Comida a domicilio en Alberic",
+    eyebrow: "PIKI Delivery · Alberic",
+    lead: "Consulta la cobertura real de PIKI para tu dirección de Alberic y revisa las opciones disponibles antes de confirmar.",
+    sections: [["Consulta la cobertura real", "Una dirección completa permite comprobar mejor qué opciones aparecen disponibles en ese momento."], ["Información clara antes de pedir", "Revisa restaurante, productos, total, tarifa y tiempo estimado en el checkout."], ["Una zona de expansión", "Alberic es una localidad objetivo de expansión local. La página no supone una promesa de reparto permanente."]],
+    cta: ["Comprobar mi dirección", "/"],
+    faqs: [["¿La cobertura en Alberic es permanente?", "No se garantiza por esta página; la cobertura se comprueba para cada dirección y momento."], ["¿Cómo puede colaborar un comercio?", "Puede enviar sus datos iniciales desde /unete para que el equipo revise la solicitud."], ["¿Qué información debo revisar?", "La disponibilidad del restaurante, la carta, el precio total, la tarifa y el tiempo estimado."]],
+  },
+  {
     path: "/unete",
     title: "Únete a PIKI | Riders y restaurantes en Xàtiva",
     description: "Página oficial para enviar solicitudes de rider o partner a PIKI Delivery en Xàtiva.",
@@ -119,6 +142,8 @@ const links = [
   ["Trabajar como rider", "/trabajo-rider-xativa"],
   ["Hazte partner", "/hazte-partner-xativa"],
   ["Cobertura", "/cobertura"],
+  ["Canals", "/comida-a-domicilio-canals"],
+  ["Alberic", "/comida-a-domicilio-alberic"],
   ["Noticias PIKI", "/noticias"],
   ["Únete a PIKI", "/unete"],
 ];
@@ -131,7 +156,8 @@ function jsonLd(page) {
       { "@type": "Organization", "@id": `${origin}/#organization`, name: "PIKI Delivery", alternateName: "PIKI", url: `${origin}/`, logo: `${origin}/piki-delivery-512.png`, areaServed: [{ "@type": "City", name: "Xàtiva" }, { "@type": "AdministrativeArea", name: "Valencia" }] },
       { "@type": "WebSite", "@id": `${origin}/#website`, url: `${origin}/`, name: "PIKI Delivery", inLanguage: "es-ES", publisher: { "@id": `${origin}/#organization` } },
       { "@type": "WebPage", "@id": `${pageUrl}#webpage`, url: pageUrl, name: page.title, description: page.description, inLanguage: "es-ES", isPartOf: { "@id": `${origin}/#website` }, about: { "@id": `${origin}/#service` } },
-      { "@type": "Service", "@id": `${origin}/#service`, name: "PIKI Delivery en Xàtiva", description: "Servicio digital para consultar opciones de comida a domicilio disponibles según la dirección del cliente.", serviceType: "Food delivery service", areaServed: { "@type": "City", name: "Xàtiva" }, provider: { "@id": `${origin}/#organization` }, url: `${origin}/comida-a-domicilio-xativa` },
+      { "@type": "Service", "@id": `${origin}/#service`, name: "PIKI Delivery en Xàtiva", description: "Servicio digital para consultar opciones de comida a domicilio disponibles según la dirección del cliente.", serviceType: "Food delivery service", areaServed: [{ "@type": "City", name: "Xàtiva" }, { "@type": "City", name: "Canals" }, { "@type": "City", name: "Alberic" }, { "@type": "GeoCircle", geoMidpoint: { "@type": "GeoCoordinates", latitude: 38.9908, longitude: -0.5186 }, geoRadius: "30000" }], provider: { "@id": `${origin}/#organization` }, url: `${origin}/comida-a-domicilio-xativa` },
+      ...(page.faqs ? [{ "@type": "FAQPage", "@id": `${pageUrl}#faq`, mainEntity: page.faqs.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }] : []),
       { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "PIKI Delivery", item: `${origin}/` }, { "@type": "ListItem", position: 2, name: page.heading, item: pageUrl }] },
     ],
   }).replace(/</g, "\\u003c");
@@ -140,6 +166,7 @@ function jsonLd(page) {
 function pageHtml(page) {
   const pageUrl = absolute(page.path);
   const cards = page.sections.map(([title, body]) => `<article><h2>${esc(title)}</h2><p>${esc(body)}</p></article>`).join("\n");
+  const faqs = page.faqs ? `<section class="faq"><h2>Preguntas frecuentes</h2>${page.faqs.map(([question, answer]) => `<div><h3>${esc(question)}</h3><p>${esc(answer)}</p></div>`).join("\n")}</section>` : "";
   const nav = links.map(([label, href]) => `<a href="${href}">${esc(label)}</a>`).join("\n");
   return `<!doctype html>
 <html lang="es-ES">
@@ -168,11 +195,11 @@ function pageHtml(page) {
   <meta name="twitter:description" content="${esc(page.description)}">
   <script type="application/ld+json">${jsonLd(page)}</script>
   <title>${esc(page.title)}</title>
-  <style>body{margin:0;background:#fffdf5;color:#171715;font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1040px;margin:auto;padding:0 22px}.nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:22px 0;border-bottom:1px solid #ece3d9}.brand{font-size:26px;font-weight:900;letter-spacing:-.06em;color:#171715;text-decoration:none}.brand span{color:#dc5c35}.links{display:flex;gap:14px;flex-wrap:wrap}.links a{font-size:14px;font-weight:700;color:#4e5a50;text-decoration:none}.hero{padding:82px 0 44px}.eyebrow{display:inline-block;background:#fff4be;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.hero h1{max-width:800px;margin:20px 0 18px;font-size:clamp(42px,7vw,80px);line-height:.95;letter-spacing:-.07em}.lead{max-width:720px;font-size:20px;color:#536057}.cta{display:inline-block;margin-top:26px;background:#171715;border-radius:999px;padding:13px 20px;color:#ffd72e;font-weight:800;text-decoration:none}.grid{display:grid;gap:18px;grid-template-columns:repeat(3,minmax(0,1fr));padding:28px 0 64px}.grid article{border:1px solid #eadfd4;border-radius:22px;background:#fff;padding:24px}.grid h2{margin:0;font-size:22px;letter-spacing:-.04em}.grid p{color:#5b695f}.local{margin:12px 0 60px;border-radius:22px;background:#f7f1e7;padding:28px}.local h2{margin-top:0}.footer{border-top:1px solid #ece3d9;padding:28px 0;color:#607065;font-size:14px}@media(max-width:760px){.grid{grid-template-columns:1fr}.hero{padding-top:52px}.links{gap:10px}.links a{font-size:12px}}</style>
+  <style>body{margin:0;background:#fffdf5;color:#171715;font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1040px;margin:auto;padding:0 22px}.nav{display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:22px 0;border-bottom:1px solid #ece3d9}.brand{font-size:26px;font-weight:900;letter-spacing:-.06em;color:#171715;text-decoration:none}.brand span{color:#dc5c35}.links{display:flex;gap:14px;flex-wrap:wrap}.links a{font-size:14px;font-weight:700;color:#4e5a50;text-decoration:none}.hero{padding:82px 0 44px}.eyebrow{display:inline-block;background:#fff4be;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.hero h1{max-width:800px;margin:20px 0 18px;font-size:clamp(42px,7vw,80px);line-height:.95;letter-spacing:-.07em}.lead{max-width:720px;font-size:20px;color:#536057}.cta{display:inline-block;margin-top:26px;background:#171715;border-radius:999px;padding:13px 20px;color:#ffd72e;font-weight:800;text-decoration:none}.grid{display:grid;gap:18px;grid-template-columns:repeat(3,minmax(0,1fr));padding:28px 0 64px}.grid article{border:1px solid #eadfd4;border-radius:22px;background:#fff;padding:24px}.grid h2{margin:0;font-size:22px;letter-spacing:-.04em}.grid p{color:#5b695f}.local{margin:12px 0 28px;border-radius:22px;background:#f7f1e7;padding:28px}.faq{margin:0 0 60px;border-radius:22px;background:#fff4be;padding:28px}.faq h2{margin-top:0}.faq h3{margin:20px 0 4px;font-size:18px}.faq p{margin:0;color:#665f35}.local h2{margin-top:0}.footer{border-top:1px solid #ece3d9;padding:28px 0;color:#607065;font-size:14px}@media(max-width:760px){.grid{grid-template-columns:1fr}.hero{padding-top:52px}.links{gap:10px}.links a{font-size:12px}}</style>
 </head>
 <body>
   <header class="wrap"><nav class="nav" aria-label="Navegación principal"><a class="brand" href="/" aria-label="PIKI Delivery, inicio">PIKI<span>.</span></a><div class="links">${nav}</div></nav></header>
-  <main class="wrap"><section class="hero"><span class="eyebrow">${esc(page.eyebrow)}</span><h1>${esc(page.heading)}</h1><p class="lead">${esc(page.lead)}</p><a class="cta" href="${page.cta[1]}">${esc(page.cta[0])}</a></section><section class="grid">${cards}</section><section class="local"><h2>Información oficial de PIKI Delivery</h2><p>PIKI Delivery es una plataforma digital vinculada a Xàtiva, Valencia, España. La disponibilidad de comercios, productos, precios y reparto se confirma para cada dirección dentro del servicio.</p><div class="links">${nav}</div></section></main>
+  <main class="wrap"><section class="hero"><span class="eyebrow">${esc(page.eyebrow)}</span><h1>${esc(page.heading)}</h1><p class="lead">${esc(page.lead)}</p><a class="cta" href="${page.cta[1]}">${esc(page.cta[0])}</a></section><section class="grid">${cards}</section>${faqs}<section class="local"><h2>Información oficial de PIKI Delivery</h2><p>PIKI Delivery es una plataforma digital vinculada a Xàtiva, Valencia, España. La disponibilidad de comercios, productos, precios y reparto se confirma para cada dirección dentro del servicio.</p><div class="links">${nav}</div></section></main>
   <footer class="wrap footer">PIKI Delivery · Xàtiva, Valencia, España · <a href="${origin}/">Web oficial</a></footer>
 </body>
 </html>`;

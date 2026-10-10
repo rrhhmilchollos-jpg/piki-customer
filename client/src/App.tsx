@@ -36,6 +36,8 @@ function Router() {
         <Route path="/hazte-partner-xativa"><LocalSeoPage page="partners" /></Route>
         <Route path="/trabajo-rider-xativa"><LocalSeoPage page="riders" /></Route>
         <Route path="/cobertura"><LocalSeoPage page="coverage" /></Route>
+        <Route path="/comida-a-domicilio-canals"><LocalSeoPage page="canals" /></Route>
+        <Route path="/comida-a-domicilio-alberic"><LocalSeoPage page="alberic" /></Route>
         <Route path="/noticias" component={NoticiasIndex} />
         <Route path="/noticias/politica-editorial" component={PoliticaEditorial} />
         <Route path="/noticias/autoria-y-transparencia" component={AutoriaYTransparencia} />
