@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { compare, hash } from "bcryptjs";
 import { createHash, createHmac, randomBytes, randomInt } from "crypto";
 import { buildOrderQuote, findRestaurant, restaurants } from "./catalog";
+import { fetchPublicCatalogue } from "./publicCatalogAdapter";
 import {
   addPartnerMenuItem,
   adminUpdatePartnerStore,
@@ -116,6 +117,14 @@ const menuItem = z.object({
 
 function publicCode() {
   return String(randomInt(10_000_000, 100_000_000));
+}
+
+/**
+ * The external catalogue is canonical when available. The local catalogue is
+ * retained only as a controlled rollout fallback for legacy deployments.
+ */
+async function customerCatalogue() {
+  return (await fetchPublicCatalogue()) ?? restaurants;
 }
 function requestOrigin(headers: Record<string, string | string[] | undefined>) {
   const origin = headers.origin;
@@ -245,16 +254,24 @@ export const appRouter = router({
     }),
   }),
   catalog: router({
-    list: publicProcedure.input(z.object({ category: z.string().optional(), query: z.string().optional() })).query(({ input }) => {
+    list: publicProcedure.input(z.object({ category: z.string().optional(), query: z.string().optional() })).query(async ({ input }) => {
       const query = input.query?.trim().toLocaleLowerCase();
-      return restaurants.filter((restaurant) => (!input.category || restaurant.category === input.category) && (!query || `${restaurant.name} ${restaurant.cuisine} ${restaurant.category} ${restaurant.tagline}`.toLowerCase().includes(query)));
+      const catalogue = await customerCatalogue();
+      return catalogue.filter((restaurant) => (
+        (!input.category || restaurant.category === input.category) &&
+        (!query || `${restaurant.name} ${restaurant.cuisine ?? ""} ${restaurant.category ?? ""} ${restaurant.tagline ?? ""}`.toLocaleLowerCase().includes(query))
+      ));
     }),
-    byId: publicProcedure.input(z.object({ id: z.string() })).query(({ input }) => findRestaurant(input.id) ?? null),
-    quote: publicProcedure.input(basketInput).query(({ input }) => buildOrderQuote(input.restaurantId, input.items).quote),
+    byId: publicProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => findRestaurant(input.id, await customerCatalogue()) ?? null),
+    quote: publicProcedure.input(basketInput).query(async ({ input }) => buildOrderQuote(input.restaurantId, input.items, await customerCatalogue()).quote),
   }),
   order: router({
     create: publicProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
-      const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
+      const { restaurant, quote } = buildOrderQuote(
+        input.restaurantId,
+        input.items,
+        await customerCatalogue(),
+      );
       const code = publicCode();
       const canonicalWritten = await writeCanonicalOrder({ publicCode: code, restaurantId: restaurant.id, customerOpenId: ctx.user?.openId ?? null, address: input.address, deliveryNote: input.deliveryNote, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod: input.paymentMethod === "cash" ? "cash" : "stripe", deliveryLocation: input.deliveryLocation });
       if (!canonicalWritten) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "La API central no está disponible; el pedido no se ha confirmado." });
@@ -267,7 +284,11 @@ export const appRouter = router({
     checkout: publicProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
       if (input.paymentMethod !== "cash") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Tarjeta y Bizum todavía no están disponibles. Selecciona efectivo al recibir." });
       if (!input.deliveryLocation) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Selecciona una dirección validada de la lista para poder despachar el pedido." });
-      const { restaurant, quote } = buildOrderQuote(input.restaurantId, input.items);
+      const { restaurant, quote } = buildOrderQuote(
+        input.restaurantId,
+        input.items,
+        await customerCatalogue(),
+      );
       const code = publicCode();
       const canonicalWritten = await writeCanonicalOrder({ publicCode: code, restaurantId: restaurant.id, customerOpenId: ctx.user?.openId ?? null, address: input.address, deliveryNote: input.deliveryNote, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod: "cash", deliveryLocation: input.deliveryLocation });
       if (!canonicalWritten) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "La API central no está disponible; el pedido no se ha confirmado." });

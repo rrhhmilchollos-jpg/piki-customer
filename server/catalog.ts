@@ -1,3 +1,12 @@
+import {
+  isRestaurantComingSoon,
+  isRestaurantOrderable,
+  type CatalogAvailabilityStatus,
+  type CatalogOnboardingStatus,
+} from "../shared/catalogAvailability";
+
+export { isRestaurantComingSoon, isRestaurantOrderable };
+
 export type MenuModifierOption = {
   id: string;
   name: string;
@@ -25,20 +34,25 @@ export type MenuItem = {
   modifierGroups?: MenuModifierGroup[];
 };
 
+/** Public restaurant shape consumed by the customer catalogue API. */
 export type Restaurant = {
   id: string;
   name: string;
-  cuisine: string;
-  category: string;
-  tagline: string;
-  eta: string;
-  fee: number;
-  rating: number;
-  reviews: number;
+  cuisine?: string;
+  category?: string;
+  tagline?: string;
+  eta?: string;
+  fee?: number;
+  rating?: number;
+  reviews?: number;
   promoted?: boolean;
-  image: string;
-  accent: string;
+  image?: string;
+  accent?: string;
   menu: MenuItem[];
+  /** Visible lifecycle signals from the canonical public catalogue. */
+  availabilityStatus?: CatalogAvailabilityStatus;
+  isActive?: boolean;
+  onboardingStatus?: CatalogOnboardingStatus;
 };
 
 export type ModifierSelection = {
@@ -528,8 +542,8 @@ export const restaurants: Restaurant[] = [
   },
 ];
 
-export function findRestaurant(id: string) {
-  return restaurants.find(restaurant => restaurant.id === id);
+export function findRestaurant(id: string, catalogue: Restaurant[] = restaurants) {
+  return catalogue.find(restaurant => restaurant.id === id);
 }
 
 function toCents(amount: number) {
@@ -597,10 +611,15 @@ function resolveSelections(
 /** Server-only quote calculation. Client totals and option prices are intentionally ignored. */
 export function buildOrderQuote(
   restaurantId: string,
-  items: CheckoutLine[]
+  items: CheckoutLine[],
+  catalogue: Restaurant[] = restaurants,
 ): { restaurant: Restaurant; quote: OrderQuote } {
-  const restaurant = findRestaurant(restaurantId);
+  const restaurant = findRestaurant(restaurantId, catalogue);
   if (!restaurant) throw new Error("Restaurante no encontrado");
+  if (!isRestaurantOrderable(restaurant))
+    throw new Error("Este establecimiento estará disponible muy pronto.");
+  if (typeof restaurant.fee !== "number" || !Number.isFinite(restaurant.fee))
+    throw new Error("El coste de entrega de este establecimiento no está disponible.");
   if (!items.length) throw new Error("La cesta está vacía");
 
   const displayLines = items.map(line => {

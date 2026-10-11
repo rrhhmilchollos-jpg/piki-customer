@@ -112,7 +112,10 @@ export default function Riders() {
   const activeOrders = trpc.rider.active.useQuery(undefined, { enabled: isAuthenticated && isRider, refetchInterval: 6_000 });
   const pushConfig = trpc.rider.pushConfig.useQuery(undefined, { enabled: isAuthenticated && isRider });
   const saveProfile = trpc.rider.profile.useMutation({ onSuccess: () => { void rider.refetch(); toast.success("Perfil de rider guardado", { description: "Operaciones revisará tus documentos y zona antes de activarte." }); setProfileOpen(false); } });
-  const uploadDocument = trpc.rider.uploadDocument.useMutation({ onSuccess: () => { void documents.refetch(); void rider.refetch(); toast.success("Documento enviado", { description: "El equipo de flota lo revisará desde Operaciones." }); } });
+  const uploadDocument = trpc.rider.uploadDocument.useMutation({
+    onSuccess: () => { void documents.refetch(); void rider.refetch(); toast.success("Documento enviado", { description: "El equipo de flota lo revisará desde Operaciones." }); },
+    onError: (error) => toast.error("No se pudo enviar el documento", { description: error.message || "Comprueba el archivo e inténtalo de nuevo." }),
+  });
   const setAvailability = trpc.rider.setAvailability.useMutation({ onSuccess: () => { void rider.refetch(); void offers.refetch(); } });
   const reportLocation = trpc.rider.reportLocation.useMutation();
   const claim = trpc.order.claim.useMutation({ onSuccess: () => { toast.success("Pedido aceptado", { description: "Dirígete al local y confirma la recogida al llegar." }); setAssignmentAlert(null); void offers.refetch(); void activeOrders.refetch(); void rider.refetch(); } });
@@ -214,7 +217,22 @@ export default function Riders() {
   const submitProfile = () => { if (!profileForm.riderName.trim() || !profileForm.zone.trim()) return toast.error("Añade tu nombre y zona habitual"); saveProfile.mutate({ riderName: profileForm.riderName.trim(), phone: profileForm.phone.trim() || undefined, vehicle: profileForm.vehicle, zone: profileForm.zone.trim() }); };
   const submitIncident = () => { if (incident.notes.trim().length < 4) return toast.error("Describe brevemente lo ocurrido"); report.mutate({ type: incident.type, notes: incident.notes.trim(), orderCode: incident.orderCode.trim() || undefined }); };
   const submitSOS = () => { const send = (latitude?: number, longitude?: number) => triggerSOS.mutate({ orderCode: activeOrder?.id, latitude, longitude, note: sosNote.trim() || undefined }); if (!navigator.geolocation) return send(); navigator.geolocation.getCurrentPosition(({ coords }) => send(coords.latitude, coords.longitude), () => send(), { enableHighAccuracy: true, timeout: 12_000, maximumAge: 20_000 }); };
-  const upload = (type: DocumentType, event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; event.target.value = ""; if (!file) return; if (file.size > 5 * 1024 * 1024) return toast.error("El documento debe pesar menos de 5 MB"); if (!["image/jpeg", "image/png", "application/pdf"].includes(file.type)) return toast.error("Sube una imagen JPG/PNG o un PDF"); const reader = new FileReader(); reader.onload = () => uploadDocument.mutate({ type, fileName: file.name, mimeType: file.type as "image/jpeg" | "image/png" | "application/pdf", dataUrl: String(reader.result) }); reader.readAsDataURL(file); };
+  const upload = (type: DocumentType, event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || uploadDocument.isPending) return;
+    if (!file.size || file.size > 5 * 1024 * 1024) return toast.error("El documento debe pesar entre 1 byte y 5 MB");
+    if (file.name.length > 150) return toast.error("El nombre del archivo no puede superar 150 caracteres");
+    if (!["image/jpeg", "image/png", "application/pdf"].includes(file.type)) return toast.error("Sube una imagen JPG/PNG o un PDF");
+    const reader = new FileReader();
+    reader.onerror = () => toast.error("No pudimos leer el documento", { description: "Prueba con otro archivo." });
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      if (!dataUrl) return toast.error("No pudimos leer el documento", { description: "Prueba con otro archivo." });
+      uploadDocument.mutate({ type, fileName: file.name, mimeType: file.type as "image/jpeg" | "image/png" | "application/pdf", dataUrl });
+    };
+    reader.readAsDataURL(file);
+  };
   const acceptOffer = (offer: Offer) => claim.mutate({ id: offer.id });
 
   if (loading) return <div className="grid min-h-screen place-items-center bg-[#10251d]"><Radio className="h-7 w-7 animate-pulse text-[#9ed49f]" /></div>;

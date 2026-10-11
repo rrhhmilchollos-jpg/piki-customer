@@ -10,6 +10,7 @@ import { PikiSplash } from "@/components/PikiSplash";
 import { useAuth } from "@/_core/hooks/useAuth";
 import QRCode from "qrcode";
 import type { MenuItem, ModifierSelection, Restaurant } from "../../../server/catalog";
+import { isRestaurantComingSoon, isRestaurantOrderable } from "@shared/catalogAvailability";
 import {
   ArrowLeft,
   Heart,
@@ -124,31 +125,61 @@ function QuantityControl({ quantity, onChange }: { quantity: number; onChange: (
 }
 
 function RestaurantCard({ restaurant, onOpen }: { restaurant: Restaurant; onOpen: (restaurant: Restaurant) => void }) {
+  const orderable = isRestaurantOrderable(restaurant);
+  const comingSoon = isRestaurantComingSoon(restaurant);
+  const hasRating = typeof restaurant.rating === "number" && Number.isFinite(restaurant.rating);
+  const hasFee = typeof restaurant.fee === "number" && Number.isFinite(restaurant.fee);
+  const hasDeliveryDetails = Boolean(restaurant.eta) || hasFee;
+
+  const content = (
+    <>
+      <div className="relative h-44 overflow-hidden bg-[#f1ebe2]">
+        {restaurant.image ? (
+          <img src={restaurant.image} alt={`Productos de ${restaurant.name}`} className={`h-full w-full object-cover transition duration-500 ${orderable ? "group-hover:scale-105" : ""}`} />
+        ) : (
+          <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,#fff8d6,transparent_48%),linear-gradient(135deg,#e7e0d6,#f8f4ed)]" aria-hidden="true" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-transparent" />
+        {comingSoon ? (
+          <span className="absolute left-3 top-3 rounded-full bg-[#fff7ed] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#bd4f2e] shadow-sm">Disponible muy pronto</span>
+        ) : restaurant.promoted ? (
+          <span className="absolute left-3 top-3 rounded-full bg-[#fff7ed] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#bd4f2e] shadow-sm">Favorito local</span>
+        ) : null}
+        {hasRating && (
+          <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-[#171715] shadow-sm"><Star className="h-3.5 w-3.5 fill-[#f5aa31] text-[#f5aa31]" /> {restaurant.rating!.toFixed(1)} {typeof restaurant.reviews === "number" && <span className="font-medium text-[#6a746b]">({restaurant.reviews})</span>}</div>
+        )}
+      </div>
+      <div className="p-4">
+        <div className="mb-2 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-base font-extrabold tracking-[-0.02em] text-[#171715]">{restaurant.name}</h3>
+            {restaurant.cuisine && <p className="mt-0.5 text-sm text-[#657066]">{restaurant.cuisine}</p>}
+          </div>
+          {orderable ? <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[#859087] transition-transform group-hover:translate-x-1" /> : <span className="mt-1 shrink-0 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#a15d43]">Próximamente</span>}
+        </div>
+        {hasDeliveryDetails && (
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[#506056]">
+            {restaurant.eta && <span className="flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" /> {restaurant.eta}</span>}
+            {restaurant.eta && hasFee && <span className="h-1 w-1 rounded-full bg-[#b7c0b8]" />}
+            {hasFee && <span>{restaurant.fee === 0 ? "Envío gratis" : `Envío ${money.format(restaurant.fee!)}`}</span>}
+          </div>
+        )}
+      </div>
+    </>
+  );
+
   return (
-    <article className="card-lift group relative overflow-hidden rounded-[1.55rem] border border-[#eee4da] bg-white shadow-[0_5px_16px_rgba(55,45,35,.05)]">
-      <button className="block w-full text-left" onClick={() => onOpen(restaurant)}>
-        <div className="relative h-44 overflow-hidden">
-          <img src={restaurant.image} alt={`Productos de ${restaurant.name}`} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-transparent" />
-          {restaurant.promoted && <span className="absolute left-3 top-3 rounded-full bg-[#fff7ed] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.13em] text-[#bd4f2e] shadow-sm">Favorito local</span>}
-          <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-[#171715] shadow-sm"><Star className="h-3.5 w-3.5 fill-[#f5aa31] text-[#f5aa31]" /> {restaurant.rating.toFixed(1)} <span className="font-medium text-[#6a746b]">({restaurant.reviews})</span></div>
+    <article className={`card-lift group relative overflow-hidden rounded-[1.55rem] border border-[#eee4da] bg-white shadow-[0_5px_16px_rgba(55,45,35,.05)] ${orderable ? "" : "opacity-90"}`}>
+      {orderable ? (
+        <button className="block w-full text-left" onClick={() => onOpen(restaurant)}>
+          {content}
+        </button>
+      ) : (
+        <div aria-disabled="true" aria-label={`${restaurant.name}. Disponible muy pronto`}>
+          {content}
         </div>
-        <div className="p-4">
-          <div className="mb-2 flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-base font-extrabold tracking-[-0.02em] text-[#171715]">{restaurant.name}</h3>
-              <p className="mt-0.5 text-sm text-[#657066]">{restaurant.cuisine}</p>
-            </div>
-            <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[#859087] transition-transform group-hover:translate-x-1" />
-          </div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#506056]">
-            <span className="flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" /> {restaurant.eta}</span>
-            <span className="h-1 w-1 rounded-full bg-[#b7c0b8]" />
-            <span>{restaurant.fee === 0 ? "Envío gratis" : `Envío ${money.format(restaurant.fee)}`}</span>
-          </div>
-        </div>
-      </button>
-      <button onClick={() => { const key = "piki-favorites"; const saved = JSON.parse(localStorage.getItem(key) || "[]") as string[]; const next = saved.includes(restaurant.id) ? saved.filter((id) => id !== restaurant.id) : [...saved, restaurant.id]; localStorage.setItem(key, JSON.stringify(next)); toast.success(next.includes(restaurant.id) ? "Guardado en favoritos" : "Eliminado de favoritos"); }} aria-label="Guardar restaurante" className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-[#d95737] shadow-sm transition hover:scale-105"><Heart className="h-4 w-4" /></button>
+      )}
+      {orderable && <button onClick={() => { const key = "piki-favorites"; const saved = JSON.parse(localStorage.getItem(key) || "[]") as string[]; const next = saved.includes(restaurant.id) ? saved.filter((id) => id !== restaurant.id) : [...saved, restaurant.id]; localStorage.setItem(key, JSON.stringify(next)); toast.success(next.includes(restaurant.id) ? "Guardado en favoritos" : "Eliminado de favoritos"); }} aria-label="Guardar restaurante" className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-[#d95737] shadow-sm transition hover:scale-105"><Heart className="h-4 w-4" /></button>}
     </article>
   );
 }
@@ -279,6 +310,11 @@ export default function Home() {
     item: MenuItem,
     selections: ModifierSelection[]
   ) => {
+    if (!isRestaurantOrderable(restaurant)) {
+      setCustomizing(null);
+      toast.error("Este establecimiento estará disponible muy pronto.");
+      return;
+    }
     const key = selectionKey(item.id, selections);
     const unitPrice = getMenuItemUnitPrice(item, selections);
     const newLine: CartLine = { key, item, selections, quantity: 1, unitPrice };
@@ -320,6 +356,12 @@ export default function Home() {
 
   const submitOrder = () => {
     if (!cartRestaurant || !cart.length) return;
+    const currentRestaurant = restaurants?.find((restaurant) => restaurant.id === cartRestaurant.id);
+    if (!isRestaurantOrderable(currentRestaurant ?? cartRestaurant)) {
+      setCheckoutOpen(false);
+      toast.error("Este establecimiento estará disponible muy pronto.");
+      return;
+    }
     if (!isAuthenticated) {
       toast.error("Inicia sesión para realizar el pedido", { description: "Tu cesta se conservará mientras accedes a tu cuenta de cliente." });
       window.dispatchEvent(new CustomEvent("piki:open-customer-auth"));
@@ -439,7 +481,7 @@ export default function Home() {
 
       <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-[#e8ded4] bg-[#FFFDF5]/95 px-4 py-3 backdrop-blur lg:hidden"><button onClick={() => setCartOpen(true)} className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-4 py-3 text-white shadow-lg"><span className="flex items-center gap-2 text-sm font-bold"><ShoppingBag className="h-4 w-4" /> {cartCount ? `${cartCount} en tu cesta` : "Tu cesta está vacía"}</span><span className="text-sm font-extrabold">{cartCount ? money.format(total) : "Ver cesta"}</span></button></div>
 
-      {selectedRestaurant && (
+      {selectedRestaurant && isRestaurantOrderable(selectedRestaurant) && (
         <div
           className="fixed inset-0 z-40 flex items-center justify-center bg-[#171715]/45 p-0 backdrop-blur-sm sm:p-4"
           onMouseDown={() => setSelectedRestaurant(null)}
@@ -449,11 +491,15 @@ export default function Home() {
             onMouseDown={event => event.stopPropagation()}
           >
             <div className="relative h-[260px] shrink-0 overflow-hidden sm:h-[290px]">
-              <img
-                src={selectedRestaurant.image}
-                alt={`Imagen de ${selectedRestaurant.name}`}
-                className="h-full w-full object-cover"
-              />
+              {selectedRestaurant.image ? (
+                <img
+                  src={selectedRestaurant.image}
+                  alt={`Imagen de ${selectedRestaurant.name}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,#fff8d6,transparent_48%),linear-gradient(135deg,#e7e0d6,#f8f4ed)]" aria-hidden="true" />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-[#171715]/80 via-[#171715]/10 to-black/10" />
               <button
                 onClick={() => setSelectedRestaurant(null)}
@@ -463,34 +509,36 @@ export default function Home() {
                 <X className="h-5 w-5" />
               </button>
               <div className="absolute bottom-5 left-6 right-6 text-white sm:left-8 sm:right-8">
-                <p className="mb-2 text-xs font-extrabold uppercase tracking-[.16em] text-[#FFE88A]">
-                  {selectedRestaurant.cuisine} · {selectedRestaurant.category}
-                </p>
+                {(selectedRestaurant.cuisine || selectedRestaurant.category) && (
+                  <p className="mb-2 text-xs font-extrabold uppercase tracking-[.16em] text-[#FFE88A]">
+                    {[selectedRestaurant.cuisine, selectedRestaurant.category].filter(Boolean).join(" · ")}
+                  </p>
+                )}
                 <h1 className="font-display text-4xl font-semibold leading-none tracking-[-.05em] sm:text-5xl">
                   {selectedRestaurant.name}
                 </h1>
-                <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-bold">
-                  <span className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-[#f9b43d] text-[#f9b43d]" />{" "}
-                    {selectedRestaurant.rating.toFixed(1)} (
-                    {selectedRestaurant.reviews})
-                  </span>
-                  <span>·</span>
-                  <span>{selectedRestaurant.eta}</span>
-                  <span>·</span>
-                  <span>
-                    {selectedRestaurant.fee === 0
-                      ? "Envío gratis"
-                      : `Envío ${money.format(selectedRestaurant.fee)}`}
-                  </span>
-                </div>
+                {(typeof selectedRestaurant.rating === "number" || selectedRestaurant.eta || typeof selectedRestaurant.fee === "number") && (
+                  <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-bold">
+                    {typeof selectedRestaurant.rating === "number" && (
+                      <span className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-[#f9b43d] text-[#f9b43d]" />
+                        {selectedRestaurant.rating.toFixed(1)}
+                        {typeof selectedRestaurant.reviews === "number" && ` (${selectedRestaurant.reviews})`}
+                      </span>
+                    )}
+                    {selectedRestaurant.eta && <span>{selectedRestaurant.eta}</span>}
+                    {typeof selectedRestaurant.fee === "number" && <span>{selectedRestaurant.fee === 0 ? "Envío gratis" : `Envío ${money.format(selectedRestaurant.fee)}`}</span>}
+                  </div>
+                )}
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-8 sm:py-7">
               <div className="flex items-start justify-between gap-4">
-                <p className="max-w-2xl text-sm leading-relaxed text-[#647166] sm:text-base">
-                  {selectedRestaurant.tagline}
-                </p>
+                {selectedRestaurant.tagline && (
+                  <p className="max-w-2xl text-sm leading-relaxed text-[#647166] sm:text-base">
+                    {selectedRestaurant.tagline}
+                  </p>
+                )}
                 <span className="hidden shrink-0 rounded-full bg-[#FFF2AD] px-3 py-1.5 text-xs font-bold text-[#171715] sm:inline-flex">
                   Entrega sostenible
                 </span>
