@@ -13,10 +13,10 @@
   "orientation": "portrait",
   "categories": ["business", "food", "productivity"],
   "icons": [
-    { "src": "/piki-mascot-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/piki-mascot-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/piki-partners-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/piki-partners-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
   "shortcuts": [
-    { "name": "Pedidos entrantes", "short_name": "Pedidos", "url": "/partners", "icons": [{ "src": "/piki-mascot-192.png", "sizes": "192x192" }] }
+    { "name": "Pedidos entrantes", "short_name": "Pedidos", "url": "/partners", "icons": [{ "src": "/piki-partners-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }
