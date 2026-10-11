@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Loader2, MessageSquare, Send } from "lucide-react";
+import { Loader2, MessageSquare, Phone, Send } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 
@@ -51,7 +51,7 @@ export default function CustomerSupport() {
 
   return <div className="mt-7 space-y-7">
     <section className="rounded-2xl border border-[#e3d9cf] bg-white p-5">
-      <div className="flex items-start gap-3"><MessageSquare className="mt-0.5 h-5 w-5 text-[#dc5c35]" /><div><p className="text-xs font-bold uppercase tracking-[.12em] text-[#6b7a6b]">Atención PIKI</p><h3 className="font-display text-2xl font-semibold">¿En qué podemos ayudarte?</h3><p className="mt-1 text-sm leading-relaxed text-[#69766c]">Cuéntanos qué ha ocurrido y nuestro equipo te responderá desde el centro de soporte.</p></div></div>
+      <div className="flex items-start gap-3"><MessageSquare className="mt-0.5 h-5 w-5 text-[#dc5c35]" /><div><p className="text-xs font-bold uppercase tracking-[.12em] text-[#6b7a6b]">Atención PIKI</p><h3 className="font-display text-2xl font-semibold">¿En qué podemos ayudarte?</h3><p className="mt-1 text-sm leading-relaxed text-[#69766c]">Cuéntanos qué ha ocurrido y nuestro equipo te responderá desde el centro de soporte.</p><a href="tel:+34960500685" className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#e3d9cf] bg-[#fffaf0] px-3 py-2 text-xs font-extrabold text-[#314037] transition hover:border-[#FFD72E]"><Phone className="h-3.5 w-3.5 text-[#dc5c35]" /> Soporte PIKI · 960 500 685</a></div></div>
       <form className="mt-5 space-y-4" onSubmit={submit}>
         <div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="mb-1.5 block text-sm font-bold text-[#314037]">Tipo de incidencia</span><select value={category} onChange={(event) => setCategory(event.target.value as SupportCategory)} className="w-full rounded-xl border border-[#ded5ca] bg-white px-3.5 py-3 text-sm outline-none focus:border-[#FFD72E]">{Object.entries(categoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label className="block"><span className="mb-1.5 block text-sm font-bold text-[#314037]">Prioridad</span><select value={priority} onChange={(event) => setPriority(event.target.value as SupportPriority)} className="w-full rounded-xl border border-[#ded5ca] bg-white px-3.5 py-3 text-sm outline-none focus:border-[#FFD72E]"><option value="low">Baja</option><option value="normal">Normal</option><option value="high">Alta</option></select></label></div>
         <label className="block"><span className="mb-1.5 block text-sm font-bold text-[#314037]">Asunto</span><input required minLength={3} maxLength={180} value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Ej. No puedo localizar mi pedido" className="w-full rounded-xl border border-[#ded5ca] bg-white px-3.5 py-3 text-sm outline-none focus:border-[#FFD72E]" /></label>

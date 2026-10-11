@@ -7,6 +7,7 @@ import { MapView } from "@/components/Map";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import CustomerNotificationCenter from "@/components/CustomerNotificationCenter";
 import { PikiSplash } from "@/components/PikiSplash";
+import PikiPlusPilot from "@/components/PikiPlusPilot";
 import { useAuth } from "@/_core/hooks/useAuth";
 import QRCode from "qrcode";
 import type { MenuItem, ModifierSelection, Restaurant } from "../../../server/catalog";
@@ -404,6 +405,7 @@ export default function Home() {
           <nav className="hidden items-center gap-7 text-sm font-bold text-[#536056] md:flex">
             <button onClick={() => document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" })} className="transition hover:text-[#171715]">Explorar</button>
             <button onClick={() => document.getElementById("restaurantes")?.scrollIntoView({ behavior: "smooth" })} className="transition hover:text-[#171715]">Restaurantes</button>
+            <button onClick={() => document.getElementById("piki-plus")?.scrollIntoView({ behavior: "smooth" })} className="transition hover:text-[#171715]">PIKI Plus</button>
           </nav>
           <div className="flex items-center gap-2 sm:gap-3">
             <button onClick={openAddressDialog} className="hidden max-w-[240px] items-center gap-2 rounded-full border border-[#e5dbd0] bg-white px-3 py-2 text-sm font-semibold text-[#304037] shadow-sm transition hover:border-[#bdc9b9] sm:flex"><MapPin className="h-4 w-4 shrink-0 text-[#FFD72E]" /><span className="truncate">{address}</span><ChevronDown className="h-3.5 w-3.5" /></button>
@@ -431,9 +433,10 @@ export default function Home() {
             </div>
             <div className="relative min-h-[320px] overflow-hidden bg-[#171715] lg:min-h-full"><img src="/piki-hero.webp" alt="Piki: Comida a domicilio: avispa repartidora, comida y app" className="absolute inset-0 h-full w-full object-cover object-center transition duration-700 hover:scale-[1.02]" /><div className="absolute inset-0 bg-gradient-to-r from-[#FFD72E]/18 via-transparent to-[#171715]/15" /><div className="absolute bottom-5 right-5 rounded-2xl bg-[#FFFDF5]/95 p-3.5 shadow-xl backdrop-blur"><div className="flex items-center gap-2"><div className="grid h-9 w-9 place-items-center rounded-xl bg-[#FFD72E] text-[#171715]"><Bike className="h-5 w-5" /></div><div><p className="text-xs font-bold text-[#667267]">Tiempo medio</p><p className="text-sm font-extrabold text-[#171715]">Menos de 30 min</p></div></div></div></div>
           </div>
-        </section>
+	      </section>
+	      <PikiPlusPilot />
 
-        <section id="explorar" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+	      <section id="explorar" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <SectionTitle eyebrow="Elige tu antojo" title="¿Qué te apetece hoy?" />
           <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-4 sm:px-0 lg:grid-cols-7">
             {categories.map(({ label, icon: Icon, hue }) => (
