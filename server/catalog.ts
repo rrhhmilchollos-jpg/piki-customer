@@ -85,6 +85,7 @@ export type OrderQuote = {
     itemId: string;
     name: string;
     quantity: number;
+    partnerUnitCents: number;
     unitCents: number;
     selections: QuotedSelection[];
   }>;
@@ -647,6 +648,7 @@ export function buildOrderQuote(
       itemId: item.id,
       name: optionSummary ? `${item.name} · ${optionSummary}` : item.name,
       quantity: line.quantity,
+      partnerUnitCents,
       unitCents,
       selections,
     };

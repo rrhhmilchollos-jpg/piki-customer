@@ -57,7 +57,7 @@ export async function syncOperationalOrder(
     itemId: line.itemId,
     name: line.name,
     quantity: line.quantity,
-    unitPriceCents: line.unitCents,
+    unitPriceCents: line.partnerUnitCents,
   }));
 
   try {
