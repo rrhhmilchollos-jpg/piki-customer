@@ -404,7 +404,6 @@ export default function Home() {
           <nav className="hidden items-center gap-7 text-sm font-bold text-[#536056] md:flex">
             <button onClick={() => document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" })} className="transition hover:text-[#171715]">Explorar</button>
             <button onClick={() => document.getElementById("restaurantes")?.scrollIntoView({ behavior: "smooth" })} className="transition hover:text-[#171715]">Restaurantes</button>
-            <button onClick={() => toast("Próximamente", { description: "Las ventajas PIKI Plus estarán disponibles pronto." })} className="transition hover:text-[#171715]">PIKI Plus</button>
           </nav>
           <div className="flex items-center gap-2 sm:gap-3">
             <button onClick={openAddressDialog} className="hidden max-w-[240px] items-center gap-2 rounded-full border border-[#e5dbd0] bg-white px-3 py-2 text-sm font-semibold text-[#304037] shadow-sm transition hover:border-[#bdc9b9] sm:flex"><MapPin className="h-4 w-4 shrink-0 text-[#FFD72E]" /><span className="truncate">{address}</span><ChevronDown className="h-3.5 w-3.5" /></button>
