@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { loadIndexableRestaurants, RESTAURANT_DIRECTORY_PATH } from "./seo-restaurants.mjs";
 
 const root = process.env.PIKI_SEO_ROOT || process.cwd();
 const dist = path.join(root, "dist", "public");
@@ -8,6 +9,7 @@ const origin = "https://pikidelivery.com";
 const buildNow = new Date(process.env.PIKI_SEO_NOW || Date.now());
 const lastmod = buildNow.toISOString().slice(0, 10);
 const blog = JSON.parse(fs.readFileSync(path.join(root, "shared", "blog-posts.json"), "utf8"));
+const indexableRestaurants = await loadIndexableRestaurants({ root });
 
 const pages = [
   {
@@ -41,17 +43,17 @@ const pages = [
   },
   {
     path: "/restaurantes-a-domicilio-xativa",
-    title: "Restaurantes con delivery en Xàtiva | PIKI Delivery",
-    description: "Información para restaurantes y comercios de Xàtiva que quieren solicitar una posible colaboración con PIKI Delivery.",
-    heading: "Restaurantes y delivery en Xàtiva",
-    eyebrow: "Para comercios · PIKI Delivery",
-    lead: "Los restaurantes y comercios de Xàtiva pueden solicitar información para valorar su incorporación a PIKI Delivery.",
+    title: "Restaurantes a domicilio en Xàtiva | PIKI Delivery",
+    description: "Consulta las fichas públicas de restaurantes operativos en Xàtiva y comprueba la disponibilidad para tu dirección con PIKI Delivery.",
+    heading: "Restaurantes a domicilio en Xàtiva",
+    eyebrow: "PIKI Delivery · Xàtiva",
+    lead: "Explora las fichas públicas de los restaurantes operativos que PIKI puede mostrar en Xàtiva. La disponibilidad final se confirma siempre para tu dirección.",
     sections: [
-      ["Solicita información", "Comparte el nombre del establecimiento, una persona de contacto, teléfono y dirección. El equipo responsable revisará la solicitud."],
-      ["Validación antes del alta", "Enviar una solicitud no activa un establecimiento. El equipo confirma los datos, el catálogo, las condiciones y la disponibilidad operativa antes de publicar un local."],
-      ["Oferta actualizada", "La carta, los horarios, las imágenes y las condiciones de cada comercio deben revisarse antes de quedar disponibles para clientes."],
+      ["Fichas de restaurantes", "Cada ficha enlaza a una página propia con la información pública que PIKI tiene disponible para ese comercio. No se crean URLs para locales próximos o no operativos."],
+      ["Disponibilidad por dirección", "La carta, los precios, la cobertura y el tiempo estimado dependen de la dirección y del momento. Antes de confirmar, revisa siempre la información del checkout."],
+      ["¿Tienes un negocio?", "Si quieres valorar una colaboración, PIKI recibe solicitudes de restaurantes y comercios desde la página de partners."],
     ],
-    cta: ["Solicitar información para mi negocio", "/unete#partners"],
+    cta: ["Consultar la oferta para mi dirección", "/"],
   },
   {
     path: "/trabajo-rider-xativa",
@@ -161,6 +163,115 @@ function jsonLd(page) {
       { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "PIKI Delivery", item: `${origin}/` }, { "@type": "ListItem", position: 2, name: page.heading, item: pageUrl }] },
     ],
   }).replace(/</g, "\\u003c");
+}
+
+function restaurantTitle(restaurant) {
+  return `${restaurant.name.slice(0, 48)} | Delivery en Xàtiva | PIKI`;
+}
+
+function restaurantDescription(restaurant) {
+  const cuisine = restaurant.cuisine ? ` de cocina ${restaurant.cuisine}` : "";
+  return `Consulta la ficha de ${restaurant.name}${cuisine} en Xàtiva y comprueba la disponibilidad para tu dirección con PIKI.`;
+}
+
+function restaurantJsonLd(restaurant) {
+  const pageUrl = absolute(restaurant.path);
+  const data = {
+    "@context": "https://schema.org",
+    "@graph": [
+      { "@type": "Organization", "@id": `${origin}/#organization`, name: "PIKI Delivery", alternateName: "PIKI", url: `${origin}/`, logo: `${origin}/piki-delivery-512.png` },
+      { "@type": "WebSite", "@id": `${origin}/#website`, url: `${origin}/`, name: "PIKI Delivery", inLanguage: "es-ES", publisher: { "@id": `${origin}/#organization` } },
+      { "@type": "WebPage", "@id": `${pageUrl}#webpage`, url: pageUrl, name: restaurantTitle(restaurant), description: restaurantDescription(restaurant), inLanguage: "es-ES", isPartOf: { "@id": `${origin}/#website` } },
+      {
+        "@type": "Restaurant",
+        "@id": `${pageUrl}#restaurant`,
+        name: restaurant.name,
+        url: pageUrl,
+        description: restaurant.tagline || restaurantDescription(restaurant),
+        address: { "@type": "PostalAddress", streetAddress: restaurant.address, addressLocality: restaurant.locality, addressRegion: "Valencia", postalCode: "46800", addressCountry: "ES" },
+        ...(restaurant.cuisine ? { servesCuisine: restaurant.cuisine } : {}),
+        ...(restaurant.phone ? { telephone: restaurant.phone } : {}),
+        ...(restaurant.image ? { image: [restaurant.image] } : {}),
+        ...(restaurant.coordinates ? { geo: { "@type": "GeoCoordinates", latitude: restaurant.coordinates.latitude, longitude: restaurant.coordinates.longitude } } : {}),
+        ...(restaurant.menu.length ? { menu: `${pageUrl}#carta` } : {}),
+        parentOrganization: { "@id": `${origin}/#organization` },
+      },
+      { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "PIKI Delivery", item: `${origin}/` }, { "@type": "ListItem", position: 2, name: "Restaurantes a domicilio en Xàtiva", item: absolute(RESTAURANT_DIRECTORY_PATH) }, { "@type": "ListItem", position: 3, name: restaurant.name, item: pageUrl }] },
+    ],
+  };
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
+function directoryJsonLd(page, restaurants) {
+  const pageUrl = absolute(page.path);
+  const graph = [
+    { "@type": "Organization", "@id": `${origin}/#organization`, name: "PIKI Delivery", alternateName: "PIKI", url: `${origin}/`, logo: `${origin}/piki-delivery-512.png` },
+    { "@type": "WebSite", "@id": `${origin}/#website`, url: `${origin}/`, name: "PIKI Delivery", inLanguage: "es-ES", publisher: { "@id": `${origin}/#organization` } },
+    { "@type": "WebPage", "@id": `${pageUrl}#webpage`, url: pageUrl, name: page.title, description: page.description, inLanguage: "es-ES", isPartOf: { "@id": `${origin}/#website` } },
+    { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "PIKI Delivery", item: `${origin}/` }, { "@type": "ListItem", position: 2, name: page.heading, item: pageUrl }] },
+  ];
+  if (restaurants.length >= 2) {
+    graph.push({ "@type": "ItemList", "@id": `${pageUrl}#listado`, name: "Restaurantes a domicilio en Xàtiva", itemListElement: restaurants.map((restaurant, index) => ({ "@type": "ListItem", position: index + 1, url: absolute(restaurant.path) })) });
+  }
+  return JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replace(/</g, "\\u003c");
+}
+
+function restaurantDirectoryHtml(page, restaurants) {
+  const pageUrl = absolute(page.path);
+  const nav = links.map(([label, href]) => `<a href="${href}">${esc(label)}</a>`).join("\n");
+  const listings = restaurants.length
+    ? `<section class="directory" aria-labelledby="listado"><p class="eyebrow">Fichas verificadas</p><h2 id="listado">Restaurantes operativos con ficha pública</h2><p>Estas fichas se generan solo para comercios activos, aprobados, con dirección pública y disponibilidad operativa. Consulta siempre la oferta final para tu dirección.</p><div class="restaurant-grid">${restaurants.map((restaurant) => `<article class="restaurant-card">${restaurant.image ? `<img src="${esc(restaurant.image)}" alt="${esc(restaurant.name)}" loading="lazy">` : ""}<div><p class="label">${esc(restaurant.cuisine || "Restaurante")}</p><h3><a href="${restaurant.path}">${esc(restaurant.name)}</a></h3><p>${esc(restaurant.tagline || `Consulta la ficha de ${restaurant.name}.`)}</p><a class="more" href="${restaurant.path}">Ver ficha del restaurante →</a></div></article>`).join("\n")}</div></section>`
+    : `<section class="directory" aria-labelledby="estado"><p class="eyebrow">Actualización operativa</p><h2 id="estado">Las fichas se publican cuando hay información completa</h2><p>Ahora mismo no hay fichas individuales de restaurantes operativos publicadas en esta web. PIKI no crea páginas para comercios próximos, inactivos o con datos incompletos.</p><a class="secondary" href="/">Comprobar opciones para mi dirección</a></section>`;
+  return `<!doctype html>
+<html lang="es-ES">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="description" content="${esc(page.description)}">
+  <meta name="theme-color" content="#FFD72E">
+  <link rel="canonical" href="${pageUrl}">
+  <link rel="alternate" hreflang="es-ES" href="${pageUrl}">
+  <link rel="alternate" hreflang="x-default" href="${pageUrl}">
+  <link rel="sitemap" type="application/xml" href="${origin}/sitemap.xml">
+  <meta property="og:type" content="website"><meta property="og:site_name" content="PIKI Delivery"><meta property="og:locale" content="es_ES"><meta property="og:title" content="${esc(page.title)}"><meta property="og:description" content="${esc(page.description)}"><meta property="og:url" content="${pageUrl}"><meta property="og:image" content="${origin}/piki-hero.webp">
+  <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(page.title)}"><meta name="twitter:description" content="${esc(page.description)}"><meta name="twitter:image" content="${origin}/piki-hero.webp">
+  <script type="application/ld+json">${directoryJsonLd(page, restaurants)}</script>
+  <title>${esc(page.title)}</title>
+  <style>body{margin:0;background:#fffdf5;color:#171715;font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1040px;margin:auto;padding:0 22px}.nav,.footer{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}.nav{padding:22px 0;border-bottom:1px solid #ece3d9}.brand{font-size:26px;font-weight:900;letter-spacing:-.06em;color:#171715;text-decoration:none}.brand span{color:#dc5c35}.links{display:flex;gap:14px;flex-wrap:wrap}.links a{font-size:14px;font-weight:700;color:#4e5a50;text-decoration:none}.hero{padding:76px 0 44px}.eyebrow,.label{display:inline-block;background:#fff4be;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.hero h1,.directory h2{max-width:850px;margin:20px 0 18px;font-size:clamp(42px,7vw,76px);line-height:.96;letter-spacing:-.07em}.lead,.directory>p{max-width:760px;font-size:19px;color:#536057}.cta,.secondary{display:inline-block;margin-top:24px;border-radius:999px;padding:13px 20px;font-weight:800;text-decoration:none}.cta{background:#171715;color:#ffd72e}.secondary{background:#ffd72e;color:#171715}.directory{margin:14px 0 64px;border-radius:28px;background:#f7f1e7;padding:34px}.directory h2{font-size:clamp(30px,5vw,52px)}.restaurant-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:28px}.restaurant-card{overflow:hidden;border:1px solid #eadfd4;border-radius:22px;background:#fff}.restaurant-card img{width:100%;height:180px;object-fit:cover}.restaurant-card>div{padding:22px}.restaurant-card h3{margin:8px 0;font-size:26px;line-height:1.02;letter-spacing:-.05em}.restaurant-card h3 a{color:inherit;text-decoration:none}.restaurant-card p{color:#5b695f}.label{background:#fff4be;font-size:10px}.more{font-weight:850;color:#171715}.footer{border-top:1px solid #ece3d9;padding:28px 0;color:#607065;font-size:14px}@media(max-width:760px){.hero{padding-top:50px}.restaurant-grid{grid-template-columns:1fr}.directory{padding:24px}.links a{font-size:12px}}</style>
+</head>
+<body>
+  <header class="wrap"><nav class="nav" aria-label="Navegación principal"><a class="brand" href="/" aria-label="PIKI Delivery, inicio">PIKI<span>.</span></a><div class="links">${nav}</div></nav></header>
+  <main class="wrap"><section class="hero"><span class="eyebrow">${esc(page.eyebrow)}</span><h1>${esc(page.heading)}</h1><p class="lead">${esc(page.lead)}</p><a class="cta" href="${page.cta[1]}">${esc(page.cta[0])}</a></section>${listings}</main>
+  <footer class="wrap footer">PIKI Delivery · Xàtiva, Valencia, España · <a href="${origin}/">Web oficial</a></footer>
+</body>
+</html>`;
+}
+
+function restaurantDetailHtml(restaurant) {
+  const pageUrl = absolute(restaurant.path);
+  const title = restaurantTitle(restaurant);
+  const description = restaurantDescription(restaurant);
+  const menu = restaurant.menu.length
+    ? `<section class="menu" id="carta"><p class="eyebrow">Carta informativa</p><h2>Productos publicados por ${esc(restaurant.name)}</h2><p>Los productos y precios pueden cambiar. Revisa el catálogo y el checkout antes de confirmar el pedido.</p><div class="menu-grid">${restaurant.menu.map((item) => `<article><h3>${esc(item.name)}</h3>${item.description ? `<p>${esc(item.description)}</p>` : ""}${item.price !== null ? `<strong>${new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(item.price)}</strong>` : ""}</article>`).join("\n")}</div></section>`
+    : "";
+  const image = restaurant.image ? `<img class="hero-image" src="${esc(restaurant.image)}" alt="${esc(restaurant.name)}">` : "";
+  return `<!doctype html>
+<html lang="es-ES">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"><meta name="description" content="${esc(description)}"><meta name="theme-color" content="#FFD72E">
+  <link rel="canonical" href="${pageUrl}"><link rel="alternate" hreflang="es-ES" href="${pageUrl}"><link rel="alternate" hreflang="x-default" href="${pageUrl}"><link rel="sitemap" type="application/xml" href="${origin}/sitemap.xml">
+  <meta property="og:type" content="website"><meta property="og:site_name" content="PIKI Delivery"><meta property="og:locale" content="es_ES"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${pageUrl}">${restaurant.image ? `<meta property="og:image" content="${esc(restaurant.image)}">` : ""}
+  <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(description)}">${restaurant.image ? `<meta name="twitter:image" content="${esc(restaurant.image)}">` : ""}
+  <script type="application/ld+json">${restaurantJsonLd(restaurant)}</script><title>${esc(title)}</title>
+  <style>body{margin:0;background:#fffdf5;color:#171715;font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1040px;margin:auto;padding:0 22px}.nav,.footer{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}.nav{padding:22px 0;border-bottom:1px solid #ece3d9}.brand{font-size:26px;font-weight:900;letter-spacing:-.06em;color:#171715;text-decoration:none}.brand span{color:#dc5c35}.links{display:flex;gap:14px;flex-wrap:wrap}.links a{font-size:14px;font-weight:700;color:#4e5a50;text-decoration:none}.back{display:inline-block;margin-top:30px;font-size:14px;font-weight:800;color:#435247}.hero{display:grid;grid-template-columns:minmax(0,1.1fr)minmax(300px,.9fr);gap:34px;padding:36px 0 54px}.eyebrow{display:inline-block;background:#fff4be;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.hero h1{margin:18px 0;font-size:clamp(42px,7vw,76px);line-height:.94;letter-spacing:-.075em}.lead{font-size:19px;color:#536057}.hero-image{width:100%;min-height:300px;height:100%;object-fit:cover;border-radius:28px;box-shadow:0 14px 28px rgba(62,48,30,.12)}.facts,.menu{margin:0 0 54px;border-radius:28px;padding:30px;background:#f7f1e7}.facts h2,.menu h2{margin:10px 0;font-size:36px;line-height:1.04;letter-spacing:-.06em}.facts address{font-style:normal;font-size:18px;color:#45554a}.cta{display:inline-block;margin-top:18px;border-radius:999px;padding:13px 20px;background:#171715;color:#ffd72e;font-weight:800;text-decoration:none}.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:24px}.menu-grid article{border-radius:18px;background:#fff;padding:20px}.menu-grid h3{margin:0;font-size:21px;line-height:1.1}.menu-grid p{color:#5b695f}.menu-grid strong{font-size:17px}.footer{border-top:1px solid #ece3d9;padding:28px 0;color:#607065;font-size:14px}@media(max-width:760px){.hero{grid-template-columns:1fr;padding-top:24px}.hero-image{max-height:330px;min-height:220px;order:-1}.menu-grid{grid-template-columns:1fr}.links a{font-size:12px}}</style>
+</head>
+<body>
+  <header class="wrap"><nav class="nav" aria-label="Navegación principal"><a class="brand" href="/" aria-label="PIKI Delivery, inicio">PIKI<span>.</span></a><div class="links"><a href="${RESTAURANT_DIRECTORY_PATH}">Restaurantes en Xàtiva</a><a href="/comida-a-domicilio-xativa">Comida a domicilio</a><a href="/unete">Únete a PIKI</a></div></nav></header>
+  <main class="wrap"><a class="back" href="${RESTAURANT_DIRECTORY_PATH}">← Todos los restaurantes de Xàtiva</a><section class="hero"><div><span class="eyebrow">${esc(restaurant.cuisine || "Restaurante")} · ${esc(restaurant.locality)}</span><h1>${esc(restaurant.name)}</h1><p class="lead">${esc(restaurant.tagline || `Consulta la información pública de ${restaurant.name} y comprueba si hay opciones disponibles para tu dirección.`)}</p><a class="cta" href="/">Consultar disponibilidad para mi dirección</a></div>${image}</section><section class="facts"><p class="eyebrow">Información del establecimiento</p><h2>${esc(restaurant.name)} en Xàtiva</h2><address>${esc(restaurant.address)}</address>${restaurant.phone ? `<p>Teléfono: <a href="tel:${esc(restaurant.phone)}">${esc(restaurant.phone)}</a></p>` : ""}<p>La disponibilidad, los tiempos de entrega y las condiciones se muestran al consultar una dirección y pueden variar.</p></section>${menu}</main>
+  <footer class="wrap footer">PIKI Delivery · Xàtiva, Valencia, España · <a href="${origin}/">Web oficial</a></footer>
+</body>
+</html>`;
 }
 
 function pageHtml(page) {
@@ -389,8 +500,16 @@ fs.mkdirSync(dist, { recursive: true });
 const appTemplate = fs.readFileSync(path.join(dist, "index.html"), "utf8");
 for (const page of pages) {
   // Home and onboarding retain their bundles because they contain ordering and application forms.
-  if (page.path === "/" || page.path === "/unete") continue;
+  if (page.path === "/" || page.path === "/unete" || page.path === RESTAURANT_DIRECTORY_PATH) continue;
   writeStatic(path.join(page.path.slice(1), "index.html"), pageHtml(page));
+}
+
+const restaurantDirectory = pages.find((page) => page.path === RESTAURANT_DIRECTORY_PATH);
+if (restaurantDirectory) {
+  writeStatic(path.join(RESTAURANT_DIRECTORY_PATH.slice(1), "index.html"), restaurantDirectoryHtml(restaurantDirectory, indexableRestaurants));
+}
+for (const restaurant of indexableRestaurants) {
+  writeStatic(path.join(restaurant.path.slice(1), "index.html"), restaurantDetailHtml(restaurant));
 }
 
 const joinPage = pages.find((page) => page.path === "/unete");
@@ -409,6 +528,7 @@ for (const page of staticBlogPages) writeStatic(path.join(page.path.slice(1), "i
 
 const sitemapPages = [
   ...pages.map((page) => ({ path: page.path, lastmod: lastmod, priority: page.path === "/" ? "1.0" : "0.8" })),
+  ...indexableRestaurants.map((restaurant) => ({ path: restaurant.path, lastmod, priority: "0.7" })),
   { path: "/noticias", lastmod, priority: "0.8" },
   ...blog.articles.map((post) => ({ path: blogPath(post), lastmod: post.dateModified, priority: "0.7" })),
   ...staticBlogPages.map((page) => ({ path: page.path, lastmod, priority: "0.5" })),
@@ -419,7 +539,8 @@ const newsSitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http
 const rss = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>Noticias PIKI</title><link>${origin}/noticias</link><description>Información corporativa y guías prácticas publicadas por el Equipo PIKI.</description><language>es-es</language><lastBuildDate>${buildNow.toUTCString()}</lastBuildDate>${blog.articles.map((post) => `<item><title>${xmlEsc(post.title)}</title><link>${xmlEsc(absolute(blogPath(post)))}</link><guid isPermaLink="true">${xmlEsc(absolute(blogPath(post)))}</guid><description>${xmlEsc(post.description)}</description><dc:creator>Equipo PIKI</dc:creator><pubDate>${isoDateToRfc822(post.datePublished)}</pubDate><category>${xmlEsc(post.type)}</category></item>`).join("")}</channel></rss>\n`;
 const robots = `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /auth/\nDisallow: /checkout/\nDisallow: /admin\nDisallow: /fleet/\nDisallow: /rider/\nDisallow: /riders\nDisallow: /partners\n\nSitemap: ${origin}/sitemap.xml\nSitemap: ${origin}/news-sitemap.xml\n`;
 const blogListing = blog.articles.map((post) => `- [${post.title}](${absolute(blogPath(post))}): ${post.description}`).join("\n");
-const llms = `# PIKI Delivery\n\n> Plataforma de comida a domicilio vinculada a Xàtiva, Valencia, España.\n\n## Información verificable\n\n- Nombre: PIKI Delivery\n- Municipio de referencia: Xàtiva, Valencia, España\n- Servicio: consultar restaurantes y opciones de comida a domicilio disponibles según la dirección introducida por el cliente.\n- No afirmar que una zona, comercio, horario, precio, tiempo o pedido está disponible sin validarlo en el servicio oficial.\n\n## Páginas oficiales\n\n${pages.map((page) => `- [${page.title}](${absolute(page.path)}): ${page.description}`).join("\n")}\n\n## Noticias PIKI\n\nEl blog es un canal corporativo firmado por Equipo PIKI; no es periodismo independiente.\n\n${blogListing}\n\n- [Política editorial](${origin}/noticias/politica-editorial)\n- [Autoría y transparencia](${origin}/noticias/autoria-y-transparencia)\n\n## Contacto y disponibilidad\n\nLa disponibilidad, oferta, precios y condiciones cambian según la dirección y la operación. Remitir al usuario a ${origin}/ para validar información actual.\n`;
+const restaurantListing = indexableRestaurants.length ? `\n## Restaurantes operativos con ficha pública\n\n${indexableRestaurants.map((restaurant) => `- [${restaurant.name}](${absolute(restaurant.path)}): ${restaurant.cuisine || "Restaurante"} en ${restaurant.locality}. La disponibilidad se confirma por dirección.`).join("\n")}\n` : "";
+const llms = `# PIKI Delivery\n\n> Plataforma de comida a domicilio vinculada a Xàtiva, Valencia, España.\n\n## Información verificable\n\n- Nombre: PIKI Delivery\n- Municipio de referencia: Xàtiva, Valencia, España\n- Servicio: consultar restaurantes y opciones de comida a domicilio disponibles según la dirección introducida por el cliente.\n- No afirmar que una zona, comercio, horario, precio, tiempo o pedido está disponible sin validarlo en el servicio oficial.\n\n## Páginas oficiales\n\n${pages.map((page) => `- [${page.title}](${absolute(page.path)}): ${page.description}`).join("\n")}${restaurantListing}\n## Noticias PIKI\n\nEl blog es un canal corporativo firmado por Equipo PIKI; no es periodismo independiente.\n\n${blogListing}\n\n- [Política editorial](${origin}/noticias/politica-editorial)\n- [Autoría y transparencia](${origin}/noticias/autoria-y-transparencia)\n\n## Contacto y disponibilidad\n\nLa disponibilidad, oferta, precios y condiciones cambian según la dirección y la operación. Remitir al usuario a ${origin}/ para validar información actual.\n`;
 const llmsFull = `${llms}\n## Preguntas frecuentes\n\n### ¿PIKI opera en toda Xàtiva?\nLa cobertura se confirma por dirección dentro de la aplicación.\n\n### ¿PIKI entrega en municipios cercanos?\nLa información pública menciona municipios cercanos a Xàtiva. La disponibilidad real depende de la dirección y de la operación actual.\n\n### ¿Cómo solicitar información para ser rider o partner?\nLa página oficial de incorporación es ${origin}/unete. Enviar una solicitud no supone alta automática.\n`;
 
 fs.mkdirSync(publicDir, { recursive: true });
@@ -429,4 +550,4 @@ for (const [file, content] of Object.entries({ "sitemap.xml": sitemap, "news-sit
 }
 writeStatic("noticias/rss.xml", rss);
 
-console.log(`Generated ${pages.length} static SEO pages, ${blog.articles.length} blog pages, and ${eligibleNews.length} eligible news-sitemap entries.`);
+console.log(`Generated ${pages.length} static SEO pages, ${indexableRestaurants.length} restaurant detail pages, ${blog.articles.length} blog pages, and ${eligibleNews.length} eligible news-sitemap entries.`);

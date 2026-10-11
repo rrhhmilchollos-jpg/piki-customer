@@ -16,10 +16,12 @@ function copy(source, destination) {
 try {
   copy(path.join(projectRoot, "shared", "blog-posts.json"), path.join(fixture, "shared", "blog-posts.json"));
   copy(path.join(projectRoot, "client", "index.html"), path.join(fixture, "dist", "public", "index.html"));
+  copy(path.join(projectRoot, "scripts", "seo-restaurants.mjs"), path.join(fixture, "scripts", "seo-restaurants.mjs"));
+  copy(path.join(projectRoot, "scripts", "fixtures", "seo-catalog.json"), path.join(fixture, "scripts", "fixtures", "seo-catalog.json"));
 
   execFileSync(process.execPath, [path.join(projectRoot, "scripts", "generate-seo-static.mjs")], {
     cwd: fixture,
-    env: { ...process.env, PIKI_SEO_ROOT: fixture, PIKI_SEO_NOW: "2026-10-10T00:00:00.000Z" },
+    env: { ...process.env, PIKI_SEO_ROOT: fixture, PIKI_SEO_NOW: "2026-10-10T00:00:00.000Z", PIKI_SEO_CATALOG_FILE: "scripts/fixtures/seo-catalog.json" },
     stdio: "pipe",
   });
 
@@ -30,6 +32,8 @@ try {
   const sitemap = read("sitemap.xml");
   const newsSitemap = read("news-sitemap.xml");
   const rss = read("noticias/rss.xml");
+  const restaurantDirectory = read("restaurantes-a-domicilio-xativa/index.html");
+  const restaurant = read("restaurantes/casa-piki-xativa/index.html");
 
   assert.match(index, /Noticias, ideas y buen rollo/);
   assert.match(index, /piki-mascot\.png/);
@@ -42,6 +46,13 @@ try {
   assert.match(guide, /Cómo comprobar la cobertura de PIKI en Xàtiva/);
   assert.match(sitemap, /https:\/\/pikidelivery\.com\/noticias\/comprobar-cobertura-xativa/);
   assert.match(sitemap, /https:\/\/pikidelivery\.com\/noticias\/politica-editorial/);
+  assert.match(sitemap, /https:\/\/pikidelivery\.com\/restaurantes\/casa-piki-xativa/);
+  assert.doesNotMatch(sitemap, /proximamente-xativa/);
+  assert.match(restaurantDirectory, /Restaurantes a domicilio en Xàtiva/);
+  assert.match(restaurantDirectory, /Casa PIKI Xàtiva/);
+  assert.match(restaurant, /<h1>Casa PIKI Xàtiva<\/h1>/);
+  assert.match(restaurant, /"@type":"Restaurant"/);
+  assert.match(restaurant, /Carrer de la Plaça, 12/);
   assert.match(rss, /<title>Noticias PIKI<\/title>/);
   assert.match(rss, /Equipo PIKI/);
   assert.match(newsSitemap, /solicitudes-riders-partners-unete/);

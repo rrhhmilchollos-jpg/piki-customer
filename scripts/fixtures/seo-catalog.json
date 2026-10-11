@@ -1,0 +1,34 @@
+{
+  "restaurants": [
+    {
+      "slug": "casa-piki-xativa",
+      "name": "Casa PIKI Xàtiva",
+      "cuisine": "Mediterránea",
+      "category": "Mediterránea",
+      "locality": "Xàtiva",
+      "address": "Carrer de la Plaça, 12, 46800 Xàtiva, Valencia",
+      "tagline": "Cocina mediterránea para pedir en Xàtiva.",
+      "phone": "+34960000000",
+      "image": "https://pikidelivery.com/piki-hero.webp",
+      "location": { "coordinates": [-0.51860, 38.99080] },
+      "isActive": true,
+      "availabilityStatus": "available",
+      "orderable": true,
+      "menu": [
+        { "name": "Arroz de verduras", "description": "Arroz con verdura de temporada.", "price": 12.5, "available": true },
+        { "name": "Ensalada de la casa", "description": "Ensalada fresca.", "price": 8.5, "available": true }
+      ]
+    },
+    {
+      "slug": "proximamente-xativa",
+      "name": "Local próximo Xàtiva",
+      "cuisine": "Kebab",
+      "locality": "Xàtiva",
+      "address": "Carrer de la Plaça, 14, 46800 Xàtiva, Valencia",
+      "isActive": false,
+      "availabilityStatus": "coming_soon",
+      "orderable": false,
+      "menu": []
+    }
+  ]
+}
