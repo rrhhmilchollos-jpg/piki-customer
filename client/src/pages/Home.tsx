@@ -731,7 +731,7 @@ export default function Home() {
                   <div className="mb-4 space-y-2 text-sm">
                     <div className="flex justify-between text-[#667267]">
                       <span>Productos</span>
-                      <span>{money.format(subtotal)}</span>
+                      <span>{money.format(partnerSubtotal)}</span>
                     </div>
                     <div className="flex justify-between text-[#667267]"><span>Comisión PIKI (23%)</span><span>{money.format(commission)}</span></div>
                     <div className="flex justify-between text-[#667267]"><span>Entrega</span><span>{deliveryFee ? money.format(deliveryFee) : "Gratis"}</span></div>
