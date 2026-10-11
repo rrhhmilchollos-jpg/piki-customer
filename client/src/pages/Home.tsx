@@ -212,7 +212,7 @@ export default function Home() {
   const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
   const subtotal = cart.reduce((total, line) => total + line.item.price * line.quantity, 0);
   const deliveryFee = cartRestaurant?.fee ?? 0;
-  const serviceFee = cart.length ? 0.79 : 0;
+  const serviceFee = cart.length ? 2.99 : 0;
   const total = subtotal + deliveryFee + serviceFee;
 
   useEffect(() => {

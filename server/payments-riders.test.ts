@@ -12,8 +12,8 @@ describe("Manduca checkout and rider flow", () => {
     const { quote } = buildOrderQuote("solera", [{ id: "solera-1", quantity: 2 }]);
     expect(quote.subtotalCents).toBe(1900);
     expect(quote.deliveryCents).toBe(299);
-    expect(quote.serviceCents).toBe(79);
-    expect(quote.totalCents).toBe(2278);
+    expect(quote.serviceCents).toBe(299);
+    expect(quote.totalCents).toBe(2498);
     expect(() => buildOrderQuote("solera", [{ id: "other-store-item", quantity: 1 }])).toThrow("Producto no válido");
   });
 
@@ -34,7 +34,7 @@ describe("Manduca checkout and rider flow", () => {
   it("ignores a manipulated client total when creating the cash order", async () => {
     const caller = appRouter.createCaller(createContext());
     const order = await caller.order.create({ restaurantId: "solera", address: "Carrer de Montcada, Xàtiva", items: [{ id: "solera-1", quantity: 1 }], total: 0.01, paymentMethod: "cash" });
-    expect(order.totalCents).toBe(1328);
+    expect(order.totalCents).toBe(1548);
     expect(order.status).toBe("placed");
   });
 });

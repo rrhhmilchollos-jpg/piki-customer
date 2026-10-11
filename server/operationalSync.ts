@@ -29,9 +29,11 @@ export async function syncOperationalOrder(order: OperationalOrderInput, deliver
   });
   if (items.some((item) => !item)) { console.warn(`[OperationalSync] Producto desconocido para ${order.publicCode}`); return false; }
   const subtotalCents = (items as Array<{ quantity: number; unitPriceCents: number }>).reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
-  const deliveryFeeCents = Math.max(0, order.totalCents - subtotalCents - 79);
+  const serviceFeeCents = 299;
+  const deliveryFeeCents = Math.max(0, order.totalCents - subtotalCents - serviceFeeCents);
+  const totalCents = subtotalCents + deliveryFeeCents + serviceFeeCents;
   try {
-    const response = await fetch(`${apiUrl}/api/v1/internal/customer-orders/sync`, { method: "POST", headers: { "Content-Type": "application/json", "x-piki-customer-sync-secret": secret }, body: JSON.stringify({ publicCode: order.publicCode, restaurantSlug: order.restaurantId, customerId: order.customerOpenId ?? null, deliveryAddress: order.address, deliveryLocation: deliveryLocation ?? null, items, subtotalCents, deliveryFeeCents, serviceFeeCents: 79, totalCents: order.totalCents, paymentMethod: order.paymentMethod ?? "stripe", paymentState: order.paymentState, stripeCheckoutSessionId: order.stripeCheckoutSessionId ?? null, stripePaymentIntentId: order.stripePaymentIntentId ?? null }) });
+    const response = await fetch(`${apiUrl}/api/v1/internal/customer-orders/sync`, { method: "POST", headers: { "Content-Type": "application/json", "x-piki-customer-sync-secret": secret }, body: JSON.stringify({ publicCode: order.publicCode, restaurantSlug: order.restaurantId, customerId: order.customerOpenId ?? null, deliveryAddress: order.address, deliveryLocation: deliveryLocation ?? null, items, subtotalCents, deliveryFeeCents, serviceFeeCents, totalCents, paymentMethod: order.paymentMethod ?? "stripe", paymentState: order.paymentState, stripeCheckoutSessionId: order.stripeCheckoutSessionId ?? null, stripePaymentIntentId: order.stripePaymentIntentId ?? null }) });
     if (!response.ok) { console.warn(`[OperationalSync] API respondió ${response.status} para ${order.publicCode}: ${await response.text()}`); return false; }
     return true;
   } catch (error) { console.warn(`[OperationalSync] Error sincronizando ${order.publicCode}`, error); return false; }

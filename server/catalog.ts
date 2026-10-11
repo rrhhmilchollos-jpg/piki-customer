@@ -43,6 +43,6 @@ export function buildOrderQuote(restaurantId: string, items: CheckoutLine[]): { 
   });
   const subtotalCents = displayLines.reduce((sum, line) => sum + line.unitCents * line.quantity, 0);
   const deliveryCents = Math.round(restaurant.fee * 100);
-  const serviceCents = 79;
+  const serviceCents = 299;
   return { restaurant, quote: { subtotalCents, deliveryCents, serviceCents, totalCents: subtotalCents + deliveryCents + serviceCents, displayLines } };
 }
