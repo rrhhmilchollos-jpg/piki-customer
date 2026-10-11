@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.pikidelivery.customer',
-  appName: 'Piki: comida a domicilio',
+  appName: 'Piki: Comida a domicilio',
   webDir: 'dist/public',
   server: {
     androidScheme: 'https',

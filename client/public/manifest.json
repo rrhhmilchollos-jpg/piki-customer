@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "PIKI Delivery",
+  "name": "Piki: Comida a domicilio",
   "short_name": "PIKI",
-  "description": "Pide a restaurantes y comercios locales de Xàtiva con PIKI Delivery.",
+  "description": "Pide a restaurantes y comercios locales de Xàtiva con Piki: Comida a domicilio.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

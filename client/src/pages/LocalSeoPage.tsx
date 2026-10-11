@@ -14,9 +14,9 @@ type LocalPage = {
 
 const pages: Record<PageKey, LocalPage> = {
   food: {
-    eyebrow: "PIKI Delivery · Xàtiva",
+    eyebrow: "Piki: Comida a domicilio · Xàtiva",
     title: "Comida a domicilio en Xàtiva",
-    description: "Consulta los restaurantes y productos que aparecen disponibles para tu dirección en PIKI Delivery.",
+    description: "Consulta los restaurantes y productos que aparecen disponibles para tu dirección en Piki: Comida a domicilio.",
     sections: [
       { title: "Comprueba la disponibilidad por dirección", body: "La oferta, los comercios activos, los precios, las tarifas y los tiempos de entrega dependen de la dirección y de la operativa del momento. Introduce tu ubicación para consultar las opciones que PIKI muestra para tu zona." },
       { title: "Una plataforma local", body: "PIKI conecta clientes, comercios asociados y riders en Xàtiva. Antes de confirmar un pedido, revisa siempre el restaurante, los productos, el total y las condiciones que aparecen en el checkout." },
@@ -52,7 +52,7 @@ const pages: Record<PageKey, LocalPage> = {
   partners: {
     eyebrow: "Partners PIKI · Xàtiva",
     title: "Hazte partner de delivery en Xàtiva",
-    description: "Los restaurantes y comercios de Xàtiva pueden solicitar información para valorar su incorporación a PIKI Delivery.",
+    description: "Los restaurantes y comercios de Xàtiva pueden solicitar información para valorar su incorporación a Piki: Comida a domicilio.",
     sections: [
       { title: "Cuéntanos sobre tu establecimiento", body: "Indica el nombre del comercio, una persona de contacto, teléfono y dirección. El equipo de zona utiliza esos datos solo para revisar la oportunidad y explicar los siguientes pasos." },
       { title: "Preparación del catálogo", body: "Antes de activar un local, se revisan datos, carta, disponibilidad y condiciones operativas. No se publica un establecimiento sin validación previa." },
@@ -63,8 +63,8 @@ const pages: Record<PageKey, LocalPage> = {
   },
   coverage: {
     eyebrow: "Zonas de servicio · PIKI",
-    title: "Cobertura de PIKI Delivery",
-    description: "Consulta cómo comprobar si PIKI Delivery puede atender tu dirección en Xàtiva y municipios cercanos.",
+    title: "Cobertura de Piki: Comida a domicilio",
+    description: "Consulta cómo comprobar si Piki: Comida a domicilio puede atender tu dirección en Xàtiva y municipios cercanos.",
     sections: [
       { title: "Xàtiva como zona de referencia", body: "PIKI opera con Xàtiva como municipio de referencia. La aplicación consulta la dirección concreta para mostrar una oferta adaptada a la zona." },
       { title: "Municipios cercanos", body: "La información pública de PIKI menciona Canals, El Genovés, La Llosa de Ranes, Novetlè y Montesa. Estas menciones no garantizan atención permanente: confirma siempre la dirección en la aplicación." },
@@ -74,7 +74,7 @@ const pages: Record<PageKey, LocalPage> = {
     primaryLabel: "Comprobar mi dirección",
   },
   canals: {
-    eyebrow: "PIKI Delivery · Canals",
+    eyebrow: "Piki: Comida a domicilio · Canals",
     title: "Comida a domicilio en Canals",
     description: "Consulta si PIKI muestra restaurantes y reparto disponibles para una dirección concreta de Canals.",
     sections: [
@@ -86,7 +86,7 @@ const pages: Record<PageKey, LocalPage> = {
     primaryLabel: "Comprobar mi dirección",
   },
   alberic: {
-    eyebrow: "PIKI Delivery · Alberic",
+    eyebrow: "Piki: Comida a domicilio · Alberic",
     title: "Comida a domicilio en Alberic",
     description: "Consulta si PIKI muestra opciones de comida y reparto para una dirección concreta de Alberic.",
     sections: [
@@ -108,7 +108,7 @@ export function LocalSeoPage({ page }: { page: PageKey }) {
     <main className="min-h-screen bg-[#fffdf5] text-[#171715]">
       <header className="border-b border-[#eee3d8] bg-[#fffdf5]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
-          <Link href="/" className="font-display text-2xl font-black tracking-[-.06em]" aria-label="PIKI Delivery, inicio">PIKI<span className="text-[#dc5c35]">.</span></Link>
+          <Link href="/" className="font-display text-2xl font-black tracking-[-.06em]" aria-label="Piki: Comida a domicilio, inicio">PIKI<span className="text-[#dc5c35]">.</span></Link>
           <nav className="flex items-center gap-4 text-sm font-bold text-[#56635a]" aria-label="Navegación principal">
             <Link href="/comida-a-domicilio-xativa" className="hover:text-[#171715]">Comida a domicilio</Link>
             <Link href="/noticias" className="hover:text-[#171715]">Noticias</Link>
@@ -131,7 +131,7 @@ export function LocalSeoPage({ page }: { page: PageKey }) {
       <section className="border-y border-[#eee2d6] bg-[#f7f1e7] px-5 py-12">
         <div className="mx-auto max-w-6xl"><p className="text-xs font-black uppercase tracking-[.16em] text-[#b95231]">Enlaces útiles</p><div className="mt-4 flex flex-wrap gap-3 text-sm font-bold"><Link href="/comida-a-domicilio-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Comida a domicilio en Xàtiva</Link><Link href="/comida-a-domicilio-canals" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Comida a domicilio en Canals</Link><Link href="/comida-a-domicilio-alberic" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Comida a domicilio en Alberic</Link><Link href="/restaurantes-a-domicilio-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Restaurantes y comercios</Link><Link href="/trabajo-rider-xativa" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Trabajar como rider</Link><Link href="/cobertura" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Cobertura</Link><Link href="/noticias" className="rounded-full bg-white px-4 py-2 hover:bg-[#fff4be]">Noticias PIKI</Link></div></div>
       </section>
-      <footer className="px-5 py-10"><div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-[#66736a]"><span>PIKI Delivery · Xàtiva, Valencia</span><div className="flex gap-4"><Link href="/noticias" className="font-bold text-[#171715]">Noticias PIKI</Link><Link href="/" className="font-bold text-[#171715]">Web oficial</Link></div></div></footer>
+      <footer className="px-5 py-10"><div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-[#66736a]"><span>Piki: Comida a domicilio · Xàtiva, Valencia</span><div className="flex gap-4"><Link href="/noticias" className="font-bold text-[#171715]">Noticias PIKI</Link><Link href="/" className="font-bold text-[#171715]">Web oficial</Link></div></div></footer>
     </main>
   );
 }
