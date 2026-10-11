@@ -75,6 +75,8 @@ export type QuotedSelection = {
 };
 
 export type OrderQuote = {
+  partnerSubtotalCents: number;
+  commissionCents: number;
   subtotalCents: number;
   deliveryCents: number;
   serviceCents: number;
@@ -633,9 +635,10 @@ export function buildOrderQuote(
     if (!item) throw new Error("Producto no válido para este restaurante");
 
     const selections = resolveSelections(item, line.selections);
-    const unitCents =
+    const partnerUnitCents =
       toCents(item.price) +
       selections.reduce((sum, selection) => sum + selection.unitCents, 0);
+    const unitCents = Math.round(partnerUnitCents * 1.23);
     const optionSummary = selections
       .map(selection => selection.optionName)
       .join(" · ");
@@ -653,12 +656,19 @@ export function buildOrderQuote(
     (sum, line) => sum + line.unitCents * line.quantity,
     0
   );
-  const deliveryCents = toCents(restaurant.fee);
-  const serviceCents = 79;
+  const partnerSubtotalCents = displayLines.reduce(
+    (sum, line) => sum + Math.round(line.unitCents / 1.23) * line.quantity,
+    0
+  );
+  const commissionCents = subtotalCents - partnerSubtotalCents;
+  const deliveryCents = 299;
+  const serviceCents = 0;
 
   return {
     restaurant,
     quote: {
+      partnerSubtotalCents,
+      commissionCents,
       subtotalCents,
       deliveryCents,
       serviceCents,

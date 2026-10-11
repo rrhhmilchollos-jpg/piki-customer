@@ -268,10 +268,12 @@ export default function Home() {
   };
 
   const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
+  const partnerSubtotal = cart.reduce((total, line) => total + (line.unitPrice / 1.23) * line.quantity, 0);
   const subtotal = cart.reduce((total, line) => total + line.unitPrice * line.quantity, 0);
-  const deliveryFee = cartRestaurant?.fee ?? 0;
-  const serviceFee = cart.length ? 0.79 : 0;
-  const total = subtotal + deliveryFee + serviceFee;
+  const deliveryFee = cart.length ? 2.99 : 0;
+  const serviceFee = 0;
+  const commission = subtotal - partnerSubtotal;
+  const total = subtotal + deliveryFee;
   const CASH_LIMIT_EUR = 48.99;
   const cashWithinLimit = total <= CASH_LIMIT_EUR;
 
@@ -317,7 +319,7 @@ export default function Home() {
       return;
     }
     const key = selectionKey(item.id, selections);
-    const unitPrice = getMenuItemUnitPrice(item, selections);
+    const unitPrice = Math.round(getMenuItemUnitPrice(item, selections) * 1.23 * 100) / 100;
     const newLine: CartLine = { key, item, selections, quantity: 1, unitPrice };
 
     if (cartRestaurant && cartRestaurant.id !== restaurant.id) {
@@ -731,16 +733,8 @@ export default function Home() {
                       <span>Productos</span>
                       <span>{money.format(subtotal)}</span>
                     </div>
-                    <div className="flex justify-between text-[#667267]">
-                      <span>Entrega</span>
-                      <span>
-                        {deliveryFee ? money.format(deliveryFee) : "Gratis"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-[#667267]">
-                      <span>Servicio</span>
-                      <span>{money.format(serviceFee)}</span>
-                    </div>
+                    <div className="flex justify-between text-[#667267]"><span>Comisión PIKI (23%)</span><span>{money.format(commission)}</span></div>
+                    <div className="flex justify-between text-[#667267]"><span>Entrega</span><span>{deliveryFee ? money.format(deliveryFee) : "Gratis"}</span></div>
                     <div className="mt-3 flex justify-between border-t border-[#e6ddd2] pt-3 text-base font-extrabold text-[#171715]">
                       <span>Total</span>
                       <span>{money.format(total)}</span>
