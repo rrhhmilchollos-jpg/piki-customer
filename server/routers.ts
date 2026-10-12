@@ -39,6 +39,7 @@ import {
   listPartnerStores,
   listRiderProfiles,
   listRiderDocuments,
+  markRiderDocumentViewed,
   listLatestRiderLocations,
   listSosAlerts,
   recordRiderLocation,
@@ -435,15 +436,19 @@ export const appRouter = router({
       assertRider(ctx.user.role);
       return listRiderDocuments(ctx.user.openId);
     }),
-    uploadDocument: protectedProcedure.input(z.object({ type: z.enum(["dni", "driver_license", "insurance"]), fileName: z.string().min(1).max(150), mimeType: z.enum(["image/jpeg", "image/png", "application/pdf"]), dataUrl: z.string().min(32).max(8_000_000), expiresAt: z.coerce.date().optional() })).mutation(async ({ input, ctx }) => {
+    uploadDocument: protectedProcedure.input(z.object({ type: z.enum(["dni", "driver_license", "insurance"]), fileName: z.string().min(1).max(150), mimeType: z.literal("application/pdf"), dataUrl: z.string().min(32).max(8_000_000), expiresAt: z.coerce.date().optional() })).mutation(async ({ input, ctx }) => {
       assertRider(ctx.user.role);
-      const [, payload] = input.dataUrl.split(",", 2);
-      if (!payload) throw new TRPCError({ code: "BAD_REQUEST", message: "Archivo de documento no válido." });
+      const prefix = "data:application/pdf;base64,";
+      if (!input.dataUrl.startsWith(prefix)) throw new TRPCError({ code: "BAD_REQUEST", message: "El expediente solo admite documentos PDF." });
+      const payload = input.dataUrl.slice(prefix.length);
+      if (!payload || !/^[A-Za-z0-9+/]*={0,2}$/.test(payload) || payload.length % 4 === 1) throw new TRPCError({ code: "BAD_REQUEST", message: "Archivo de documento no válido." });
       const bytes = Buffer.from(payload, "base64");
       if (!bytes.length || bytes.length > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "El documento debe pesar menos de 5 MB." });
-      const cleanName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-");
-      const uploaded = await storagePut(`riders/${ctx.user.id}/documents/${input.type}-${Date.now()}-${cleanName}`, bytes, input.mimeType);
-      const document = await createRiderDocument({ riderOpenId: ctx.user.openId, type: input.type, fileKey: uploaded.key, fileUrl: uploaded.url, fileName: cleanName, mimeType: input.mimeType, expiresAt: input.expiresAt ?? null });
+      if (bytes.length < 5 || bytes.subarray(0, 5).toString("ascii") !== "%PDF-") throw new TRPCError({ code: "BAD_REQUEST", message: "El contenido no corresponde a un PDF válido." });
+      const cleanStem = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/\.[^.]*$/, "").slice(0, 146) || "documento";
+      const cleanName = `${cleanStem}.pdf`;
+      const uploaded = await storagePut(`riders/${ctx.user.id}/documents/${input.type}-${Date.now()}-${cleanName}`, bytes, "application/pdf");
+      const document = await createRiderDocument({ riderOpenId: ctx.user.openId, type: input.type, fileKey: uploaded.key, fileUrl: uploaded.url, fileName: cleanName, mimeType: "application/pdf", expiresAt: input.expiresAt ?? null });
       if (!document) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "No se pudo guardar el documento." });
       await syncRiderDocumentsStatus(ctx.user.openId);
       await audit(ctx.user.openId, "upload_rider_document", "rider_document", String(document.id), { type: input.type });
@@ -570,6 +575,13 @@ export const appRouter = router({
       const rider = await syncRiderDocumentsStatus(document.riderOpenId);
       await audit(ctx.user.openId, "review_rider_document", "rider_document", String(document.id), { status: input.status });
       return { document, rider };
+    }),
+    viewRiderDocument: protectedProcedure.input(z.object({ documentId: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
+      assertOperations(ctx.user.role);
+      const document = await markRiderDocumentViewed(input.documentId, ctx.user.openId);
+      if (!document) throw new TRPCError({ code: "NOT_FOUND", message: "No se encontró el documento." });
+      await audit(ctx.user.openId, "view_rider_document", "rider_document", String(document.id));
+      return document;
     }),
     updatePartner: protectedProcedure.input(z.object({ storeId: z.number().int().positive(), status: z.enum(["pending_review", "active", "paused"]) })).mutation(async ({ input, ctx }) => {
       assertOperations(ctx.user.role);

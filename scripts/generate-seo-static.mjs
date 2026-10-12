@@ -92,7 +92,7 @@ const pages = [
     lead: "PIKI consulta cada dirección para mostrar la oferta y las condiciones disponibles en ese momento.",
     sections: [
       ["Xàtiva como referencia", "PIKI opera con Xàtiva como municipio de referencia y adapta la oferta a la dirección introducida por el cliente."],
-      ["Municipios cercanos", "La información pública de PIKI menciona Canals, El Genovés, La Llosa de Ranes, Novetlè y Montesa. Estas menciones no garantizan atención permanente."],
+      ["Municipios cercanos", "La información pública de PIKI menciona Canals, El Genovés, La Llosa de Ranes y Novetlè. Estas menciones no garantizan atención permanente."],
       ["La información válida", "Antes de confirmar un pedido, revisa siempre la disponibilidad, los precios y la entrega mostrados por PIKI para tu dirección."],
     ],
     cta: ["Comprobar mi dirección", "/"],

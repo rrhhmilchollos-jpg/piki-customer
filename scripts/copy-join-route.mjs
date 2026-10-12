@@ -111,12 +111,12 @@ const localBody = `
           <p>Introduce tu dirección para consultar qué restaurantes aparecen disponibles. Revisa sus cartas y las condiciones del pedido, elige los productos que te interesen y confirma la información en el checkout.</p>
           <p>La oferta, los precios, el coste de entrega y el tiempo estimado pueden variar según el establecimiento, la dirección y el momento. Comprueba siempre los datos que muestra la aplicación antes de confirmar.</p>
           <h2>¿En qué zonas opera PIKI?</h2>
-          <p>Xàtiva es el municipio de referencia de PIKI. La información pública del servicio también menciona Canals, El Genovés, La Llosa de Ranes, Novetlè y Montesa. La cobertura de cada dirección y la existencia de restaurantes disponibles deben confirmarse en la plataforma; mencionar una localidad no implica disponibilidad garantizada.</p>
+          <p>Xàtiva es el municipio de referencia de PIKI. La información pública del servicio también menciona Canals, El Genovés, La Llosa de Ranes y Novetlè. La cobertura de cada dirección y la existencia de restaurantes disponibles deben confirmarse en la plataforma; mencionar una localidad no implica disponibilidad garantizada.</p>
           <h2>Cómo pedir</h2>
           <ol><li>Abre la web de PIKI e introduce tu dirección.</li><li>Consulta los restaurantes y artículos disponibles para esa zona.</li><li>Revisa los precios y las condiciones antes de seleccionar.</li><li>Confirma el pedido y sigue las indicaciones que aparecen en la aplicación.</li></ol>
           <h2>Preguntas frecuentes</h2>
           <h3>¿PIKI entrega en toda Xàtiva?</h3><p>La disponibilidad depende de la dirección, los restaurantes activos y la operación en ese momento. Introduce tu dirección en la plataforma para comprobarlo.</p>
-          <h3>¿PIKI está disponible en Canals u otros municipios cercanos?</h3><p>Canals, El Genovés, La Llosa de Ranes, Novetlè y Montesa aparecen en la información pública de PIKI. Comprueba la cobertura efectiva de la dirección antes de hacer un pedido.</p>
+          <h3>¿PIKI está disponible en Canals u otros municipios cercanos?</h3><p>Canals, El Genovés, La Llosa de Ranes y Novetlè aparecen en la información pública de PIKI. Comprueba la cobertura efectiva de la dirección antes de hacer un pedido.</p>
           <h3>¿Qué restaurantes, precios y tiempos hay?</h3><p>El catálogo, precios, tarifas de entrega y tiempos estimados pueden cambiar. Consulta la información que PIKI muestra para tu dirección antes de confirmar.</p>
           <h2>Comercios y riders</h2>
           <p>PIKI también recibe solicitudes de establecimientos y de personas interesadas en repartir. <a href="/unete#partners">Información para restaurantes y comercios</a> · <a href="/unete#riders">Información para riders</a>.</p>

@@ -468,7 +468,7 @@ export default function Home() {
             <h2 id="cobertura-piki" className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] text-[#171715] sm:text-4xl">Delivery en Xàtiva y alrededores</h2>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[#526056] sm:text-base">Pide comida, productos y tus favoritos a negocios locales de Xàtiva, sus pedanías y las localidades cercanas. PIKI conecta restaurantes partners con clientes y riders de la zona.</p>
             <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-[#3a473d]">
-              {['Xàtiva', 'Annauir', 'Bixquert', 'Sorió', 'El Genovés', 'Novetlè', 'La Llosa de Ranes', 'Vallés', 'Rotglà i Corberà', "L'Alcúdia de Crespins", 'Canals', 'Montesa', 'Barxeta'].map((place) => <span key={place} className="rounded-full bg-white px-3 py-2 shadow-sm">{place}</span>)}
+              {['Xàtiva', 'Annauir', 'Bixquert', 'Sorió', 'El Genovés', 'Novetlè', 'La Llosa de Ranes', 'Vallés', 'Rotglà i Corberà', "L'Alcúdia de Crespins", 'Canals'].map((place) => <span key={place} className="rounded-full bg-white px-3 py-2 shadow-sm">{place}</span>)}
             </div>
           </div>
         </section>

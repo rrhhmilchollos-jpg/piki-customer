@@ -67,7 +67,7 @@ const pages: Record<PageKey, LocalPage> = {
     description: "Consulta cómo comprobar si Piki: Comida a domicilio puede atender tu dirección en Xàtiva y municipios cercanos.",
     sections: [
       { title: "Xàtiva como zona de referencia", body: "PIKI opera con Xàtiva como municipio de referencia. La aplicación consulta la dirección concreta para mostrar una oferta adaptada a la zona." },
-      { title: "Municipios cercanos", body: "La información pública de PIKI menciona Canals, El Genovés, La Llosa de Ranes, Novetlè y Montesa. Estas menciones no garantizan atención permanente: confirma siempre la dirección en la aplicación." },
+      { title: "Municipios cercanos", body: "La información pública de PIKI menciona Canals, El Genovés, La Llosa de Ranes y Novetlè. Estas menciones no garantizan atención permanente: confirma siempre la dirección en la aplicación." },
       { title: "Disponibilidad actual", body: "La actividad de los comercios, riders, horarios y condiciones de entrega puede cambiar. La información que aparece en PIKI en el momento de pedir es la referencia válida." },
     ],
     primaryHref: "/",

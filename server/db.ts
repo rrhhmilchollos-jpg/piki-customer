@@ -488,6 +488,14 @@ export async function reviewRiderDocument(documentId: number, patch: { status: "
   return rows[0] ?? null;
 }
 
+export async function markRiderDocumentViewed(documentId: number, viewerOpenId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.update(riderDocuments).set({ viewedByOpenId: viewerOpenId, viewedAt: new Date() }).where(eq(riderDocuments.id, documentId));
+  const rows = await db.select().from(riderDocuments).where(eq(riderDocuments.id, documentId)).limit(1);
+  return rows[0] ?? null;
+}
+
 export async function syncRiderDocumentsStatus(riderOpenId: string) {
   const documents = await listRiderDocuments(riderOpenId);
   const latest = new Map<string, typeof documents[number]>();

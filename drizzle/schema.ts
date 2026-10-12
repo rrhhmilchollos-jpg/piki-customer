@@ -97,6 +97,8 @@ export const riderDocuments = mysqlTable("riderDocuments", {
   reviewedByOpenId: varchar("reviewedByOpenId", { length: 64 }),
   reviewedAt: timestamp("reviewedAt"),
   reviewNote: text("reviewNote"),
+  viewedByOpenId: varchar("viewedByOpenId", { length: 64 }),
+  viewedAt: timestamp("viewedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
