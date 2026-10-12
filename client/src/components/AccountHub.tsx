@@ -35,6 +35,26 @@ type OrderRecord = { id: string; restaurant: string; total: number; createdAt: n
 type View = "profile" | "support" | "map" | "auth" | null;
 type AuthMode = "login" | "register" | "forgot" | "reset";
 
+const passkeyMessages: Record<string, string> = {
+  AUTHENTICATION_REQUIRED: "Inicia sesión con tu contraseña para activar la biometría.",
+  EMAIL_REQUIRED: "Escribe el email de tu cuenta para continuar.",
+  PASSKEY_NOT_REGISTERED: "No hay una huella o Face ID activados para este email. Entra con contraseña y actívalo desde Mi perfil.",
+  PASSKEY_CHALLENGE_EXPIRED: "La solicitud biométrica ha caducado. Vuelve a intentarlo.",
+  PASSKEY_CHALLENGE_ALREADY_USED: "Esta solicitud biométrica ya se utilizó. Vuelve a intentarlo.",
+  PASSKEY_AUTHENTICATION_FAILED: "No se pudo verificar la huella, Face ID o PIN del dispositivo.",
+  PASSKEY_REGISTRATION_FAILED: "No se pudo activar la biometría en este dispositivo.",
+};
+
+async function passkeyRequest(path: string, init: RequestInit = {}) {
+  const response = await fetch(path, { credentials: "include", ...init });
+  const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+  if (!response.ok) {
+    const code = typeof body.error === "string" ? body.error : "";
+    throw new Error(passkeyMessages[code] || "No se pudo completar el acceso biométrico. Inténtalo de nuevo.");
+  }
+  return body;
+}
+
 function PasswordField({ value, onChange, label = "Contraseña", placeholder = "Tu contraseña" }: { value: string; onChange: (value: string) => void; label?: string; placeholder?: string }) {
   const [visible, setVisible] = useState(false);
   return <label className="block"><span className="mb-1.5 block text-sm font-bold text-[#314037]">{label}</span><span className="relative block"><input value={value} onChange={(event) => onChange(event.target.value)} type={visible ? "text" : "password"} placeholder={placeholder} className="w-full rounded-xl border border-[#ded5ca] bg-white px-3.5 py-3 pr-11 text-sm outline-none transition focus:border-[#FFD72E] focus:ring-4 focus:ring-[#FFD72E]/10" /><button type="button" onClick={() => setVisible((current) => !current)} className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-xl text-[#667267] hover:text-[#171715]" aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}>{visible ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}</button></span></label>;
@@ -62,10 +82,34 @@ export default function AccountHub({ initialView }: { initialView?: "auth" } = {
   const pending = register.isPending || login.isPending || requestReset.isPending || resetPassword.isPending;
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const activatePasskey = async () => {
-    try { setPasskeyBusy(true); const options = await fetch("https://api.pikidelivery.com/api/v1/passkeys/customer/register/options", { method: "POST", credentials: "include" }).then((r) => r.json()); if (options.error) throw new Error(options.error); const credential = await startRegistration({ optionsJSON: options }); const result = await fetch("https://api.pikidelivery.com/api/v1/passkeys/customer/register/verify", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(credential) }).then((r) => r.json()); if (!result.verified) throw new Error(result.error || "PASSKEY_REGISTRATION_FAILED"); toast.success("Inicio biométrico activado", { description: "La próxima vez podrás entrar con huella, Face ID o el bloqueo del dispositivo." }); } catch (error) { toast.error("No se pudo activar la biometría", { description: error instanceof Error ? error.message : "Prueba desde un dispositivo compatible." }); } finally { setPasskeyBusy(false); }
+    try {
+      setPasskeyBusy(true);
+      const options = await passkeyRequest("/api/v1/passkeys/customer/register/options", { method: "POST" });
+      const credential = await startRegistration({ optionsJSON: options as unknown as Parameters<typeof startRegistration>[0]["optionsJSON"] });
+      const result = await passkeyRequest("/api/v1/passkeys/customer/register/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(credential) });
+      if (result.verified !== true) throw new Error(passkeyMessages.PASSKEY_REGISTRATION_FAILED);
+      toast.success("Inicio biométrico activado", { description: "La próxima vez podrás entrar con huella, Face ID o el bloqueo del dispositivo." });
+    } catch (error) {
+      toast.error("No se pudo activar la biometría", { description: error instanceof Error ? error.message : "Prueba desde un dispositivo compatible." });
+    } finally {
+      setPasskeyBusy(false);
+    }
   };
   const loginWithPasskey = async () => {
-    try { setPasskeyBusy(true); const options = await fetch("https://api.pikidelivery.com/api/v1/passkeys/customer/auth/options", { method: "POST", credentials: "include" }).then((r) => r.json()); const assertion = await startAuthentication({ optionsJSON: options }); const result = await fetch("https://api.pikidelivery.com/api/v1/passkeys/customer/auth/verify", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(assertion) }).then((r) => r.json()); if (!result.verified) throw new Error(result.error || "PASSKEY_AUTHENTICATION_FAILED"); await utils.auth.me.invalidate(); setPanel(null); toast.success("Sesión iniciada"); } catch (error) { toast.error("No se pudo iniciar con biometría", { description: error instanceof Error ? error.message : "Usa tu contraseña." }); } finally { setPasskeyBusy(false); }
+    if (!email.trim()) return toast.error("Escribe tu email", { description: "Necesitamos tu email para localizar la passkey que activaste." });
+    try {
+      setPasskeyBusy(true);
+      const normalizedEmail = email.trim().toLowerCase();
+      const options = await passkeyRequest("/api/v1/passkeys/customer/auth/options", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: normalizedEmail }) });
+      const assertion = await startAuthentication({ optionsJSON: options as unknown as Parameters<typeof startAuthentication>[0]["optionsJSON"] });
+      const result = await passkeyRequest("/api/v1/passkeys/customer/auth/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...assertion, email: normalizedEmail }) });
+      if (result.verified !== true) throw new Error(passkeyMessages.PASSKEY_AUTHENTICATION_FAILED);
+      await finishAuth("user");
+    } catch (error) {
+      toast.error("No se pudo iniciar con biometría", { description: error instanceof Error ? error.message : "Usa tu contraseña." });
+    } finally {
+      setPasskeyBusy(false);
+    }
   };
 
   useEffect(() => {
