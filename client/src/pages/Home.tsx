@@ -268,8 +268,9 @@ export default function Home() {
   };
 
   const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
-  const partnerSubtotal = cart.reduce((total, line) => total + (line.unitPrice / 1.23) * line.quantity, 0);
   const subtotal = cart.reduce((total, line) => total + line.unitPrice * line.quantity, 0);
+  const PARTNER_COMMISSION_RATE = 0.18;
+  const partnerSubtotal = subtotal * (1 - PARTNER_COMMISSION_RATE);
   const deliveryFee = cart.length ? 2.99 : 0;
   const serviceFee = 0;
   const commission = subtotal - partnerSubtotal;
@@ -733,7 +734,7 @@ export default function Home() {
                       <span>Productos</span>
                       <span>{money.format(partnerSubtotal)}</span>
                     </div>
-                    <div className="flex justify-between text-[#667267]"><span>Comisión PIKI (23%)</span><span>{money.format(commission)}</span></div>
+                    <div className="flex justify-between text-[#667267]"><span>Comisión PIKI (18%)</span><span>{money.format(commission)}</span></div>
                     <div className="flex justify-between text-[#667267]"><span>Entrega</span><span>{deliveryFee ? money.format(deliveryFee) : "Gratis"}</span></div>
                     <div className="mt-3 flex justify-between border-t border-[#e6ddd2] pt-3 text-base font-extrabold text-[#171715]">
                       <span>Total</span>
