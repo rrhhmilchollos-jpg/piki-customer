@@ -73,15 +73,15 @@ export function ProductCustomizer({
         aria-label={`Personalizar ${item.name}`}
         role="dialog"
         aria-modal="true"
-        className="max-h-[92vh] w-full max-w-xl overflow-hidden rounded-t-[2rem] bg-[#FFFDF5] shadow-2xl sm:rounded-[2rem]"
+        className="flex h-[86vh] max-h-[86vh] w-full max-w-xl flex-col overflow-hidden rounded-t-[1.5rem] bg-[#FFFDF5] shadow-2xl sm:h-auto sm:max-h-[88vh] sm:rounded-[2rem]"
         onMouseDown={event => event.stopPropagation()}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-[#ece2d8] px-5 py-5 sm:px-7">
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[#ece2d8] px-4 py-4 sm:px-7 sm:py-5">
           <div className="min-w-0">
             <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#dc5c35]">
               Personaliza tu pedido
             </p>
-            <h2 className="mt-1 font-display text-3xl font-semibold tracking-[-.05em] text-[#171715]">
+            <h2 className="mt-1 font-display text-2xl font-semibold tracking-[-.05em] text-[#171715] sm:text-3xl">
               {item.name}
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-[#68746a]">
@@ -97,13 +97,13 @@ export function ProductCustomizer({
           </button>
         </header>
 
-        <div className="max-h-[calc(92vh-190px)] overflow-y-auto px-5 py-5 sm:px-7">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-7 sm:py-5">
           {groups.length === 0 ? (
             <p className="rounded-2xl bg-white p-4 text-sm text-[#68746a]">
               Este producto se añade tal cual a la cesta.
             </p>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {groups.map(group => {
                 const chosen = selected[group.id] ?? [];
                 const maximum = group.maxSelections ?? group.options.length;
@@ -187,7 +187,7 @@ export function ProductCustomizer({
           )}
         </div>
 
-        <footer className="border-t border-[#ece2d8] bg-[#FFFDF5] p-5 sm:px-7">
+        <footer className="shrink-0 border-t border-[#ece2d8] bg-[#FFFDF5] p-3.5 sm:px-7 sm:py-5">
           {!isValid && (
             <p className="mb-3 text-xs font-bold text-[#bc4d2d]">
               Completa las opciones obligatorias para continuar.
@@ -197,7 +197,7 @@ export function ProductCustomizer({
             type="button"
             disabled={!isValid}
             onClick={() => onAdd(selections)}
-            className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-5 py-3.5 text-sm font-extrabold text-white shadow-lg transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-4 py-3 text-sm font-extrabold text-white shadow-lg transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-3.5"
           >
             <span className="flex items-center gap-2">
               <Plus className="h-4 w-4" /> Añadir a la cesta
