@@ -187,7 +187,7 @@ export function ProductCustomizer({
           )}
         </div>
 
-        <footer className="shrink-0 border-t border-[#ece2d8] bg-[#FFFDF5] p-3.5 sm:px-7 sm:py-5">
+        <footer className="sticky bottom-0 z-10 border-t border-[#ece2d8] bg-[#FFFDF5]/95 p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-[0_-8px_20px_rgba(23,23,21,.06)] backdrop-blur sm:px-7" >
           {!isValid && (
             <p className="mb-3 text-xs font-bold text-[#bc4d2d]">
               Completa las opciones obligatorias para continuar.
@@ -200,7 +200,7 @@ export function ProductCustomizer({
             className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-4 py-3 text-sm font-extrabold text-white shadow-lg transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-3.5"
           >
             <span className="flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Añadir a la cesta
+              <Plus className="h-4 w-4" /> Añadir menú a la cesta
             </span>
             <span>{money.format(unitPrice)}</span>
           </button>

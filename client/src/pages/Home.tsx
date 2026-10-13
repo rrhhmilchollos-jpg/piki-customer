@@ -727,7 +727,7 @@ export default function Home() {
                     })}
                   </div>
                 </div>
-                <div className="border-t border-[#ece2d8] p-5">
+                <div className="border-t border-[#ece2d8] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
                   <div className="mb-4 space-y-2 text-sm">
                     <div className="flex justify-between text-[#667267]">
                       <span>Productos</span>
@@ -740,6 +740,15 @@ export default function Home() {
                       <span>{money.format(total)}</span>
                     </div>
                   </div>
+                  <button
+                    onClick={() => {
+                      setCartOpen(false);
+                      setSelectedRestaurant(cartRestaurant);
+                    }}
+                    className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-[#d8cec2] bg-white py-3 text-sm font-extrabold text-[#171715] transition hover:bg-[#faf6f0] active:scale-[.98]"
+                  >
+                    <Plus className="h-4 w-4" /> Seguir añadiendo productos
+                  </button>
                   <button
                     onClick={() => {
                       setCartOpen(false);
