@@ -4,7 +4,10 @@ type Props = { children: ReactNode };
 
 /** Shows the PIKI brand before mounting the app, login, or home route. */
 export default function PikiSplash({ children }: Props) {
-  const [visible, setVisible] = useState(true);
+  // La página pública de captación debe ser usable inmediatamente. En móviles
+  // una pantalla de marca de 5 s se percibe como un fallo de carga y además
+  // retrasa el acceso de candidatos al formulario.
+  const [visible, setVisible] = useState(() => window.location.pathname !== "/unete");
 
   useEffect(() => {
     const timer = window.setTimeout(() => setVisible(false), 5000);

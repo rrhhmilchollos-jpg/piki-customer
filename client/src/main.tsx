@@ -16,6 +16,7 @@ import "./index.css";
 
 installPikiReleaseHeaders();
 const queryClient = new QueryClient();
+const isPublicJoinRoute = window.location.pathname === "/unete";
 // Android WebViews use https://localhost, which does not receive the Vercel
 // rewrite for /api/trpc. The production API explicitly permits that origin.
 const trpcApiOrigin = Capacitor.isNativePlatform()
@@ -53,6 +54,7 @@ const trpcClient = trpc.createClient({ links: [httpBatchLink({
   },
   fetch(input, init) { return globalThis.fetch(input, { ...(init ?? {}), credentials: "include" }); },
 })] });
-createRoot(document.getElementById("root")!).render(
-  <PikiSplash><PikiReleaseGate><trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><ThemeProvider defaultTheme="light" switchable><AppErrorBoundary><App /></AppErrorBoundary></ThemeProvider></QueryClientProvider></trpc.Provider></PikiReleaseGate></PikiSplash>,
-);
+const app = <trpc.Provider client={trpcClient} queryClient={queryClient}><QueryClientProvider client={queryClient}><ThemeProvider defaultTheme="light" switchable><AppErrorBoundary><App /></AppErrorBoundary></ThemeProvider></QueryClientProvider></trpc.Provider>;
+const guardedApp = isPublicJoinRoute ? app : <PikiReleaseGate>{app}</PikiReleaseGate>;
+
+createRoot(document.getElementById("root")!).render(<PikiSplash>{guardedApp}</PikiSplash>);
