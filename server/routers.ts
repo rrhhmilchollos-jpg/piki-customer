@@ -34,6 +34,7 @@ import {
   listDeliveryZones,
   listFleets,
   listOrderRecords,
+  listCustomerOrderRecords,
   listOpsAuditEvents,
   listPartnerOrders,
   listPartnerStores,
@@ -241,6 +242,9 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => { const cookieOptions = getSessionCookieOptions(ctx.req); ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 }); return { success: true } as const; }),
   }),
   customer: router({
+    orders: router({
+      list: protectedProcedure.query(async ({ ctx }) => (await listCustomerOrderRecords(ctx.user.openId)).map((order) => ({ id: order.publicCode, restaurant: order.restaurantName, status: order.status, total: order.totalCents / 100, createdAt: order.createdAt.getTime(), active: !["delivered", "cancelled"].includes(order.status), paymentState: order.paymentState }))),
+    }),
     support: router({
       list: protectedProcedure.query(async ({ ctx }) => listCustomerSupportTickets({ customerId: ctx.user.openId, customerEmail: ctx.user.email || "" })),
       create: protectedProcedure.input(z.object({ orderRef: z.string().trim().max(120).optional(), category: z.enum(["order", "account", "technical", "billing", "finance", "other"]).default("order"), priority: z.enum(["low", "normal", "high"]).default("normal"), subject: z.string().trim().min(3).max(180), description: z.string().trim().min(3).max(4000) })).mutation(async ({ input, ctx }) => {

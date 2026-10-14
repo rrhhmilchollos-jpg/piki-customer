@@ -75,6 +75,7 @@ export default function AccountHub({ initialView }: { initialView?: "auth" } = {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const utils = trpc.useUtils();
   const { data: restaurants = [] } = trpc.catalog.list.useQuery({});
+  const { data: accountOrders = [], isFetching: ordersFetching } = trpc.customer.orders.list.useQuery(undefined, { enabled: isAuthenticated, refetchInterval: 10_000 });
   const register = trpc.auth.register.useMutation();
   const login = trpc.auth.login.useMutation();
   const requestReset = trpc.auth.requestPasswordReset.useMutation();

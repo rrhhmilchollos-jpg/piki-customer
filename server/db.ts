@@ -168,6 +168,11 @@ export async function listOrderRecords(statuses?: Array<typeof orders.status.enu
   return rows.filter((row) => (!paidOnly || row.paymentState === "paid") && (!statuses?.length || statuses.includes(row.status)));
 }
 
+export async function listCustomerOrderRecords(customerOpenId: string) {
+  const rows = await listOrderRecords(undefined, false);
+  return rows.filter((row) => row.customerOpenId === customerOpenId).slice(0, 100);
+}
+
 export async function updateOrderRecord(publicCode: string, patch: Partial<typeof orders.$inferInsert>) {
   const db = await getDb();
   if (!db) return null;

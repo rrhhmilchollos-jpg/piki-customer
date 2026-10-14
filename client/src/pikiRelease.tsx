@@ -319,9 +319,9 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
       const registration = await registerWorker();
       const activation = await activateUpdatedWorker(registration);
       if (!activation.activated) {
-        setUpdating(false);
-        setDeferredUpdate(true);
-        setDetail("La nueva versión todavía se está descargando. Mantén esta PWA abierta y vuelve a intentarlo cuando esté lista.");
+        setDetail("Recargando la aplicación para aplicar la versión disponible…");
+        await registration?.update().catch(() => undefined);
+        window.setTimeout(() => window.location.reload(), 350);
         return;
       }
       controllerChangedRef.current = activation.controllerChanged;
