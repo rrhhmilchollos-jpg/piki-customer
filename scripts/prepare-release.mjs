@@ -14,10 +14,10 @@ function buildId() {
   try { return execFileSync("git", ["rev-parse", "--short=12", "HEAD"], { cwd: root, encoding: "utf8" }).trim(); }
   catch { return `local-${version}`; }
 }
-// Opt-in blocking avoids trapping cached 0.2.x PWAs behind a page that cannot
-// activate the recovery worker. Deployments default to a compatible release;
-// enable PIKI_FORCE_UPDATE=true only after validating the migration in staging.
-const forceUpdate = process.env.PIKI_FORCE_UPDATE === "true";
+// The recovery worker and update gate are now validated in production. Keep the
+// flag enabled so cached customer PWAs receive the update prompt; setting it to
+// false remains available for an emergency rollback.
+const forceUpdate = process.env.PIKI_FORCE_UPDATE !== "false";
 const release = { surface, version, minimumVersion: forceUpdate ? version : "0.0.0", buildId: buildId(), forceUpdate };
 const publicDir = path.join(root, "client/public");
 fs.writeFileSync(path.join(publicDir, "release.json"), `${JSON.stringify(release, null, 2)}\n`);
