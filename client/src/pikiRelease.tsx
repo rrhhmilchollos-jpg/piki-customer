@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { PIKI_RELEASE } from "./release-meta";
 import {
   canApplyPwaUpdate,
+  hasNewerWebBuild,
   isValidReleasePolicy,
   requiresMandatoryPwaUpdate,
   shouldReloadAfterWorkerActivation,
@@ -9,7 +10,7 @@ import {
 } from "./pikiReleasePolicy";
 import { shouldShowPushConsent } from "./pushConsentPolicy";
 
-type GateState = "checking" | "ready" | "required" | "error";
+type GateState = "checking" | "ready" | "available" | "required" | "error";
 type WorkerActivation = { activated: boolean; controllerChanged: boolean; hadController: boolean };
 
 const apiOrigin = (import.meta.env.VITE_API_URL ?? "https://api.pikidelivery.com").replace(/\/$/, "");
@@ -278,6 +279,9 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
         } else {
           setState("required");
         }
+      } else if (hasNewerWebBuild(policy, PIKI_RELEASE) || Boolean(registration?.waiting)) {
+        setRequiredVersion(`${String(policy.version || policy.minimumVersion)} · ${policy.buildId}`);
+        setState("available");
       } else {
         setState("ready");
       }
@@ -368,6 +372,6 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
   }, [check, deferredUpdate, isSafeToReload, reloadAfterControllerChange]);
 
   if (state === "checking") return <main aria-live="polite" style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "system-ui", padding: "24px" }}>Comprobando la versión segura de PIKI…</main>;
-  if (state === "required") return <main aria-labelledby="piki-update-title" style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "system-ui", padding: "24px", background: "#f8fafc" }}><section role="dialog" aria-modal="true" style={{ maxWidth: "480px", padding: "28px", background: "white", borderRadius: "16px", boxShadow: "0 12px 40px rgba(15,23,42,.15)" }}><p style={{ fontWeight: 700, color: "#b45309" }}>PIKI · ACTUALIZACIÓN NECESARIA</p><h1 id="piki-update-title">Hay una nueva versión de la PWA</h1><p>La versión {requiredVersion} debe estar lista antes de continuar. La PWA conserva tu sesión y solo se recarga cuando hay conexión y no hay una acción en curso.</p>{detail && <p role="alert">{detail}</p>}<button type="button" onClick={() => void update()} disabled={updating} style={{ padding: "12px 16px", border: 0, borderRadius: "9px", background: "#111827", color: "white", fontWeight: 700 }}>{updating ? "Preparando actualización…" : "Buscar actualización"}</button></section></main>;
+  if (state === "required" || state === "available") return <main aria-labelledby="piki-update-title" style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "system-ui", padding: "24px", background: "#f8fafc" }}><section role="dialog" aria-modal="true" style={{ maxWidth: "480px", padding: "28px", background: "white", borderRadius: "16px", boxShadow: "0 12px 40px rgba(15,23,42,.15)" }}><p style={{ fontWeight: 700, color: "#b45309" }}>PIKI · {state === "required" ? "ACTUALIZACIÓN NECESARIA" : "ACTUALIZACIÓN DISPONIBLE"}</p><h1 id="piki-update-title">Hay una nueva versión de la PWA</h1><p>La versión {requiredVersion} está disponible. La sesión y los datos se conservan; la recarga solo se ejecuta con conexión y sin una acción en curso.</p>{detail && <p role="alert">{detail}</p>}<button type="button" onClick={() => void update()} disabled={updating} style={{ padding: "12px 16px", border: 0, borderRadius: "9px", background: "#111827", color: "white", fontWeight: 700 }}>{updating ? "Preparando actualización…" : "Actualizar ahora"}</button></section></main>;
   return <>{state === "error" && <div role="status" style={{ position: "fixed", zIndex: 9998, top: 0, left: 0, right: 0, padding: "8px", textAlign: "center", background: "#fef3c7", color: "#78350f", fontSize: "13px" }}>No se ha podido comprobar la versión: {detail}</div>}{state === "ready" && deferredUpdate && <div role="status" style={{ position: "fixed", zIndex: 9998, top: 0, left: 0, right: 0, padding: "8px", textAlign: "center", background: "#e8f4e5", color: "#24532b", fontSize: "13px" }}>Hay una nueva versión de la PWA pendiente. Se aplicará al terminar la acción en curso y con conexión.</div>}{children}<PushConsentControl /></>;
 }

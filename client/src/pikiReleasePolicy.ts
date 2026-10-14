@@ -63,6 +63,12 @@ export function requiresMandatoryPwaUpdate(policy: ValidReleasePolicy, current: 
   );
 }
 
+/** A changed deployed build must be visible to users even when it is compatible. */
+export function hasNewerWebBuild(policy: ValidReleasePolicy, current: ReleaseIdentity): boolean {
+  const announcedVersion = typeof policy.version === "string" && versionParts(policy.version) ? policy.version : policy.minimumVersion;
+  return isNewer(announcedVersion, current.version) || policy.buildId !== current.buildId;
+}
+
 export function canApplyPwaUpdate(safety: PwaUpdateSafety): boolean {
   return safety.online && safety.visible && !safety.hasSensitiveActivity;
 }

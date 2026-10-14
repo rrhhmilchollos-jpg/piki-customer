@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canApplyPwaUpdate,
+  hasNewerWebBuild,
   isValidReleasePolicy,
   requiresMandatoryPwaUpdate,
   shouldReloadAfterWorkerActivation,
@@ -30,6 +31,7 @@ describe("PIKI PWA release policy", () => {
     const release = policy({ minimumVersion: "0.2.14", updateRequired: false });
     if (!isValidReleasePolicy(release, "customer")) throw new Error("test policy must be valid");
     expect(requiresMandatoryPwaUpdate(release, current)).toBe(false);
+    expect(hasNewerWebBuild(release, current)).toBe(true);
   });
 
   it("requires an explicitly required or minimum-version update", () => {
