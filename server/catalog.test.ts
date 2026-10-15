@@ -19,11 +19,11 @@ describe("buildOrderQuote", () => {
         itemId: "brasa-1",
         name: "La Clásica · Patatas fritas con salsa · Coca-Cola",
         quantity: 2,
-        unitCents: 1730,
+        unitCents: 2042,
       }),
     ]);
-    expect(quote.subtotalCents).toBe(3460);
-    expect(quote.totalCents).toBe(3838);
+    expect(quote.subtotalCents).toBe(4084);
+    expect(quote.totalCents).toBe(4383);
   });
 
   it("rechaza precios y opciones que no pertenecen al producto", () => {
@@ -58,6 +58,6 @@ describe("buildOrderQuote", () => {
       "B2B y logística",
     ]));
     const { quote } = buildOrderQuote("piki-market-xativa", [{ id: "market-1", quantity: 1 }]);
-    expect(quote.totalCents).toBe(1123);
+    expect(quote.totalCents).toBe(1237);
   });
 });

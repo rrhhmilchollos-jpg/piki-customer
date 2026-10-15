@@ -53,6 +53,7 @@ export type Restaurant = {
   availabilityStatus?: CatalogAvailabilityStatus;
   isActive?: boolean;
   onboardingStatus?: CatalogOnboardingStatus;
+  commissionRateBps?: number;
 };
 
 export type ModifierSelection = {
@@ -605,6 +606,12 @@ export function buildOrderQuote(
   if (typeof restaurant.fee !== "number" || !Number.isFinite(restaurant.fee))
     throw new Error("El coste de entrega de este establecimiento no está disponible.");
   if (!items.length) throw new Error("La cesta está vacía");
+  const commissionRate = Number.isInteger(restaurant.commissionRateBps)
+    ? Math.max(0, Math.min(1, Number(restaurant.commissionRateBps) / 10_000))
+    : restaurant.id === "alibaba-kebab-xativa" ? 0.15
+      : restaurant.id === "rooster-kebab-xativa" || restaurant.id === "nakama-sushi-xativa" ? 0.23
+        : 0.18;
+  const markupMultiplier = 1 + commissionRate;
 
   const displayLines = items.map(line => {
     if (
@@ -620,7 +627,7 @@ export function buildOrderQuote(
     const partnerUnitCents =
       toCents(item.price) +
       selections.reduce((sum, selection) => sum + selection.unitCents, 0);
-    const unitCents = Math.round(partnerUnitCents * 1.23);
+    const unitCents = Math.ceil(partnerUnitCents * markupMultiplier);
     const optionSummary = selections
       .map(selection => selection.optionName)
       .join(" · ");
@@ -640,7 +647,7 @@ export function buildOrderQuote(
     0
   );
   const partnerSubtotalCents = displayLines.reduce(
-    (sum, line) => sum + Math.round(line.unitCents / 1.23) * line.quantity,
+    (sum, line) => sum + Math.round(line.partnerUnitCents) * line.quantity,
     0
   );
   const commissionCents = subtotalCents - partnerSubtotalCents;
