@@ -236,16 +236,15 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
   }), []);
 
   const reloadAfterControllerChange = useCallback(() => {
-    // El service worker navega dentro de esta misma ventana en cuanto está
-    // activo. Así llega el bundle nuevo sin cerrar la PWA ni exigir al cliente
-    // que la abra de nuevo manualmente.
     if (controllerChangedRef.current) {
       setDeferredUpdate(false);
       setUpdating(false);
-      setState("ready");
-      setDetail("PIKI se ha actualizado en esta misma pantalla. No necesitas cerrar ni abrir la app de nuevo.");
+      // El worker nuevo ya controla la pestaña. Recargar la misma URL hace que
+      // el navegador lea el HTML y los assets del build nuevo; no cierra la PWA
+      // ni exige que el usuario la abra manualmente.
+      window.setTimeout(() => window.location.reload(), 0);
     }
-  }, [isSafeToReload]);
+  }, []);
 
   const requestWorkerActivation = useCallback((registration: ServiceWorkerRegistration | null) => {
     if (!registration || !canApplyPwaUpdate(isSafeToReload())) return;
