@@ -27,11 +27,17 @@ describe("PIKI PWA release policy", () => {
     expect(isValidReleasePolicy(policy({ minimumVersion: "not-a-version" }), "customer")).toBe(false);
   });
 
-  it("does not force-update only because the build ID differs", () => {
+  it("forces an old installed build when the server enables the rollout gate", () => {
     const release = policy({ minimumVersion: "0.2.14", updateRequired: false });
     if (!isValidReleasePolicy(release, "customer")) throw new Error("test policy must be valid");
-    expect(requiresMandatoryPwaUpdate(release, current)).toBe(false);
+    expect(requiresMandatoryPwaUpdate(release, current)).toBe(true);
     expect(hasNewerWebBuild(release, current)).toBe(true);
+  });
+
+  it("does not force a changed build when force update is disabled", () => {
+    const release = policy({ minimumVersion: "0.2.14", forceUpdate: false, updateRequired: false });
+    if (!isValidReleasePolicy(release, "customer")) throw new Error("test policy must be valid");
+    expect(requiresMandatoryPwaUpdate(release, current)).toBe(false);
   });
 
   it("requires an explicitly required or minimum-version update", () => {

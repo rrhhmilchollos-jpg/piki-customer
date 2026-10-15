@@ -52,14 +52,15 @@ export function isValidReleasePolicy(value: ReleasePolicy, surface: string): val
 }
 
 /**
- * A changed build alone is never a mandatory-update signal: a client that has
- * just activated a worker may still be running the old JS until the next safe
- * navigation. Requiring it here was the source of the force-update loop.
+ * A changed build is mandatory only when the server explicitly enables the
+ * force-update gate. This lets an installed Customer recover from a stale
+ * service-worker shell while avoiding a loop on compatible builds.
  */
 export function requiresMandatoryPwaUpdate(policy: ValidReleasePolicy, current: ReleaseIdentity): boolean {
   return policy.forceUpdate && (
     policy.updateRequired === true
     || isNewer(policy.minimumVersion, current.version)
+    || policy.buildId !== current.buildId
   );
 }
 
