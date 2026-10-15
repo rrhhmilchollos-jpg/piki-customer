@@ -129,6 +129,9 @@ export function ProductCustomizer({
                         {group.description ??
                           `Elige hasta ${maximum} opción${maximum === 1 ? "" : "es"}.`}
                       </p>
+                      <p className="mt-2 text-xs font-bold text-[#7b847b]">
+                        {chosen.length} seleccionada{chosen.length === 1 ? "" : "s"} · máximo {maximum}
+                      </p>
                     </div>
                     <div className="p-2">
                       {minimum === 0 && (
@@ -143,7 +146,7 @@ export function ProductCustomizer({
                           className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${chosen.length === 0 ? "bg-[#fff7d9] text-[#171715]" : "hover:bg-[#faf6f0] text-[#536056]"}`}
                         >
                           <span
-                            className={`grid h-5 w-5 place-items-center rounded-full border-2 ${chosen.length === 0 ? "border-[#171715] bg-[#171715] text-white" : "border-[#c6c1ba] bg-white"}`}
+                                  className={`grid h-5 w-5 place-items-center rounded-sm border-2 ${chosen.length === 0 ? "border-[#171715] bg-[#171715] text-white" : "border-[#c6c1ba] bg-white"}`}
                           >
                             {chosen.length === 0 && (
                               <Check className="h-3 w-3" />
@@ -164,7 +167,7 @@ export function ProductCustomizer({
                             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition ${active ? "bg-[#fff7d9] text-[#171715]" : "hover:bg-[#faf6f0] text-[#536056]"}`}
                           >
                             <span
-                              className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${active ? "border-[#171715] bg-[#171715] text-white" : "border-[#c6c1ba] bg-white"}`}
+                              className={`grid h-5 w-5 shrink-0 place-items-center rounded-sm border-2 ${active ? "border-[#008f72] bg-[#008f72] text-white" : "border-[#c6c1ba] bg-white"}`}
                             >
                               {active && <Check className="h-3 w-3" />}
                             </span>
