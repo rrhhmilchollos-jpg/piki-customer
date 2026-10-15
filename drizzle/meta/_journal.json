@@ -64,6 +64,13 @@
       "when": 1791763954654,
       "tag": "0011_rider_document_view_tracking",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791765000000,
+      "tag": "0012_customer_profile",
+      "breakpoints": true
     }
   ]
 }

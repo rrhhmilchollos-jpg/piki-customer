@@ -51,6 +51,7 @@ import {
   updateDeliveryZone,
   updateFleet,
   updateLastSignedIn,
+  updateCustomerProfile,
   updateOrderRecord,
   updatePartnerMenuItem,
   updatePartnerStoreRecord,
@@ -188,9 +189,9 @@ async function dispatchReadyOrderPush(order: { publicCode: string; restaurantNam
   const candidates = (await listRiderProfiles()).filter((rider) => rider.status === "active" && rider.documentsStatus === "verified" && rider.availability === "available");
   return notifyRidersOfReadyOrder({ orderId: order.publicCode, restaurant: order.restaurantName, address: order.address, riderOpenIds: candidates.map((rider) => rider.riderOpenId) });
 }
-function publicAccount(user: { id: number; name: string | null; email: string | null; role: string; createdAt: Date; lastSignedIn: Date } | null) {
+function publicAccount(user: { id: number; name: string | null; email: string | null; phone?: string | null; address?: string | null; locality?: string | null; deliveryLatitude?: string | null; deliveryLongitude?: string | null; role: string; createdAt: Date; lastSignedIn: Date } | null) {
   if (!user) return null;
-  return { id: user.id, name: user.name, email: user.email, role: user.role, createdAt: user.createdAt, lastSignedIn: user.lastSignedIn };
+  return { id: user.id, name: user.name, email: user.email, phone: user.phone ?? null, address: user.address ?? null, locality: user.locality ?? null, deliveryLocation: user.deliveryLatitude && user.deliveryLongitude ? { latitude: Number(user.deliveryLatitude), longitude: Number(user.deliveryLongitude) } : null, role: user.role, createdAt: user.createdAt, lastSignedIn: user.lastSignedIn };
 }
 async function setCredentialSession(ctx: { res: any; req: any }, user: { openId: string; name: string | null }) {
   const sessionToken = await sdk.createSessionToken(user.openId, { name: user.name || "Manduca" , expiresInMs: ONE_YEAR_MS });
@@ -240,6 +241,14 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => { const cookieOptions = getSessionCookieOptions(ctx.req); ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 }); return { success: true } as const; }),
   }),
   customer: router({
+    profile: router({
+      get: protectedProcedure.query(({ ctx }) => publicAccount(ctx.user)),
+      update: protectedProcedure.input(z.object({ name: z.string().trim().min(2).max(160).optional(), phone: z.string().trim().max(32).nullable().optional(), address: z.string().trim().max(280).nullable().optional(), locality: z.string().trim().max(120).nullable().optional(), deliveryLocation: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }).nullable().optional() })).mutation(async ({ input, ctx }) => {
+        const updated = await updateCustomerProfile({ userId: ctx.user.id, name: input.name, phone: input.phone, address: input.address, locality: input.locality, deliveryLatitude: input.deliveryLocation?.latitude ?? (input.deliveryLocation === null ? null : undefined), deliveryLongitude: input.deliveryLocation?.longitude ?? (input.deliveryLocation === null ? null : undefined) });
+        if (!updated) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "No se pudo guardar el perfil." });
+        return publicAccount(updated);
+      }),
+    }),
     orders: router({
       list: protectedProcedure.query(async ({ ctx }) => (await listCustomerOrderRecords(ctx.user.openId)).map((order) => ({ id: order.publicCode, restaurant: order.restaurantName, status: order.status, total: order.totalCents / 100, createdAt: order.createdAt.getTime(), active: !["delivered", "cancelled"].includes(order.status), paymentState: order.paymentState }))),
     }),
@@ -252,8 +261,12 @@ export const appRouter = router({
       }),
     }),
     deliveryAddress: router({
-      get: protectedProcedure.query(() => ({ saved: false as const, address: null as string | null, deliveryLocation: null as { latitude: number; longitude: number } | null, updatedAt: null as Date | null })),
-      save: protectedProcedure.input(z.object({ address: z.string().trim().min(5).max(280), deliveryLocation: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }) })).mutation(({ input }) => ({ saved: true as const, address: input.address, deliveryLocation: input.deliveryLocation, updatedAt: new Date() })),
+      get: protectedProcedure.query(({ ctx }) => ({ saved: Boolean(ctx.user.address), address: ctx.user.address ?? null, deliveryLocation: ctx.user.deliveryLatitude && ctx.user.deliveryLongitude ? { latitude: Number(ctx.user.deliveryLatitude), longitude: Number(ctx.user.deliveryLongitude) } : null, updatedAt: ctx.user.updatedAt })),
+      save: protectedProcedure.input(z.object({ address: z.string().trim().min(5).max(280), deliveryLocation: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }) })).mutation(async ({ input, ctx }) => {
+        const updated = await updateCustomerProfile({ userId: ctx.user.id, address: input.address, deliveryLatitude: input.deliveryLocation.latitude, deliveryLongitude: input.deliveryLocation.longitude, locality: input.address.split(",").at(-1)?.trim() || null });
+        if (!updated) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "No se pudo guardar la dirección." });
+        return { saved: true as const, address: updated.address, deliveryLocation: { latitude: Number(updated.deliveryLatitude), longitude: Number(updated.deliveryLongitude) }, updatedAt: updated.updatedAt };
+      }),
     }),
   }),
   catalog: router({

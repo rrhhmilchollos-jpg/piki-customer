@@ -25,6 +25,7 @@ import { ENV } from "./_core/env";
 let _db: ReturnType<typeof drizzle> | null = null;
 let _chatTableReady = false;
 let _orderNoteReady = false;
+let _customerProfileReady = false;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
@@ -37,6 +38,16 @@ export async function getDb() {
       if (!_orderNoteReady) {
         try { await _db.execute(sql.raw("ALTER TABLE `orders` ADD COLUMN `deliveryNote` varchar(500) NULL")); } catch { /* La columna ya existe en instalaciones migradas. */ }
         _orderNoteReady = true;
+      }
+      if (!_customerProfileReady) {
+        for (const statement of [
+          "ALTER TABLE `users` ADD COLUMN `phone` varchar(32) NULL",
+          "ALTER TABLE `users` ADD COLUMN `address` text NULL",
+          "ALTER TABLE `users` ADD COLUMN `locality` varchar(120) NULL",
+          "ALTER TABLE `users` ADD COLUMN `deliveryLatitude` varchar(32) NULL",
+          "ALTER TABLE `users` ADD COLUMN `deliveryLongitude` varchar(32) NULL",
+        ]) { try { await _db.execute(sql.raw(statement)); } catch { /* La columna ya existe. */ } }
+        _customerProfileReady = true;
       }
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
@@ -122,6 +133,21 @@ export async function updateLastSignedIn(userId: number) {
   const db = await getDb();
   if (!db) return;
   await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, userId));
+}
+
+export async function updateCustomerProfile(input: { userId: number; name?: string; phone?: string | null; address?: string | null; locality?: string | null; deliveryLatitude?: number | null; deliveryLongitude?: number | null }) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.update(users).set({
+    ...(input.name === undefined ? {} : { name: input.name }),
+    ...(input.phone === undefined ? {} : { phone: input.phone }),
+    ...(input.address === undefined ? {} : { address: input.address }),
+    ...(input.locality === undefined ? {} : { locality: input.locality }),
+    ...(input.deliveryLatitude === undefined ? {} : { deliveryLatitude: input.deliveryLatitude == null ? null : String(input.deliveryLatitude) }),
+    ...(input.deliveryLongitude === undefined ? {} : { deliveryLongitude: input.deliveryLongitude == null ? null : String(input.deliveryLongitude) }),
+  }).where(eq(users.id, input.userId));
+  const rows = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+  return rows[0] ?? null;
 }
 
 export async function createResetToken(input: { userId: number; tokenHash: string; expiresAt: Date }) {

@@ -249,7 +249,8 @@ export default function Home() {
   const savedDeliveryAddress = trpc.customer.deliveryAddress.get.useQuery(undefined, { enabled: isAuthenticated, retry: false, refetchOnWindowFocus: false });
   const saveDeliveryAddress = trpc.customer.deliveryAddress.save.useMutation({
     onSuccess: (saved) => {
-      setAddress(saved.address); setAddressDraft(saved.address); setDeliveryLocation(saved.deliveryLocation); setAddressOpen(false);
+      if (saved.address) { setAddress(saved.address); setAddressDraft(saved.address); }
+      setDeliveryLocation(saved.deliveryLocation); setAddressOpen(false);
       void savedDeliveryAddress.refetch();
       toast.success("Dirección guardada", { description: "La usaremos en tus próximos envíos hasta que decidas cambiarla." });
     },
