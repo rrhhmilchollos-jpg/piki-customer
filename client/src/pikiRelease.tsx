@@ -5,7 +5,6 @@ import {
   hasNewerWebBuild,
   isValidReleasePolicy,
   requiresMandatoryPwaUpdate,
-  shouldReloadAfterWorkerActivation,
   type ReleasePolicy,
 } from "./pikiReleasePolicy";
 import { shouldShowPushConsent } from "./pushConsentPolicy";
@@ -226,7 +225,6 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
   const [updating, setUpdating] = useState(false);
   const [deferredUpdate, setDeferredUpdate] = useState(false);
   const sensitiveActivityRef = useRef(false);
-  const reloadMarkerRef = useRef<string | null>(null);
   const controllerChangedRef = useRef(false);
   const updateInFlightRef = useRef(false);
   const hadControllerOnMountRef = useRef("serviceWorker" in navigator && Boolean(navigator.serviceWorker.controller));
@@ -238,15 +236,15 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
   }), []);
 
   const reloadAfterControllerChange = useCallback(() => {
-    const reloadKey = PIKI_RELEASE.buildId;
-    const alreadyReloadedForBuild = reloadMarkerRef.current === reloadKey || sessionStorage.getItem("piki-pwa-reloaded-for") === reloadKey;
-    if (!shouldReloadAfterWorkerActivation({ controllerChanged: controllerChangedRef.current, safety: isSafeToReload(), alreadyReloadedForBuild })) {
-      if (controllerChangedRef.current) setDeferredUpdate(true);
-      return;
+    // Do not force a visible close/reopen. The new worker is active and will
+    // serve the new bundle on the next navigation; the current screen remains
+    // usable and preserves the customer's session and cart.
+    if (controllerChangedRef.current) {
+      setDeferredUpdate(false);
+      setUpdating(false);
+      setState("ready");
+      setDetail("PIKI se ha actualizado en segundo plano. No necesitas cerrar ni reabrir la app.");
     }
-    reloadMarkerRef.current = reloadKey;
-    sessionStorage.setItem("piki-pwa-reloaded-for", reloadKey);
-    window.location.reload();
   }, [isSafeToReload]);
 
   const requestWorkerActivation = useCallback((registration: ServiceWorkerRegistration | null) => {
@@ -319,9 +317,10 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
       const registration = await registerWorker();
       const activation = await activateUpdatedWorker(registration);
       if (!activation.activated) {
-        setDetail("Recargando la aplicación para aplicar la versión disponible…");
+        setDetail("La actualización se ha descargado y se aplicará automáticamente en la próxima navegación.");
         await registration?.update().catch(() => undefined);
-        window.setTimeout(() => window.location.reload(), 350);
+        setUpdating(false);
+        setDeferredUpdate(true);
         return;
       }
       controllerChangedRef.current = activation.controllerChanged;

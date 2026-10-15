@@ -54,6 +54,9 @@ function CustomerRealtimeBridge() {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!isAuthenticated) return;
+    // /unete is a public recruitment/onboarding page. Order lifecycle toasts
+    // from a previous customer session must never cover its forms.
+    if (window.location.pathname === "/unete") return;
     return connectCustomerRealtime((event) => {
       void queryClient.invalidateQueries();
       if (event.type === "order.processing") toast.success("Pago confirmado: tu pedido está siendo procesado por el restaurante.");
