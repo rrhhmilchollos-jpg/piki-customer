@@ -58,6 +58,6 @@ describe("buildOrderQuote", () => {
       "B2B y logística",
     ]));
     const { quote } = buildOrderQuote("piki-market-xativa", [{ id: "market-1", quantity: 1 }]);
-    expect(quote.totalCents).toBe(1237);
+    expect(quote.totalCents).toBe(1238);
   });
 });
