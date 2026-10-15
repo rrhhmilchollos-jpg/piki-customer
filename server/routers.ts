@@ -298,7 +298,7 @@ export const appRouter = router({
       }
       return { id: stored?.publicCode ?? code, restaurant: restaurant.name, eta: restaurant.eta, createdAt: stored?.createdAt?.getTime() ?? Date.now(), status: stored?.status ?? "placed", totalCents: quote.totalCents } as const;
     }),
-    checkout: publicProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
+    checkout: protectedProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
       if (input.paymentMethod === "stripe" && !hasStripeConfiguration()) {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: "El pago online no está disponible temporalmente. Puedes seleccionar efectivo al recibir." });
       }
