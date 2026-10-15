@@ -67,6 +67,7 @@ import { createCustomerSupportTicket, fetchOperationalMessages, fetchOperational
 import { sendPasswordResetEmail } from "./credentialEmail";
 import { storagePut } from "./storage";
 import { isFreshRiderLocation, mayShareRiderLocation } from "./deliveryTracking";
+import { createCheckoutSession, hasStripeConfiguration } from "./payments";
 import { sdk } from "./_core/sdk";
 import { ENV } from "./_core/env";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
@@ -298,7 +299,9 @@ export const appRouter = router({
       return { id: stored?.publicCode ?? code, restaurant: restaurant.name, eta: restaurant.eta, createdAt: stored?.createdAt?.getTime() ?? Date.now(), status: stored?.status ?? "placed", totalCents: quote.totalCents } as const;
     }),
     checkout: publicProcedure.input(basketInput).mutation(async ({ input, ctx }) => {
-      if (input.paymentMethod !== "cash") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Tarjeta y Bizum todavía no están disponibles. Selecciona efectivo al recibir." });
+      if (input.paymentMethod === "stripe" && !hasStripeConfiguration()) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "El pago online no está disponible temporalmente. Puedes seleccionar efectivo al recibir." });
+      }
       if (!input.deliveryLocation) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Selecciona una dirección validada de la lista para poder despachar el pedido." });
       const { restaurant, quote } = buildOrderQuote(
         input.restaurantId,
@@ -306,12 +309,34 @@ export const appRouter = router({
         await customerCatalogue(),
       );
       const code = publicCode();
-      const canonicalWritten = await writeCanonicalOrder({ publicCode: code, restaurantId: restaurant.id, customerOpenId: ctx.user?.openId ?? null, address: input.address, deliveryNote: input.deliveryNote, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod: "cash", deliveryLocation: input.deliveryLocation });
+      const paymentMethod = input.paymentMethod === "cash" ? "cash" : "stripe";
+      const canonicalWritten = await writeCanonicalOrder({ publicCode: code, restaurantId: restaurant.id, customerOpenId: ctx.user?.openId ?? null, address: input.address, deliveryNote: input.deliveryNote, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending", paymentMethod, deliveryLocation: input.deliveryLocation });
       if (!canonicalWritten) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "La API central no está disponible; el pedido no se ha confirmado." });
       const stored = await createOrderRecord({ publicCode: code, restaurantId: restaurant.id, restaurantName: restaurant.name, customerOpenId: ctx.user?.openId ?? null, customerName: input.customerName ?? ctx.user?.name ?? null, address: input.address, deliveryNote: input.deliveryNote, itemsJson: JSON.stringify(input.items), totalCents: quote.totalCents, paymentState: "pending" });
       if (!stored) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No fue posible guardar el pedido; inténtalo de nuevo." });
-      void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
-      return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash", paymentState: "pending_cash_collection", cashDueAtDelivery: true };
+      if (paymentMethod === "cash") {
+        void notifyPartnersOfNewOrder({ orderCode: stored.publicCode, restaurant: stored.restaurantName, address: stored.address, customerName: stored.customerName, totalCents: stored.totalCents });
+        return { orderId: code, checkoutUrl: null, totalCents: quote.totalCents, paymentMethod: "cash" as const, paymentState: "pending_cash_collection" as const, cashDueAtDelivery: true };
+      }
+      try {
+        const session = await createCheckoutSession({
+          origin: requestOrigin(ctx.req.headers),
+          orderCode: code,
+          restaurantName: restaurant.name,
+          quote,
+          customerOpenId: ctx.user?.openId,
+          customerName: ctx.user?.name,
+          customerEmail: ctx.user?.email,
+        });
+        await updateOrderRecord(code, {
+          stripeCheckoutSessionId: session.id,
+          stripePaymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null,
+        });
+        return { orderId: code, checkoutUrl: session.url, totalCents: quote.totalCents, paymentMethod: "stripe" as const, paymentState: "pending_payment" as const, cashDueAtDelivery: false };
+      } catch (error) {
+        await updateOrderRecord(code, { paymentState: "failed", status: "cancelled" });
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: error instanceof Error ? error.message : "No se pudo iniciar el pago seguro." });
+      }
     }),
     get: publicProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input }) => {
       const row = await getOrderRecord(input.id);
