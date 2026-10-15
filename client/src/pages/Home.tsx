@@ -201,6 +201,7 @@ export default function Home() {
   const [address, setAddress] = useState("Carrer de Montcada, Xàtiva");
   const [addressDraft, setAddressDraft] = useState(address);
   const [deliveryLocation, setDeliveryLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [deviceLocationBusy, setDeviceLocationBusy] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [locationSuggestions, setLocationSuggestions] = useState<Array<{ label: string; latitude: number; longitude: number }>>([]);
@@ -256,15 +257,22 @@ export default function Home() {
     setDeviceLocationBusy(true);
     navigator.geolocation.getCurrentPosition(async (position) => {
       const latitude = position.coords.latitude; const longitude = position.coords.longitude;
+      const accuracy = Number(position.coords.accuracy);
+      if (!Number.isFinite(accuracy) || accuracy > 100) {
+        setDeviceLocationBusy(false); setGpsAccuracy(accuracy);
+        toast.error("La señal GPS no es suficientemente precisa", { description: `Precisión actual: ${Math.round(accuracy)} m. Sal a un lugar despejado y vuelve a intentarlo.` });
+        return;
+      }
       setDeliveryLocation({ latitude, longitude });
+      setGpsAccuracy(accuracy);
       try {
         const response = await fetch(`https://api.pikidelivery.com/api/v1/locations/reverse?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`);
         const payload = await response.json();
-        setAddressDraft(typeof payload.label === "string" ? payload.label : `Ubicación GPS ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+        setAddressDraft(typeof payload.label === "string" && payload.label.trim() ? payload.label : `Ubicación GPS ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
       } catch { setAddressDraft(`Ubicación GPS ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`); }
       setLocationSuggestions([]); setDeviceLocationBusy(false);
-      toast.success("Ubicación GPS detectada", { description: `Precisión aproximada: ${Math.round(position.coords.accuracy)} m` });
-    }, (error) => { setDeviceLocationBusy(false); toast.error("No se pudo usar tu GPS", { description: error.message || "Revisa el permiso de ubicación del navegador." }); }, { enableHighAccuracy: true, maximumAge: 15_000, timeout: 15_000 });
+      toast.success("Ubicación GPS detectada", { description: `Coordenadas verificadas · precisión aproximada: ${Math.round(accuracy)} m` });
+    }, (error) => { setDeviceLocationBusy(false); toast.error("No se pudo usar tu GPS", { description: error.message || "Revisa el permiso de ubicación del navegador." }); }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20_000 });
   };
 
   const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
