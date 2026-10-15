@@ -440,6 +440,11 @@ export default function Home() {
                 <div className="brand-spark mb-5 rounded-full px-3 py-1.5 text-xs font-bold text-[#171715]"><Sparkles className="h-3.5 w-3.5 text-[#dc5c35]" /> PIKI: pide, recibe, disfruta.</div>
                 <h1 className="font-display text-[2.8rem] font-semibold leading-[.95] tracking-[-0.065em] text-[#171715] sm:text-6xl lg:text-7xl">El mejor bocado<br /><span className="text-[#dc5c35]">a tu mesa.</span></h1>
                 <p className="mt-6 max-w-md text-base leading-relaxed text-[#2c2b20] sm:text-lg">Restaurantes, supermercados y antojos locales. Pide fácil, sigue tu pedido y disfruta de Xàtiva con una sonrisa.</p>
+                <div className="mt-5 max-w-lg rounded-2xl border border-[#171715]/15 bg-[#fff8c9]/80 p-4 shadow-[0_8px_18px_rgba(31,31,20,.08)]">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-[#b84e2d]">Disponible muy pronto en más zonas</p>
+                  <p className="mt-1 text-sm font-extrabold leading-relaxed text-[#29281e]">Regístrate para ser de los primeros en enterarte, recibir ofertas de lanzamiento y descubrir los nuevos comercios de Xàtiva y alrededores.</p>
+                  <button onClick={() => window.dispatchEvent(new CustomEvent("piki:open-customer-auth"))} className="mt-3 inline-flex items-center gap-2 rounded-full bg-[#171715] px-4 py-2.5 text-xs font-extrabold text-[#FFD72E] transition hover:bg-black active:scale-[.98]">Quiero enterarme primero <ArrowRight className="h-3.5 w-3.5" /></button>
+                </div>
                 <button onClick={() => document.getElementById("explorar")?.scrollIntoView({ behavior: "smooth" })} className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#171715] px-5 py-3 text-sm font-extrabold text-[#FFD72E] shadow-[0_10px_20px_rgba(31,31,20,.2)] transition hover:-translate-y-0.5 hover:bg-black active:scale-[.98]">¡Quiero mi bocado! <ArrowRight className="h-4 w-4" /></button>
                 <button onClick={openAddressDialog} className="mt-7 flex items-center gap-2 text-sm font-semibold text-[#29281e] transition hover:text-black"><MapPin className="h-4 w-4 text-[#171715]" /> Entregando en <span className="border-b border-dashed border-[#171715]/45">{address}</span></button>
               </div>
