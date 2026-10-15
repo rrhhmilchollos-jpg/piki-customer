@@ -18,6 +18,14 @@ self.addEventListener("activate", (event) => {
     const keys = await caches.keys();
     await Promise.all(keys.filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME).map((key) => caches.delete(key)));
     await self.clients.claim();
+    // El cliente solo solicita SKIP_WAITING en un punto seguro. Al activar el
+    // nuevo worker se navega dentro de la misma ventana para cargar el bundle
+    // nuevo, sin cerrar la PWA ni exigir que se abra manualmente de nuevo.
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    await Promise.all(windows.map(async (client) => {
+      if (!client.url.startsWith(self.location.origin)) return;
+      try { await client.navigate(client.url); } catch { /* Una ventana cerrándose no bloquea la actualización. */ }
+    }));
   })());
 });
 
