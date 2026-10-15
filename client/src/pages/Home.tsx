@@ -94,6 +94,37 @@ const expandingPartners = [
 ] as const;
 
 const money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
+const MAX_ACCEPTABLE_GPS_ACCURACY_METERS = 100;
+const GPS_RETRY_COUNT = 3;
+
+function getFreshPrecisePosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    let bestAccuracy = Number.POSITIVE_INFINITY;
+    let lastPosition: GeolocationPosition | null = null;
+
+    const request = () => {
+      attempts += 1;
+      navigator.geolocation.getCurrentPosition((position) => {
+        lastPosition = position;
+        bestAccuracy = Math.min(bestAccuracy, Number(position.coords.accuracy));
+        if (Number.isFinite(position.coords.accuracy) && position.coords.accuracy <= MAX_ACCEPTABLE_GPS_ACCURACY_METERS) {
+          resolve(position);
+          return;
+        }
+        if (attempts < GPS_RETRY_COUNT) {
+          window.setTimeout(request, 900);
+          return;
+        }
+        const error = new Error(`Precisión GPS insuficiente (${Math.round(bestAccuracy)} m)`);
+        (error as Error & { position?: GeolocationPosition }).position = lastPosition || undefined;
+        reject(error);
+      }, reject, { enableHighAccuracy: true, maximumAge: 0, timeout: 12_000 });
+    };
+
+    request();
+  });
+}
 
 function SectionTitle({ eyebrow, title, action }: { eyebrow?: string; title: string; action?: string }) {
   return (
@@ -255,14 +286,9 @@ export default function Home() {
   const useDeviceLocation = () => {
     if (!navigator.geolocation) { toast.error("Este dispositivo no permite usar tu GPS."); return; }
     setDeviceLocationBusy(true);
-    navigator.geolocation.getCurrentPosition(async (position) => {
+    void getFreshPrecisePosition().then(async (position) => {
       const latitude = position.coords.latitude; const longitude = position.coords.longitude;
       const accuracy = Number(position.coords.accuracy);
-      if (!Number.isFinite(accuracy) || accuracy > 100) {
-        setDeviceLocationBusy(false); setGpsAccuracy(accuracy);
-        toast.error("La señal GPS no es suficientemente precisa", { description: `Precisión actual: ${Math.round(accuracy)} m. Sal a un lugar despejado y vuelve a intentarlo.` });
-        return;
-      }
       setDeliveryLocation({ latitude, longitude });
       setGpsAccuracy(accuracy);
       try {
@@ -272,7 +298,17 @@ export default function Home() {
       } catch { setAddressDraft(`Ubicación GPS ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`); }
       setLocationSuggestions([]); setDeviceLocationBusy(false);
       toast.success("Ubicación GPS detectada", { description: `Coordenadas verificadas · precisión aproximada: ${Math.round(accuracy)} m` });
-    }, (error) => { setDeviceLocationBusy(false); toast.error("No se pudo usar tu GPS", { description: error.message || "Revisa el permiso de ubicación del navegador." }); }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20_000 });
+    }).catch((error: unknown) => {
+      setDeviceLocationBusy(false);
+      setGpsAccuracy(null);
+      const message = error instanceof Error ? error.message : "No se pudo verificar una lectura GPS fiable.";
+      const permissionMessage = typeof error === "object" && error !== null && "code" in error && (error as GeolocationPositionError).code === 1
+        ? "Concede permiso de ubicación precisa en el navegador y vuelve a intentarlo."
+        : message.includes("Precisión GPS insuficiente")
+          ? "El dispositivo no ha conseguido una señal suficientemente precisa. Sal al exterior o selecciona la calle manualmente."
+          : message || "Revisa el permiso de ubicación del navegador.";
+      toast.error("No se pudo verificar tu ubicación", { description: permissionMessage });
+    });
   };
 
   const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
