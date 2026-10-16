@@ -326,6 +326,17 @@ export default function Home() {
   const cashWithinLimit = total <= CASH_LIMIT_EUR;
 
   useEffect(() => {
+    const openOrder = (event: Event) => {
+      const detail = (event as CustomEvent<{ id?: string; restaurant?: string; totalCents?: number; stage?: string }>).detail;
+      if (!detail?.id) return;
+      const stage = detail.stage === "preparing" || detail.stage === "onway" ? detail.stage : "confirmed";
+      setTracking({ id: detail.id, restaurant: detail.restaurant || "Pedido PIKI", eta: "actualizando…", stage, totalCents: detail.totalCents });
+    };
+    window.addEventListener("piki:open-order", openOrder);
+    return () => window.removeEventListener("piki:open-order", openOrder);
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get("order_id");
     if (orderId && !params.get("checkout")) {

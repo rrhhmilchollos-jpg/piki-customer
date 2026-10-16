@@ -195,8 +195,9 @@ export async function listOrderRecords(statuses?: Array<typeof orders.status.enu
 }
 
 export async function listCustomerOrderRecords(customerOpenId: string) {
-  const rows = await listOrderRecords(undefined, false);
-  return rows.filter((row) => row.customerOpenId === customerOpenId).slice(0, 100);
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(orders).where(eq(orders.customerOpenId, customerOpenId)).orderBy(desc(orders.createdAt)).limit(100);
 }
 
 export async function updateOrderRecord(publicCode: string, patch: Partial<typeof orders.$inferInsert>) {
