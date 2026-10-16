@@ -252,11 +252,12 @@ export default function Home() {
   const addItem = (
     restaurant: Restaurant,
     item: MenuItem,
-    selections: ModifierSelection[]
+    selections: ModifierSelection[],
+    quantity = 1
   ) => {
     const key = selectionKey(item.id, selections);
     const unitPrice = getMenuItemUnitPrice(item, selections);
-    const newLine: CartLine = { key, item, selections, quantity: 1, unitPrice };
+    const newLine: CartLine = { key, item, selections, quantity, unitPrice };
 
     if (cartRestaurant && cartRestaurant.id !== restaurant.id) {
       setCartRestaurant(restaurant);
@@ -270,7 +271,7 @@ export default function Home() {
         const existing = current.find(line => line.key === key);
         if (existing)
           return current.map(line =>
-            line.key === key ? { ...line, quantity: line.quantity + 1 } : line
+            line.key === key ? { ...line, quantity: line.quantity + quantity } : line
           );
         return [...current, newLine];
       });
@@ -476,7 +477,6 @@ export default function Home() {
                   const quantity = cart
                     .filter(line => line.item.id === item.id)
                     .reduce((sum, line) => sum + line.quantity, 0);
-                  const customizable = Boolean(item.modifierGroups?.length);
                   return (
                     <article
                       key={item.id}
@@ -516,18 +516,16 @@ export default function Home() {
                       </div>
                       <button
                         onClick={() =>
-                          customizable
-                            ? setCustomizing({
-                                restaurant: selectedRestaurant,
-                                item,
-                              })
-                            : addItem(selectedRestaurant, item, [])
+                          setCustomizing({
+                            restaurant: selectedRestaurant,
+                            item,
+                          })
                         }
                         className="flex shrink-0 self-center items-center gap-1.5 rounded-xl bg-[#171715] px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-black active:scale-95"
-                        aria-label={`${customizable ? "Personalizar" : "Añadir"} ${item.name}`}
+                        aria-label={`Personalizar y añadir ${item.name}`}
                       >
                         <Plus className="h-4 w-4" />
-                        {customizable ? "Personalizar" : "Añadir"}
+                        Añadir
                       </button>
                     </article>
                   );

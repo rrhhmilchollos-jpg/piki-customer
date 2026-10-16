@@ -1,5 +1,5 @@
 import { getMenuItemUnitPrice } from "@/lib/menu";
-import { Check, Plus, X } from "lucide-react";
+import { Check, Minus, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { MenuItem, ModifierSelection } from "../../../server/catalog";
 
@@ -11,7 +11,7 @@ const money = new Intl.NumberFormat("es-ES", {
 type ProductCustomizerProps = {
   item: MenuItem;
   onClose: () => void;
-  onAdd: (selections: ModifierSelection[]) => void;
+  onAdd: (selections: ModifierSelection[], quantity: number) => void;
 };
 
 function initialSelections(item: MenuItem) {
@@ -28,6 +28,7 @@ export function ProductCustomizer({
   const [selected, setSelected] = useState<Record<string, string[]>>(() =>
     initialSelections(item)
   );
+  const [quantity, setQuantity] = useState(1);
   const groups = item.modifierGroups ?? [];
   const selections = useMemo<ModifierSelection[]>(
     () =>
@@ -73,7 +74,7 @@ export function ProductCustomizer({
         aria-label={`Personalizar ${item.name}`}
         role="dialog"
         aria-modal="true"
-        className="max-h-[92vh] w-full max-w-xl overflow-hidden rounded-t-[2rem] bg-[#FFFDF5] shadow-2xl sm:rounded-[2rem]"
+        className="max-h-[94vh] w-full max-w-5xl overflow-hidden rounded-t-[2rem] bg-[#FFFDF5] shadow-2xl sm:rounded-[2rem]"
         onMouseDown={event => event.stopPropagation()}
       >
         <header className="flex items-start justify-between gap-4 border-b border-[#ece2d8] px-5 py-5 sm:px-7">
@@ -97,7 +98,8 @@ export function ProductCustomizer({
           </button>
         </header>
 
-        <div className="max-h-[calc(92vh-190px)] overflow-y-auto px-5 py-5 sm:px-7">
+        <div className="grid min-h-0 max-h-[calc(94vh-180px)] overflow-hidden lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,.75fr)]">
+          <div className="min-h-0 overflow-y-auto px-5 py-5 sm:px-7">
           {groups.length === 0 ? (
             <p className="rounded-2xl bg-white p-4 text-sm text-[#68746a]">
               Este producto se añade tal cual a la cesta.
@@ -185,6 +187,21 @@ export function ProductCustomizer({
               })}
             </div>
           )}
+          </div>
+          <aside className="hidden min-h-0 border-l border-[#ece2d8] bg-white p-6 lg:block">
+            <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#dc5c35]">Tu elección</p>
+            <h3 className="mt-2 font-display text-2xl font-semibold tracking-[-.05em] text-[#171715]">{item.name}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-[#68746a]">Revisa las opciones y la cantidad antes de añadirla a la cesta.</p>
+            <div className="mt-8 flex items-center justify-between rounded-2xl bg-[#fff8df] px-4 py-3">
+              <span className="text-sm font-extrabold">Cantidad</span>
+              <div className="flex items-center gap-3 rounded-full border border-[#e5dbd0] bg-white p-1">
+                <button type="button" aria-label="Restar cantidad" onClick={() => setQuantity(value => Math.max(1, value - 1))} className="grid h-8 w-8 place-items-center rounded-full hover:bg-[#f5efe7]"><Minus className="h-4 w-4" /></button>
+                <span className="min-w-5 text-center font-extrabold">{quantity}</span>
+                <button type="button" aria-label="Sumar cantidad" onClick={() => setQuantity(value => value + 1)} className="grid h-8 w-8 place-items-center rounded-full bg-[#FFD72E]"><Plus className="h-4 w-4" /></button>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center justify-between border-t border-[#ece2d8] pt-4 text-lg font-extrabold"><span>Total</span><span>{money.format(unitPrice * quantity)}</span></div>
+          </aside>
         </div>
 
         <footer className="border-t border-[#ece2d8] bg-[#FFFDF5] p-5 sm:px-7">
@@ -193,16 +210,24 @@ export function ProductCustomizer({
               Completa las opciones obligatorias para continuar.
             </p>
           )}
+          <div className="mb-3 flex items-center justify-between rounded-xl bg-[#fff8df] px-3 py-2 lg:hidden">
+            <span className="text-sm font-extrabold">Cantidad</span>
+            <div className="flex items-center gap-3 rounded-full border border-[#e5dbd0] bg-white p-1">
+              <button type="button" aria-label="Restar cantidad" onClick={() => setQuantity(value => Math.max(1, value - 1))} className="grid h-8 w-8 place-items-center rounded-full"><Minus className="h-4 w-4" /></button>
+              <span className="min-w-5 text-center font-extrabold">{quantity}</span>
+              <button type="button" aria-label="Sumar cantidad" onClick={() => setQuantity(value => value + 1)} className="grid h-8 w-8 place-items-center rounded-full bg-[#FFD72E]"><Plus className="h-4 w-4" /></button>
+            </div>
+          </div>
           <button
             type="button"
             disabled={!isValid}
-            onClick={() => onAdd(selections)}
+            onClick={() => onAdd(selections, quantity)}
             className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-5 py-3.5 text-sm font-extrabold text-white shadow-lg transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Añadir a la cesta
+              <Plus className="h-4 w-4" /> Añadir {quantity} a la cesta
             </span>
-            <span>{money.format(unitPrice)}</span>
+            <span>{money.format(unitPrice * quantity)}</span>
           </button>
         </footer>
       </section>
