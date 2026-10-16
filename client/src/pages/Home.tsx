@@ -324,7 +324,9 @@ export default function Home() {
 
   const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
   const subtotal = cart.reduce((total, line) => total + line.unitPrice * line.quantity, 0);
-  const partnerCommissionRate = 0.18;
+  const partnerCommissionRate = typeof cartRestaurant?.commissionRateBps === "number"
+    ? Math.max(0, Math.min(1, cartRestaurant.commissionRateBps / 10_000))
+    : 0.18;
   const partnerSubtotal = subtotal / (1 + partnerCommissionRate);
   const deliveryFee = cart.length ? 2.99 : 0;
   const serviceFee = 0;
