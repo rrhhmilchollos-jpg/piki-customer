@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  customerAddresses,
   deliveryIncidents,
   deliveryZones,
   fleets,
@@ -38,6 +39,7 @@ export async function getDb() {
         try { await _db.execute(sql.raw("ALTER TABLE `orders` ADD COLUMN `deliveryNote` varchar(500) NULL")); } catch { /* La columna ya existe en instalaciones migradas. */ }
         _orderNoteReady = true;
       }
+      await _db.execute(sql.raw("CREATE TABLE IF NOT EXISTS `customerAddresses` (`id` int AUTO_INCREMENT NOT NULL, `customerOpenId` varchar(64) NOT NULL, `streetType` varchar(32) NOT NULL, `streetName` varchar(160) NOT NULL, `streetNumber` varchar(24) NOT NULL, `block` varchar(80), `floor` varchar(32), `door` varchar(32), `locality` varchar(120) NOT NULL DEFAULT 'Xàtiva', `notes` varchar(500), `latitude` int, `longitude` int, `createdAt` timestamp NOT NULL DEFAULT (now()), `updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE now(), PRIMARY KEY (`id`), UNIQUE KEY `customerAddresses_customerOpenId_unique` (`customerOpenId`))"));
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -87,6 +89,23 @@ export async function getUserByEmail(email: string) {
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.email, email.toLowerCase())).limit(1);
   return result[0];
+}
+
+export async function getCustomerAddress(customerOpenId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(customerAddresses).where(eq(customerAddresses.customerOpenId, customerOpenId)).limit(1);
+  return rows[0];
+}
+
+export async function upsertCustomerAddress(input: {
+  customerOpenId: string; streetType: string; streetName: string; streetNumber: string; block?: string; floor?: string; door?: string; locality: string; notes?: string; latitude?: number; longitude?: number;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  const values = { ...input, latitude: input.latitude === undefined ? null : Math.round(input.latitude * 1_000_000), longitude: input.longitude === undefined ? null : Math.round(input.longitude * 1_000_000), block: input.block || null, floor: input.floor || null, door: input.door || null, notes: input.notes || null };
+  await db.insert(customerAddresses).values(values).onDuplicateKeyUpdate({ set: values });
+  return getCustomerAddress(input.customerOpenId);
 }
 
 export async function createCredentialUser(input: {

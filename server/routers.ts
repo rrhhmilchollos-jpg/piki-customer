@@ -19,6 +19,7 @@ import {
   createResetToken,
   deletePartnerMenuItem,
   getPartnerOrder,
+  getCustomerAddress,
   getRiderProfile,
   getLatestRiderLocation,
   getOrderRecord,
@@ -56,6 +57,7 @@ import {
   updateUserRole,
   updateUserPassword,
   upsertPartnerPushSubscription,
+  upsertCustomerAddress,
   upsertRiderPushSubscription,
   upsertRiderProfile,
 } from "./db";
@@ -115,6 +117,10 @@ const menuItem = z.object({
 });
 
 function publicCode() { return `MG-${nanoid(8).toUpperCase()}`; }
+function formatDeliveryAddress(address: { streetType: string; streetName: string; streetNumber: string; block?: string | null; floor?: string | null; door?: string | null; locality: string; notes?: string | null }) {
+  const building = [address.block, address.floor, address.door].filter(Boolean).join(", ");
+  return `${address.streetType} ${address.streetName} ${address.streetNumber}${building ? `, ${building}` : ""}, ${address.locality}${address.notes ? ` · ${address.notes}` : ""}`;
+}
 function requestOrigin(headers: Record<string, string | string[] | undefined>) {
   const origin = headers.origin;
   return typeof origin === "string" && origin.startsWith("http") ? origin : "https://mesagodeliv-gdrjgnii.manus.space";
@@ -238,8 +244,16 @@ export const appRouter = router({
       }),
     }),
     deliveryAddress: router({
-      get: protectedProcedure.query(() => ({ saved: false as const, address: null as string | null, deliveryLocation: null as { latitude: number; longitude: number } | null, updatedAt: null as Date | null })),
-      save: protectedProcedure.input(z.object({ address: z.string().trim().min(5).max(280), deliveryLocation: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }) })).mutation(({ input }) => ({ saved: true as const, address: input.address, deliveryLocation: input.deliveryLocation, updatedAt: new Date() })),
+      get: protectedProcedure.query(async ({ ctx }) => {
+        const saved = await getCustomerAddress(ctx.user.openId);
+        if (!saved) return { saved: false as const, address: null, structured: null, deliveryLocation: null, updatedAt: null };
+        return { saved: true as const, address: formatDeliveryAddress(saved), structured: { streetType: saved.streetType, streetName: saved.streetName, streetNumber: saved.streetNumber, block: saved.block || "", floor: saved.floor || "", door: saved.door || "", locality: saved.locality, notes: saved.notes || "" }, deliveryLocation: saved.latitude === null || saved.longitude === null ? null : { latitude: saved.latitude / 1_000_000, longitude: saved.longitude / 1_000_000 }, updatedAt: saved.updatedAt };
+      }),
+      save: protectedProcedure.input(z.object({ streetType: z.enum(["Calle", "Plaza", "Avenida", "Camino", "Pasaje"]), streetName: z.string().trim().min(2).max(160), streetNumber: z.string().trim().min(1).max(24), block: z.string().trim().max(80).optional(), floor: z.string().trim().max(32).optional(), door: z.string().trim().max(32).optional(), locality: z.string().trim().min(2).max(120).default("Xàtiva"), notes: z.string().trim().max(500).optional(), deliveryLocation: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }) })).mutation(async ({ input, ctx }) => {
+        const saved = await upsertCustomerAddress({ customerOpenId: ctx.user.openId, streetType: input.streetType, streetName: input.streetName, streetNumber: input.streetNumber, block: input.block || "", floor: input.floor || "", door: input.door || "", locality: input.locality, notes: input.notes || "", latitude: input.deliveryLocation.latitude, longitude: input.deliveryLocation.longitude });
+        if (!saved) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "La dirección no se pudo guardar en Staging." });
+        return { saved: true as const, address: formatDeliveryAddress(saved), structured: { streetType: saved.streetType, streetName: saved.streetName, streetNumber: saved.streetNumber, block: saved.block || "", floor: saved.floor || "", door: saved.door || "", locality: saved.locality, notes: saved.notes || "" }, deliveryLocation: { latitude: saved.latitude! / 1_000_000, longitude: saved.longitude! / 1_000_000 }, updatedAt: saved.updatedAt };
+      }),
     }),
   }),
   catalog: router({

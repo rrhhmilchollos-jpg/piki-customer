@@ -13,6 +13,23 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
+export const customerAddresses = mysqlTable("customerAddresses", {
+  id: int("id").autoincrement().primaryKey(),
+  customerOpenId: varchar("customerOpenId", { length: 64 }).notNull().unique(),
+  streetType: varchar("streetType", { length: 32 }).notNull(),
+  streetName: varchar("streetName", { length: 160 }).notNull(),
+  streetNumber: varchar("streetNumber", { length: 24 }).notNull(),
+  block: varchar("block", { length: 80 }),
+  floor: varchar("floor", { length: 32 }),
+  door: varchar("door", { length: 32 }),
+  locality: varchar("locality", { length: 120 }).notNull().default("Xàtiva"),
+  notes: varchar("notes", { length: 500 }),
+  latitude: int("latitude"),
+  longitude: int("longitude"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export const passwordResetTokens = mysqlTable("passwordResetTokens", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
