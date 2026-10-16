@@ -72,10 +72,24 @@ async function activateUpdatedWorker(registration: ServiceWorkerRegistration | n
       resolve({ activated: controllerChanged, controllerChanged, hadController: Boolean(previousController) });
     };
     const onControllerChange = () => finish(navigator.serviceWorker.controller !== previousController);
-    const timeout = window.setTimeout(() => finish(false), 8_000);
+    const timeout = window.setTimeout(() => finish(false), 4_000);
     navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
     waiting.postMessage({ type: "SKIP_WAITING" });
   });
+}
+
+async function forceRefreshPwa(): Promise<void> {
+  if ("serviceWorker" in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(registration => registration.unregister()));
+  }
+  if ("caches" in window) {
+    const cacheNames = await caches.keys();
+    await Promise.all(cacheNames.filter(name => name.startsWith("piki-customer-")).map(name => caches.delete(name)));
+  }
+  const url = new URL(window.location.href);
+  url.searchParams.set("piki_refresh", Date.now().toString());
+  window.location.replace(url.toString());
 }
 
 export function installPikiReleaseHeaders(): void {
@@ -316,10 +330,8 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
       const registration = await registerWorker();
       const activation = await activateUpdatedWorker(registration);
       if (!activation.activated) {
-        setDetail("La actualización se ha descargado y se aplicará automáticamente en la próxima navegación.");
-        await registration?.update().catch(() => undefined);
-        setUpdating(false);
-        setDeferredUpdate(true);
+        setDetail("El navegador no ha activado el worker anterior. Limpiando la caché y aplicando la versión nueva…");
+        await forceRefreshPwa();
         return;
       }
       controllerChangedRef.current = activation.controllerChanged;
