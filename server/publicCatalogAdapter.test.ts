@@ -39,6 +39,31 @@ describe("public catalogue availability adapter", () => {
     expect(catalogue?.[0]).not.toHaveProperty("eta");
   });
 
+  it("maps the API modifiers alias to modifier groups for the product configurator", () => {
+    const catalogue = mapPublicCataloguePayload([
+      {
+        id: "alibaba",
+        name: "Alibaba Kebab Xàtiva",
+        menu: [{
+          id: "menu-1",
+          name: "Menú 1",
+          price: 9,
+          modifiers: [{
+            id: "drink",
+            name: "Bebida",
+            minSelections: 1,
+            maxSelections: 1,
+            options: [{ id: "cola", name: "Coca-Cola", price: 0 }],
+          }],
+        }],
+      },
+    ]);
+
+    expect(catalogue?.[0]?.menu[0]?.modifierGroups).toEqual([
+      expect.objectContaining({ id: "drink", name: "Bebida", minSelections: 1 }),
+    ]);
+  });
+
   it("fails closed for a coming-soon restaurant even if a caller submits menu lines", () => {
     const catalogue = mapPublicCataloguePayload([
       {
