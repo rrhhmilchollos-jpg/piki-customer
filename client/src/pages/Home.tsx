@@ -618,7 +618,6 @@ export default function Home() {
                   const quantity = cart
                     .filter(line => line.item.id === item.id)
                     .reduce((sum, line) => sum + line.quantity, 0);
-                  const customizable = Boolean(item.modifierGroups?.length);
                   return (
                     <article
                       key={item.id}
@@ -657,19 +656,12 @@ export default function Home() {
                         )}
                       </div>
                       <button
-                        onClick={() =>
-                          customizable
-                            ? setCustomizing({
-                                restaurant: selectedRestaurant,
-                                item,
-                              })
-                            : addItem(selectedRestaurant, item, [])
-                        }
+                        onClick={() => setCustomizing({ restaurant: selectedRestaurant, item })}
                         className="flex shrink-0 self-center items-center gap-1.5 rounded-xl bg-[#171715] px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-black active:scale-95"
-                        aria-label={`${customizable ? "Personalizar" : "Añadir"} ${item.name}`}
+                        aria-label={`Añadir ${item.name}`}
                       >
                         <Plus className="h-4 w-4" />
-                        {customizable ? "Personalizar" : "Añadir"}
+                        Añadir
                       </button>
                     </article>
                   );

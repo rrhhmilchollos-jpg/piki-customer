@@ -98,7 +98,9 @@ function mapMenuItem(value: unknown): MenuItem | null {
   if (!id || !name || price === undefined || price < 0) return null;
   const modifierRows = Array.isArray(value.modifierGroups)
     ? value.modifierGroups
-    : [];
+    : Array.isArray(value.modifiers)
+      ? value.modifiers
+      : [];
   const modifierGroups = modifierRows
     .map(mapModifierGroup)
     .filter((group): group is MenuModifierGroup => group !== null);
