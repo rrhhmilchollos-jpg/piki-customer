@@ -359,7 +359,8 @@ export default function Home() {
   const addItem = (
     restaurant: Restaurant,
     item: MenuItem,
-    selections: ModifierSelection[]
+    selections: ModifierSelection[],
+    quantity = 1
   ) => {
     if (!isRestaurantOrderable(restaurant)) {
       setCustomizing(null);
@@ -368,7 +369,7 @@ export default function Home() {
     }
     const key = selectionKey(item.id, selections);
     const unitPrice = Math.round(getMenuItemUnitPrice(item, selections) * 1.23 * 100) / 100;
-    const newLine: CartLine = { key, item, selections, quantity: 1, unitPrice };
+    const newLine: CartLine = { key, item, selections, quantity, unitPrice };
 
     if (cartRestaurant && cartRestaurant.id !== restaurant.id) {
       setCartRestaurant(restaurant);
@@ -382,7 +383,7 @@ export default function Home() {
         const existing = current.find(line => line.key === key);
         if (existing)
           return current.map(line =>
-            line.key === key ? { ...line, quantity: line.quantity + 1 } : line
+            line.key === key ? { ...line, quantity: line.quantity + quantity } : line
           );
         return [...current, newLine];
       });

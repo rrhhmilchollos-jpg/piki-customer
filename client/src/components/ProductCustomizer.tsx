@@ -1,5 +1,5 @@
 import { getMenuItemUnitPrice } from "@/lib/menu";
-import { Check, Plus, X } from "lucide-react";
+import { Check, Minus, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { MenuItem, ModifierSelection } from "../../../server/catalog";
 
@@ -11,7 +11,7 @@ const money = new Intl.NumberFormat("es-ES", {
 type ProductCustomizerProps = {
   item: MenuItem;
   onClose: () => void;
-  onAdd: (selections: ModifierSelection[]) => void;
+  onAdd: (selections: ModifierSelection[], quantity: number) => void;
 };
 
 function initialSelections(item: MenuItem) {
@@ -28,6 +28,7 @@ export function ProductCustomizer({
   const [selected, setSelected] = useState<Record<string, string[]>>(() =>
     initialSelections(item)
   );
+  const [quantity, setQuantity] = useState(1);
   const groups = item.modifierGroups ?? [];
   const selections = useMemo<ModifierSelection[]>(
     () =>
@@ -196,16 +197,24 @@ export function ProductCustomizer({
               Completa las opciones obligatorias para continuar.
             </p>
           )}
+          <div className="mb-3 flex items-center justify-between rounded-xl bg-[#fff8df] px-3 py-2 lg:hidden">
+            <span className="text-sm font-extrabold">Cantidad</span>
+            <div className="flex items-center gap-3 rounded-full border border-[#e5dbd0] bg-white p-1">
+              <button type="button" aria-label="Restar cantidad" onClick={() => setQuantity(value => Math.max(1, value - 1))} className="grid h-8 w-8 place-items-center rounded-full"><Minus className="h-4 w-4" /></button>
+              <span className="min-w-5 text-center font-extrabold">{quantity}</span>
+              <button type="button" aria-label="Sumar cantidad" onClick={() => setQuantity(value => value + 1)} className="grid h-8 w-8 place-items-center rounded-full bg-[#FFD72E]"><Plus className="h-4 w-4" /></button>
+            </div>
+          </div>
           <button
             type="button"
             disabled={!isValid}
-            onClick={() => onAdd(selections)}
+            onClick={() => onAdd(selections, quantity)}
             className="flex w-full items-center justify-between rounded-xl bg-[#171715] px-4 py-3 text-sm font-extrabold text-white shadow-lg transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-50 sm:px-5 sm:py-3.5"
           >
             <span className="flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Añadir al carrito
+              <Plus className="h-4 w-4" /> Añadir {quantity} al carrito
             </span>
-            <span>{money.format(unitPrice)}</span>
+            <span>{money.format(unitPrice * quantity)}</span>
           </button>
         </footer>
       </section>
