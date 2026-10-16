@@ -28,6 +28,8 @@ export type MenuItem = {
   name: string;
   description: string;
   price: number;
+  category?: string;
+  image?: string;
   allergens?: string[];
   vegetarian?: boolean;
   popular?: boolean;
@@ -608,9 +610,7 @@ export function buildOrderQuote(
   if (!items.length) throw new Error("La cesta está vacía");
   const commissionRate = Number.isInteger(restaurant.commissionRateBps)
     ? Math.max(0, Math.min(1, Number(restaurant.commissionRateBps) / 10_000))
-    : restaurant.id === "alibaba-kebab-xativa" ? 0.15
-      : restaurant.id === "rooster-kebab-xativa" || restaurant.id === "nakama-sushi-xativa" ? 0.23
-        : 0.18;
+    : 0.18;
   const markupMultiplier = 1 + commissionRate;
 
   const displayLines = items.map(line => {

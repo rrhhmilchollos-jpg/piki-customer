@@ -260,6 +260,16 @@ export default function Home() {
   const { data: liveTracking } = trpc.order.get.useQuery(trackingInput, { enabled: Boolean(tracking) && isAuthenticated, refetchInterval: 3000, retry: false });
   const customerTracking = trpc.order.customerTracking.useQuery(trackingInput, { enabled: Boolean(tracking) && isAuthenticated, refetchInterval: 5_000, retry: false });
   const trackingTotalCents = tracking?.totalCents ?? liveTracking?.totalCents;
+  const menuSections = useMemo(() => {
+    const sections = new Map<string, MenuItem[]>();
+    for (const item of selectedRestaurant?.menu ?? []) {
+      const label = item.category?.trim() || "Carta";
+      const current = sections.get(label) ?? [];
+      current.push(item);
+      sections.set(label, current);
+    }
+    return Array.from(sections.entries()).map(([label, items]) => ({ label, items }));
+  }, [selectedRestaurant?.menu]);
   useEffect(() => {
     const saved = savedDeliveryAddress.data;
     if (!saved?.saved || !saved.address || !saved.deliveryLocation) return;
@@ -314,9 +324,7 @@ export default function Home() {
 
   const cartCount = cart.reduce((total, line) => total + line.quantity, 0);
   const subtotal = cart.reduce((total, line) => total + line.unitPrice * line.quantity, 0);
-  const partnerCommissionRate = cartRestaurant?.id === "alibaba-kebab-xativa" ? 0.15
-    : cartRestaurant?.id === "rooster-kebab-xativa" || cartRestaurant?.id === "nakama-sushi-xativa" ? 0.23
-      : 0.18;
+  const partnerCommissionRate = 0.18;
   const partnerSubtotal = subtotal / (1 + partnerCommissionRate);
   const deliveryFee = cart.length ? 2.99 : 0;
   const serviceFee = 0;
@@ -625,59 +633,56 @@ export default function Home() {
                   {selectedRestaurant.menu.length} productos
                 </span>
               </div>
-              <div className="mt-5 space-y-3">
-                {selectedRestaurant.menu.map(item => {
-                  const quantity = cart
-                    .filter(line => line.item.id === item.id)
-                    .reduce((sum, line) => sum + line.quantity, 0);
-                  return (
-                    <article
-                      key={item.id}
-                      className="flex gap-4 rounded-2xl border border-[#e5dbd0] bg-white p-4 shadow-[0_4px_12px_rgba(61,49,36,.04)] transition hover:border-[#c9d5bf]"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-extrabold text-[#263229]">
-                            {item.name}
-                          </h3>
-                          {item.popular && (
-                            <span className="rounded-full bg-[#ffe6dc] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#c14f2d]">
-                              Top
-                            </span>
-                          )}
-                          {item.vegetarian && (
-                            <Leaf className="h-3.5 w-3.5 text-[#4f883c]" />
-                          )}
-                        </div>
-                        <p className="mt-1 text-sm leading-relaxed text-[#68746a]">
-                          {item.description ||
-                            "Preparado al momento con ingredientes seleccionados."}
-                        </p>
-                        {item.allergens?.length ? (
-                          <p className="mt-2 text-[11px] leading-relaxed text-[#8a5a35]">
-                            <strong>Alérgenos:</strong> {item.allergens.join(" · ")} · Puede contener trazas
-                          </p>
-                        ) : null}
-                        <p className="mt-2 text-sm font-extrabold text-[#263229]">
-                          Desde {money.format(item.price)}
-                        </p>
-                        {quantity > 0 && (
-                          <p className="mt-1 text-xs font-bold text-[#526952]">
-                            {quantity} en tu cesta
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setCustomizing({ restaurant: selectedRestaurant, item })}
-                        className="flex shrink-0 self-center items-center gap-1.5 rounded-xl bg-[#171715] px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-black active:scale-95"
-                        aria-label={`Añadir ${item.name}`}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Añadir
-                      </button>
-                    </article>
-                  );
-                })}
+              <div className="mt-5 space-y-8">
+                {menuSections.map(section => (
+                  <section key={section.label} aria-labelledby={`menu-section-${section.label}`}>
+                    <div className="mb-3 flex items-center gap-3">
+                      <h3 id={`menu-section-${section.label}`} className="font-display text-2xl font-semibold tracking-[-.04em] text-[#263229]">
+                        {section.label}
+                      </h3>
+                      <span className="rounded-full bg-[#f2eee7] px-2.5 py-1 text-[11px] font-bold text-[#68746a]">
+                        {section.items.length}
+                      </span>
+                    </div>
+                    <div className="space-y-3">
+                      {section.items.map((item: MenuItem) => {
+                        const quantity = cart
+                          .filter(line => line.item.id === item.id)
+                          .reduce((sum, line) => sum + line.quantity, 0);
+                        const hasCustomisation = Boolean(item.modifierGroups?.length);
+                        return (
+                          <article
+                            key={item.id}
+                            className="flex gap-4 rounded-2xl border border-[#e5dbd0] bg-white p-4 shadow-[0_4px_12px_rgba(61,49,36,.04)] transition hover:border-[#c9d5bf]"
+                          >
+                            {item.image && (
+                              <img src={item.image} alt="" className="h-24 w-24 shrink-0 rounded-xl object-cover" loading="lazy" />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="text-base font-extrabold text-[#263229]">{item.name}</h4>
+                                {item.popular && <span className="rounded-full bg-[#ffe6dc] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#c14f2d]">Top</span>}
+                                {item.vegetarian && <Leaf className="h-3.5 w-3.5 text-[#4f883c]" />}
+                              </div>
+                              <p className="mt-1 text-sm leading-relaxed text-[#68746a]">{item.description || "Preparado al momento con ingredientes seleccionados."}</p>
+                              {item.allergens?.length ? <p className="mt-2 text-[11px] leading-relaxed text-[#8a5a35]"><strong>Alérgenos:</strong> {item.allergens.join(" · ")} · Puede contener trazas</p> : null}
+                              <p className="mt-2 text-sm font-extrabold text-[#263229]">Desde {money.format(item.price)}</p>
+                              {hasCustomisation && <p className="mt-1 text-xs font-semibold text-[#7a887b]">Personalizable · elige tus complementos</p>}
+                              {quantity > 0 && <p className="mt-1 text-xs font-bold text-[#526952]">{quantity} en tu cesta</p>}
+                            </div>
+                            <button
+                              onClick={() => setCustomizing({ restaurant: selectedRestaurant, item })}
+                              className="flex shrink-0 self-center items-center gap-1.5 rounded-xl bg-[#171715] px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-black active:scale-95"
+                              aria-label={`${hasCustomisation ? "Personalizar y añadir" : "Añadir"} ${item.name}`}
+                            >
+                              <Plus className="h-4 w-4" /> Añadir
+                            </button>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
               </div>
             </div>
             {cartCount > 0 && (
