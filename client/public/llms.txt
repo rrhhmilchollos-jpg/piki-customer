@@ -20,6 +20,10 @@
 - [Comida a domicilio en Canals | PIKI Delivery](https://pikidelivery.com/comida-a-domicilio-canals): Comprueba si PIKI muestra opciones de comida y reparto para una dirección concreta de Canals.
 - [Comida a domicilio en Alberic | PIKI Delivery](https://pikidelivery.com/comida-a-domicilio-alberic): Comprueba si PIKI muestra opciones de comida y reparto para una dirección concreta de Alberic.
 - [Únete a PIKI | Riders y restaurantes en Xàtiva](https://pikidelivery.com/unete): Página oficial para enviar solicitudes de rider o partner a PIKI Delivery en Xàtiva.
+## Restaurantes operativos con ficha pública
+
+- [Alibaba Kebab Xàtiva](https://pikidelivery.com/restaurantes/alibaba-kebab-xativa): Kebab en Xàtiva. La disponibilidad se confirma por dirección.
+
 ## Noticias PIKI
 
 El blog es un canal corporativo firmado por Equipo PIKI; no es periodismo independiente.
