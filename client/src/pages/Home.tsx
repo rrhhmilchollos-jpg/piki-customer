@@ -763,6 +763,7 @@ export default function Home() {
       {customizing && (
         <ProductCustomizer
           item={customizing.item}
+          restaurant={customizing.restaurant}
           onClose={() => setCustomizing(null)}
           onAdd={selections =>
             addItem(customizing.restaurant, customizing.item, selections)
