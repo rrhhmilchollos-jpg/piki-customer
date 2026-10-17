@@ -9,6 +9,7 @@ import {
   type ReleasePolicy,
 } from "./pikiReleasePolicy";
 import { shouldShowPushConsent } from "./pushConsentPolicy";
+import { nativePushSupported, syncNativeCustomerPush } from "./nativePush";
 
 type GateState = "checking" | "ready" | "available" | "required" | "error";
 type WorkerActivation = { activated: boolean; controllerChanged: boolean; hadController: boolean };
@@ -150,6 +151,7 @@ function storedEmployeeToken(): string | null {
 }
 
 async function syncPushSubscription(showNotification: boolean): Promise<string> {
+  if (nativePushSupported()) return syncNativeCustomerPush(showNotification);
   if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) throw new Error("Este navegador no admite notificaciones push.");
   const config = await fetch(`${apiOrigin}/api/v1/push/config`, { cache: "no-store", headers: { Accept: "application/json" } }).then(async (response) => {
     if (!response.ok) throw new Error("La configuración de avisos no está disponible.");
@@ -181,9 +183,10 @@ function PushConsentControl() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [authEpoch, setAuthEpoch] = useState(0);
-  const [supported] = useState(() => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window);
+  const [supported] = useState(() => nativePushSupported() || ("serviceWorker" in navigator && "PushManager" in window && "Notification" in window));
   const [visible, setVisible] = useState(false);
   const customerSurface: boolean = String(PIKI_RELEASE.surface) === "customer";
+  const nativePush = nativePushSupported();
   useEffect(() => {
     const wake = () => setAuthEpoch((value) => value + 1);
     window.addEventListener("piki-authenticated", wake);
@@ -201,6 +204,17 @@ function PushConsentControl() {
       return;
     }
     const authenticated = customerSurface ? authEpoch > 0 : Boolean(storedEmployeeToken());
+    if (nativePush) {
+      const preferenceKey = `piki-native-push-${PIKI_RELEASE.surface}-enabled`;
+      const alreadyEnabled = localStorage.getItem(preferenceKey) === "true";
+      setVisible(authenticated && !alreadyEnabled);
+      if (authenticated && alreadyEnabled) void syncPushSubscription(false).catch((error) => {
+        localStorage.removeItem(preferenceKey);
+        setVisible(true);
+        console.warn("No se pudo resincronizar FCM.", error);
+      });
+      return;
+    }
     const permission = "Notification" in window ? Notification.permission : "default";
     if (!shouldShowPushConsent({ supported, authenticated, permission })) {
       setVisible(false);
@@ -208,19 +222,24 @@ function PushConsentControl() {
       return;
     }
     setVisible(true);
-  }, [authEpoch, customerSurface, supported]);
+  }, [authEpoch, customerSurface, nativePush, supported]);
   const enable = useCallback(async () => {
     setBusy(true); setMessage("");
-    try { await syncPushSubscription(true); setMessage(""); setVisible(false); }
+    try {
+      await syncPushSubscription(true);
+      if (nativePush) localStorage.setItem(`piki-native-push-${PIKI_RELEASE.surface}-enabled`, "true");
+      setMessage(""); setVisible(false);
+    }
     catch (error) {
+      if (nativePush) { setMessage(error instanceof Error ? error.message : "No se pudieron activar los avisos."); setVisible(true); return; }
       const permission = "Notification" in window ? Notification.permission : "default";
       if (permission === "default") { setMessage(error instanceof Error ? error.message : "No se pudieron activar los avisos."); setVisible(true); }
       else { setMessage(""); setVisible(false); console.warn("No se pudo registrar este dispositivo para avisos.", error); }
     }
     finally { setBusy(false); }
-  }, []);
+  }, [nativePush]);
   useEffect(() => {
-    if (!supported) return;
+    if (!supported || nativePush) return;
     const listener = (event: MessageEvent) => {
       if (event.data?.type === "PIKI_PUSH_SUBSCRIPTION_CHANGED" && Notification.permission === "granted" && (!customerSurface || authEpoch > 0)) void syncPushSubscription(false).catch((error) => {
         console.warn("No se pudo resincronizar la suscripción de avisos.", error);
@@ -229,7 +248,7 @@ function PushConsentControl() {
     };
     navigator.serviceWorker.addEventListener("message", listener);
     return () => navigator.serviceWorker.removeEventListener("message", listener);
-  }, [supported, customerSurface, authEpoch]);
+  }, [supported, customerSurface, authEpoch, nativePush]);
   if (!supported || !visible) return null;
   return <aside aria-live="polite" style={{ position: "fixed", right: "16px", bottom: "16px", zIndex: 9999, maxWidth: "320px", padding: "12px", borderRadius: "12px", background: "#111827", color: "white", boxShadow: "0 10px 30px rgba(0,0,0,.25)" }}>
     <button type="button" onClick={() => setVisible(false)} aria-label="Cerrar aviso de PIKI" style={{ float: "right", border: 0, background: "transparent", color: "white", fontSize: "20px", lineHeight: 1, cursor: "pointer" }}>×</button>

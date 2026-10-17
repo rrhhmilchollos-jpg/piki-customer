@@ -4,4 +4,5 @@
     <string name="title_activity_main">Piki: Comida a domicilio</string>
     <string name="package_name">com.pikidelivery.customer</string>
     <string name="custom_url_scheme">com.pikidelivery.customer</string>
+    <string name="default_notification_channel_id">piki_orders</string>
 </resources>
