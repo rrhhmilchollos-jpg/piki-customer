@@ -111,6 +111,7 @@ export function installPikiReleaseHeaders(): void {
     headers.set("X-PIKI-Surface", PIKI_RELEASE.surface);
     headers.set("X-PIKI-Client-Version", PIKI_RELEASE.version);
     headers.set("X-PIKI-Client-Build", PIKI_RELEASE.buildId);
+    if (isInstalledAndroidApp()) headers.set("X-PIKI-Native-Container", "capacitor");
     if (input instanceof Request) return nativeFetch(new Request(input, { ...init, headers }));
     return nativeFetch(input, { ...init, headers });
   };
