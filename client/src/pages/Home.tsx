@@ -397,7 +397,7 @@ export default function Home() {
   useEffect(() => {
     if (!liveTracking?.status) return;
     const status = liveTracking.status;
-    const serverStage: TrackingStage = ["placed", "accepted"].includes(status) ? "confirmed" : status === "ready" ? "preparing" : ["assigned", "picked_up", "delivering", "on_the_way"].includes(status) ? "onway" : "confirmed";
+    const serverStage: TrackingStage = ["placed", "accepted", "pending"].includes(status) ? "confirmed" : ["preparing", "ready", "ready_for_pickup"].includes(status) ? "preparing" : ["assigned", "picked_up", "delivering", "on_the_way"].includes(status) ? "onway" : "confirmed";
     const becameAvailable = ["picked_up", "delivering"].includes(status) && !["picked_up", "delivering"].includes(previousDeliveryStatus.current || "");
     if (becameAvailable && isAuthenticated) setChatOpen(true);
     if (["delivered", "cancelled"].includes(status)) setChatOpen(false);
@@ -411,7 +411,7 @@ export default function Home() {
       return { ...current, restaurant: liveTracking.restaurant, stage };
     });
   }, [isAuthenticated, liveTracking]);
-  const readyForPickup = liveTracking?.operationalStatus === "ready_for_pickup";
+  const readyForPickup = liveTracking?.operationalStatus === "ready_for_pickup" || ["ready", "ready_for_pickup"].includes(liveTracking?.status || "");
 
   const addItem = (
     restaurant: Restaurant,
