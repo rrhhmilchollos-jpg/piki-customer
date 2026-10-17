@@ -71,7 +71,7 @@ export function ProductCustomizer({
     const maximum = group.maxSelections ?? group.options.length;
     return count >= minimum && count <= maximum;
   });
-  const imageSource = item.image || restaurant.image;
+  const imageSource = item.image || restaurant?.image;
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
