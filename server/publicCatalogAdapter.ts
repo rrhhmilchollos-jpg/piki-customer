@@ -108,7 +108,10 @@ function mapModifierGroup(value: unknown): MenuModifierGroup | null {
   const maxSelections =
     Number.isInteger(suppliedMaximum) && suppliedMaximum! >= minSelections
       ? Math.min(suppliedMaximum!, options.length)
-      : options.length;
+      : // Grupo obligatorio sin máximo indicado: se elige exactamente el mínimo (normalmente 1).
+        minSelections > 0
+        ? minSelections
+        : options.length;
   return {
     id,
     name,
