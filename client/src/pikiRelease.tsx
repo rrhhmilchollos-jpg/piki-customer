@@ -15,6 +15,12 @@ type WorkerActivation = { activated: boolean; controllerChanged: boolean; hadCon
 const apiOrigin = (import.meta.env.VITE_API_URL ?? "https://api.pikidelivery.com").replace(/\/$/, "");
 const apiHost = new URL(apiOrigin, window.location.origin).origin;
 const requestTimeoutMs = 15_000;
+const customerPlayStoreUrl = "https://play.google.com/store/apps/details?id=com.pikidelivery.customer";
+
+function isInstalledAndroidApp(): boolean {
+  const standalone = window.matchMedia?.("(display-mode: standalone)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+  return /Android/i.test(navigator.userAgent) && (standalone || document.referrer.startsWith("android-app://"));
+}
 
 async function registerWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!("serviceWorker" in navigator)) return null;
@@ -327,6 +333,10 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
     setUpdating(true);
     setDetail("");
     try {
+      if (isInstalledAndroidApp()) {
+        window.location.assign(customerPlayStoreUrl);
+        return;
+      }
       const registration = await registerWorker();
       const activation = await activateUpdatedWorker(registration);
       if (!activation.activated) {
@@ -382,6 +392,6 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
   }, [check, deferredUpdate, isSafeToReload, reloadAfterControllerChange]);
 
   if (state === "checking") return <main aria-live="polite" style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "system-ui", padding: "24px" }}>Comprobando la versión segura de PIKI…</main>;
-  if (state === "required" || state === "available") return <main aria-labelledby="piki-update-title" style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "system-ui", padding: "24px", background: "#f8fafc" }}><section role="dialog" aria-modal="true" style={{ maxWidth: "480px", padding: "28px", background: "white", borderRadius: "16px", boxShadow: "0 12px 40px rgba(15,23,42,.15)" }}><p style={{ fontWeight: 700, color: "#b45309" }}>PIKI · {state === "required" ? "ACTUALIZACIÓN NECESARIA" : "ACTUALIZACIÓN DISPONIBLE"}</p><h1 id="piki-update-title">Hay una nueva versión de la PWA</h1><p>La versión {requiredVersion} está disponible. La sesión y los datos se conservan; la recarga solo se ejecuta con conexión y sin una acción en curso.</p>{detail && <p role="alert">{detail}</p>}<button type="button" onClick={() => void update()} disabled={updating} style={{ padding: "12px 16px", border: 0, borderRadius: "9px", background: "#111827", color: "white", fontWeight: 700 }}>{updating ? "Preparando actualización…" : "Actualizar ahora"}</button></section></main>;
+  if (state === "required" || state === "available") return <main aria-labelledby="piki-update-title" style={{ minHeight: "100vh", display: "grid", placeItems: "center", fontFamily: "system-ui", padding: "24px", background: "#f8fafc" }}><section role="dialog" aria-modal="true" style={{ maxWidth: "480px", padding: "28px", background: "white", borderRadius: "16px", boxShadow: "0 12px 40px rgba(15,23,42,.15)" }}><p style={{ fontWeight: 700, color: "#b45309" }}>PIKI · {state === "required" ? "ACTUALIZACIÓN NECESARIA" : "ACTUALIZACIÓN DISPONIBLE"}</p><h1 id="piki-update-title">Hay una nueva versión de la PWA</h1><p>{state === "required" && isInstalledAndroidApp() ? `Hay una versión nueva (${requiredVersion}). Abre Google Play para actualizar PIKI sin perder tu sesión.` : `La versión ${requiredVersion} está disponible. La sesión y los datos se conservan; la recarga solo se ejecuta con conexión y sin una acción en curso.`}</p>{detail && <p role="alert">{detail}</p>}<button type="button" onClick={() => void update()} disabled={updating} style={{ padding: "12px 16px", border: 0, borderRadius: "9px", background: "#111827", color: "white", fontWeight: 700 }}>{updating ? (isInstalledAndroidApp() ? "Abriendo Google Play…" : "Preparando actualización…") : state === "required" && isInstalledAndroidApp() ? "Actualizar en Google Play" : "Actualizar ahora"}</button></section></main>;
   return <>{state === "error" && <div role="status" style={{ position: "fixed", zIndex: 9998, top: 0, left: 0, right: 0, padding: "8px", textAlign: "center", background: "#fef3c7", color: "#78350f", fontSize: "13px" }}>No se ha podido comprobar la versión: {detail}</div>}{state === "ready" && deferredUpdate && <div role="status" style={{ position: "fixed", zIndex: 9998, top: 0, left: 0, right: 0, padding: "8px", textAlign: "center", background: "#e8f4e5", color: "#24532b", fontSize: "13px" }}>Hay una nueva versión de la PWA pendiente. Se aplicará al terminar la acción en curso y con conexión.</div>}{children}<PushConsentControl /></>;
 }
