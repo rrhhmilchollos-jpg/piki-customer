@@ -1,6 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import AccountHub from "@/components/AccountHub";
 import { ProductCustomizer } from "@/components/ProductCustomizer";
+import { RestaurantInfoModal } from "@/components/RestaurantInfoModal";
 import { getMenuItemUnitPrice, selectedOptionNames, selectionKey } from "@/lib/menu";
 import { InstallAppBanner } from "@/components/InstallAppBanner";
 import { MapView } from "@/components/Map";
@@ -27,6 +28,7 @@ import {
   CreditCard,
   Flame,
   Home as HomeIcon,
+  Info,
   Leaf,
   LogIn,
   MapPin,
@@ -223,6 +225,7 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const [restaurantInfoOpen, setRestaurantInfoOpen] = useState(false);
   const [cartRestaurant, setCartRestaurant] = useState<Restaurant | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -623,6 +626,13 @@ export default function Home() {
               >
                 <X className="h-5 w-5" />
               </button>
+              <button
+                onClick={() => setRestaurantInfoOpen(true)}
+                className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-white/95 text-[#171715] shadow-lg"
+                aria-label={`Información de ${selectedRestaurant.name}`}
+              >
+                <Info className="h-5 w-5" />
+              </button>
               <div className="absolute bottom-5 left-6 right-6 text-white sm:left-8 sm:right-8">
                 {(selectedRestaurant.cuisine || selectedRestaurant.category) && (
                   <p className="mb-2 text-xs font-extrabold uppercase tracking-[.16em] text-[#FFE88A]">
@@ -658,6 +668,13 @@ export default function Home() {
                   Entrega sostenible
                 </span>
               </div>
+              <button
+                type="button"
+                onClick={() => setRestaurantInfoOpen(true)}
+                className="mt-4 inline-flex items-center gap-2 text-sm font-extrabold text-[#315b3f] underline decoration-[#b7cdb0] underline-offset-4"
+              >
+                <Info className="h-4 w-4" /> Ver información del establecimiento
+              </button>
               <div className="mt-7 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[.16em] text-[#dc5c35]">
@@ -750,6 +767,13 @@ export default function Home() {
           onAdd={selections =>
             addItem(customizing.restaurant, customizing.item, selections)
           }
+          />
+      )}
+
+      {restaurantInfoOpen && selectedRestaurant && (
+        <RestaurantInfoModal
+          restaurant={selectedRestaurant}
+          onClose={() => setRestaurantInfoOpen(false)}
         />
       )}
 

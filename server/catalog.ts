@@ -50,6 +50,9 @@ export type Restaurant = {
   promoted?: boolean;
   image?: string;
   accent?: string;
+  address?: string;
+  phone?: string;
+  partnerProfile?: { openingHours?: Record<string, { open?: string; close?: string; closed?: boolean }> };
   menu: MenuItem[];
   /** Visible lifecycle signals from the canonical public catalogue. */
   availabilityStatus?: CatalogAvailabilityStatus;

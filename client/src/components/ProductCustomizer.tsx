@@ -77,6 +77,14 @@ export function ProductCustomizer({
         className="flex h-[82vh] max-h-[82vh] w-full max-w-xl flex-col overflow-hidden rounded-t-[1.5rem] bg-[#FFFDF5] shadow-2xl sm:h-auto sm:max-h-[88vh] sm:rounded-[2rem]"
         onMouseDown={event => event.stopPropagation()}
       >
+        {item.image ? (
+          <div className="relative h-44 shrink-0 overflow-hidden sm:h-52">
+            <img src={item.image} alt="" className="h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#171715]/45 to-transparent" />
+          </div>
+        ) : (
+          <div className="h-20 shrink-0 bg-[radial-gradient(circle_at_top_left,#fff4be,transparent_50%),linear-gradient(135deg,#f1e4d6,#fffdf5)]" aria-hidden="true" />
+        )}
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[#ece2d8] px-4 py-4 sm:px-7 sm:py-5">
           <div className="min-w-0">
             <p className="text-xs font-extrabold uppercase tracking-[.16em] text-[#dc5c35]">
@@ -88,6 +96,7 @@ export function ProductCustomizer({
             <p className="mt-1 text-sm leading-relaxed text-[#68746a]">
               {item.description}
             </p>
+            <p className="mt-2 text-sm font-extrabold text-[#263229]">{money.format(unitPrice)} · unidad</p>
           </div>
           <button
             onClick={onClose}
