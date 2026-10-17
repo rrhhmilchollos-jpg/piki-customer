@@ -31,7 +31,9 @@ function stringValue(value: unknown, maximum = 10_000): string | undefined {
 }
 
 function numberValue(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
 }
 
 function booleanValue(value: unknown): boolean | undefined {
@@ -40,9 +42,10 @@ function booleanValue(value: unknown): boolean | undefined {
 
 function enumValue<T extends readonly string[]>(
   value: unknown,
-  allowed: T,
+  allowed: T
 ): T[number] | undefined {
-  return typeof value === "string" && (allowed as readonly string[]).includes(value)
+  return typeof value === "string" &&
+    (allowed as readonly string[]).includes(value)
     ? (value as T[number])
     : undefined;
 }
@@ -72,20 +75,27 @@ function mapModifierGroup(value: unknown): MenuModifierGroup | null {
     .map(mapModifierOption)
     .filter((option): option is MenuModifierOption => option !== null);
   if (!id || !name || !options.length) return null;
-  const minSelections = numberValue(value.minSelections);
-  const maxSelections = numberValue(value.maxSelections);
+  const suppliedMinimum = numberValue(value.minSelections);
+  const defaultMinimum = booleanValue(value.required) ? 1 : 0;
+  const minSelections = Math.min(
+    Number.isInteger(suppliedMinimum) && suppliedMinimum! >= 0
+      ? suppliedMinimum!
+      : defaultMinimum,
+    options.length
+  );
+  const suppliedMaximum = numberValue(value.maxSelections);
+  const maxSelections =
+    Number.isInteger(suppliedMaximum) && suppliedMaximum! >= minSelections
+      ? Math.min(suppliedMaximum!, options.length)
+      : options.length;
   return {
     id,
     name,
     ...(stringValue(value.description, 1_000)
       ? { description: stringValue(value.description, 1_000) }
       : {}),
-    ...(Number.isInteger(minSelections) && minSelections! >= 0
-      ? { minSelections }
-      : {}),
-    ...(Number.isInteger(maxSelections) && maxSelections! >= 0
-      ? { maxSelections }
-      : {}),
+    ...(minSelections > 0 ? { minSelections } : {}),
+    maxSelections,
     options,
   };
 }
@@ -100,10 +110,17 @@ function mapMenuItem(value: unknown): MenuItem | null {
     ? value.modifierGroups
     : Array.isArray(value.modifiers)
       ? value.modifiers
-      : [];
+      : Array.isArray(value.optionGroups)
+        ? value.optionGroups
+        : [];
   const modifierGroups = modifierRows
     .map(mapModifierGroup)
     .filter((group): group is MenuModifierGroup => group !== null);
+  const category = stringValue(value.category, 160);
+  const image =
+    stringValue(value.image, 2_000) ??
+    stringValue(value.imageUrl, 2_000) ??
+    stringValue(value.photoUrl, 2_000);
   const allergens = Array.isArray(value.allergens)
     ? value.allergens
         .map(allergen => stringValue(allergen, 100))
@@ -114,6 +131,8 @@ function mapMenuItem(value: unknown): MenuItem | null {
     name,
     description: stringValue(value.description, 1_000) ?? "",
     price,
+    ...(category ? { category } : {}),
+    ...(image ? { image } : {}),
     ...(allergens?.length ? { allergens } : {}),
     ...(booleanValue(value.vegetarian) !== undefined
       ? { vegetarian: booleanValue(value.vegetarian) }
@@ -129,48 +148,64 @@ function mapMenuItem(value: unknown): MenuItem | null {
  * Maps only API-provided display values. No cover image, cuisine, ETA, price,
  * or rating fallback is fabricated when a record has not supplied one.
  */
-export function mapPublicCatalogueRestaurant(value: unknown): Restaurant | null {
+export function mapPublicCatalogueRestaurant(
+  value: unknown
+): Restaurant | null {
   if (!isRecord(value)) return null;
   const id = stringValue(value.id ?? value._id, 80);
   const name = stringValue(value.name, 160);
   if (!id || !name) return null;
 
-  const fee = numberValue(value.fee) ?? (typeof value.deliveryFeeCents === "number" ? value.deliveryFeeCents / 100 : undefined);
+  const fee =
+    numberValue(value.fee) ??
+    (typeof value.deliveryFeeCents === "number"
+      ? value.deliveryFeeCents / 100
+      : undefined);
   const menuRows = Array.isArray(value.menu) ? value.menu : [];
   const menu = menuRows
     .map(mapMenuItem)
     .filter((item): item is MenuItem => item !== null);
   const availabilityStatus = enumValue(
     value.availabilityStatus,
-    catalogAvailabilityStatuses,
+    catalogAvailabilityStatuses
   ) as CatalogAvailabilityStatus | undefined;
   const onboardingStatus = enumValue(
     value.onboardingStatus,
-    catalogOnboardingStatuses,
+    catalogOnboardingStatuses
   ) as CatalogOnboardingStatus | undefined;
 
   return {
     id,
     name,
     menu,
-    ...(stringValue(value.cuisine, 160) ? { cuisine: stringValue(value.cuisine, 160) } : {}),
-    ...(stringValue(value.category, 120) ? { category: stringValue(value.category, 120) } : {}),
-    ...(stringValue(value.tagline, 500) ? { tagline: stringValue(value.tagline, 500) } : {}),
-    ...(stringValue(value.eta, 80) ? { eta: stringValue(value.eta, 80) } : {}),
-    ...(fee !== undefined && fee >= 0
-      ? { fee }
+    ...(stringValue(value.cuisine, 160)
+      ? { cuisine: stringValue(value.cuisine, 160) }
       : {}),
-    ...(numberValue(value.rating) !== undefined && numberValue(value.rating)! >= 0
+    ...(stringValue(value.category, 120)
+      ? { category: stringValue(value.category, 120) }
+      : {}),
+    ...(stringValue(value.tagline, 500)
+      ? { tagline: stringValue(value.tagline, 500) }
+      : {}),
+    ...(stringValue(value.eta, 80) ? { eta: stringValue(value.eta, 80) } : {}),
+    ...(fee !== undefined && fee >= 0 ? { fee } : {}),
+    ...(numberValue(value.rating) !== undefined &&
+    numberValue(value.rating)! >= 0
       ? { rating: numberValue(value.rating) }
       : {}),
-    ...(Number.isInteger(numberValue(value.reviews)) && numberValue(value.reviews)! >= 0
+    ...(Number.isInteger(numberValue(value.reviews)) &&
+    numberValue(value.reviews)! >= 0
       ? { reviews: numberValue(value.reviews) }
       : {}),
     ...(booleanValue(value.promoted) !== undefined
       ? { promoted: booleanValue(value.promoted) }
       : {}),
-    ...(stringValue(value.image, 2_000) ? { image: stringValue(value.image, 2_000) } : {}),
-    ...(stringValue(value.accent, 32) ? { accent: stringValue(value.accent, 32) } : {}),
+    ...(stringValue(value.image, 2_000)
+      ? { image: stringValue(value.image, 2_000) }
+      : {}),
+    ...(stringValue(value.accent, 32)
+      ? { accent: stringValue(value.accent, 32) }
+      : {}),
     ...(availabilityStatus ? { availabilityStatus } : {}),
     ...(booleanValue(value.isActive) !== undefined
       ? { isActive: booleanValue(value.isActive) }
@@ -180,12 +215,16 @@ export function mapPublicCatalogueRestaurant(value: unknown): Restaurant | null 
 }
 
 /** Accepts the documented { restaurants: [...] } envelope and a direct array. */
-export function mapPublicCataloguePayload(payload: unknown): Restaurant[] | null {
+export function mapPublicCataloguePayload(
+  payload: unknown
+): Restaurant[] | null {
   const rows = Array.isArray(payload)
     ? payload
     : isRecord(payload) && Array.isArray(payload.restaurants)
       ? payload.restaurants
-      : isRecord(payload) && isRecord(payload.data) && Array.isArray(payload.data.restaurants)
+      : isRecord(payload) &&
+          isRecord(payload.data) &&
+          Array.isArray(payload.data.restaurants)
         ? payload.data.restaurants
         : null;
   if (!rows) return null;
@@ -209,7 +248,10 @@ export async function fetchPublicCatalogue(): Promise<Restaurant[] | null> {
     if (!response.ok) return null;
     const mapped = mapPublicCataloguePayload(await response.json());
     if (mapped === null) return null;
-    cachedCatalogue = { restaurants: mapped, expiresAt: Date.now() + CACHE_TTL_MS };
+    cachedCatalogue = {
+      restaurants: mapped,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    };
     return mapped;
   } catch {
     return null;

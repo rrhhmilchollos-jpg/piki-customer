@@ -1,1 +1,44 @@
-{"routes":[{"path":"/","title":"PIKI — Comida a domicilio en Xàtiva"},{"path":"/comida-a-domicilio-xativa","title":"Comida a domicilio en Xàtiva | PIKI"},{"path":"/restaurantes-a-domicilio-xativa","title":"Restaurantes a domicilio en Xàtiva | PIKI"},{"path":"/restaurantes/:slug","title":"Restaurante a domicilio en Xàtiva | PIKI"},{"path":"/unete","title":"Únete a PIKI en Xàtiva"},{"path":"/partners","title":"PIKI Partners"},{"path":"/riders","title":"PIKI Riders"},{"path":"/admin","title":"PIKI Admin"},{"path":"/legal/politica-privacidad","title":"Política de privacidad PIKI"},{"path":"/legal/eliminacion-cuenta","title":"Eliminar cuenta PIKI"}]}
+{
+  "routes": [
+    { "path": "/", "title": "PIKI — Comida a domicilio en Xàtiva" },
+    { "path": "/partners", "title": "PIKI Partners" },
+    { "path": "/riders", "title": "PIKI Riders" },
+    { "path": "/admin", "title": "PIKI Admin" },
+    { "path": "/unete", "title": "Únete a PIKI en Xàtiva" },
+    {
+      "path": "/comida-a-domicilio-xativa",
+      "title": "Comida a domicilio en Xàtiva | PIKI"
+    },
+    {
+      "path": "/restaurantes-a-domicilio-xativa",
+      "title": "Restaurantes a domicilio en Xàtiva | PIKI"
+    },
+    {
+      "path": "/hazte-partner-xativa",
+      "title": "Hazte partner en Xàtiva | PIKI"
+    },
+    {
+      "path": "/trabajo-rider-xativa",
+      "title": "Trabajo de rider en Xàtiva | PIKI"
+    },
+    { "path": "/cobertura", "title": "Cobertura de PIKI" },
+    {
+      "path": "/comida-a-domicilio-canals",
+      "title": "Comida a domicilio en Canals | PIKI"
+    },
+    {
+      "path": "/comida-a-domicilio-alberic",
+      "title": "Comida a domicilio en Alberic | PIKI"
+    },
+    { "path": "/noticias", "title": "Noticias PIKI" },
+    {
+      "path": "/noticias/politica-editorial",
+      "title": "Política editorial PIKI"
+    },
+    {
+      "path": "/noticias/autoria-y-transparencia",
+      "title": "Autoría y transparencia PIKI"
+    },
+    { "path": "/noticias/:slug", "title": "Artículo de PIKI" }
+  ]
+}

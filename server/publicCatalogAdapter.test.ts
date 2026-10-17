@@ -31,7 +31,13 @@ describe("public catalogue availability adapter", () => {
 
   it("does not fabricate optional visual data absent from the API response", () => {
     const catalogue = mapPublicCataloguePayload([
-      { id: "soon", name: "Próximo", availabilityStatus: "coming_soon", isActive: false, onboardingStatus: "pending_review" },
+      {
+        id: "soon",
+        name: "Próximo",
+        availabilityStatus: "coming_soon",
+        isActive: false,
+        onboardingStatus: "pending_review",
+      },
     ]);
 
     expect(catalogue?.[0]).not.toHaveProperty("image");
@@ -44,24 +50,68 @@ describe("public catalogue availability adapter", () => {
       {
         id: "alibaba",
         name: "Alibaba Kebab Xàtiva",
-        menu: [{
-          id: "menu-1",
-          name: "Menú 1",
-          price: 9,
-          modifiers: [{
-            id: "drink",
-            name: "Bebida",
-            minSelections: 1,
-            maxSelections: 1,
-            options: [{ id: "cola", name: "Coca-Cola", price: 0 }],
-          }],
-        }],
+        menu: [
+          {
+            id: "menu-1",
+            name: "Menú 1",
+            price: 9,
+            category: "Menús",
+            image: "https://cdn.example.test/menu-1.webp",
+            modifiers: [
+              {
+                id: "drink",
+                name: "Bebida",
+                minSelections: 1,
+                maxSelections: 1,
+                options: [{ id: "cola", name: "Coca-Cola", price: 0 }],
+              },
+            ],
+          },
+        ],
       },
     ]);
 
     expect(catalogue?.[0]?.menu[0]?.modifierGroups).toEqual([
-      expect.objectContaining({ id: "drink", name: "Bebida", minSelections: 1 }),
+      expect.objectContaining({
+        id: "drink",
+        name: "Bebida",
+        minSelections: 1,
+      }),
     ]);
+    expect(catalogue?.[0]?.menu[0]).toEqual(
+      expect.objectContaining({
+        category: "Menús",
+        image: "https://cdn.example.test/menu-1.webp",
+      })
+    );
+  });
+
+  it("infers a mandatory minimum from the canonical required flag", () => {
+    const catalogue = mapPublicCataloguePayload([
+      {
+        id: "alibaba",
+        name: "Alibaba Kebab Xàtiva",
+        menu: [
+          {
+            id: "menu-10",
+            name: "Menú 10",
+            price: 10.5,
+            modifiers: [
+              {
+                id: "salsa",
+                name: "Elige una salsa",
+                required: true,
+                options: [{ id: "yogur", name: "Salsa de yogur", price: 0 }],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    expect(catalogue?.[0]?.menu[0]?.modifierGroups?.[0]).toEqual(
+      expect.objectContaining({ minSelections: 1, maxSelections: 1 })
+    );
   });
 
   it("fails closed for a coming-soon restaurant even if a caller submits menu lines", () => {
@@ -76,8 +126,8 @@ describe("public catalogue availability adapter", () => {
       },
     ]);
 
-    expect(() => buildOrderQuote("soon", [{ id: "dish", quantity: 1 }], catalogue ?? [])).toThrow(
-      "Este establecimiento estará disponible muy pronto.",
-    );
+    expect(() =>
+      buildOrderQuote("soon", [{ id: "dish", quantity: 1 }], catalogue ?? [])
+    ).toThrow("Este establecimiento estará disponible muy pronto.");
   });
 });
