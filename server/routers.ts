@@ -344,7 +344,7 @@ export const appRouter = router({
       const live = await fetchOperationalTracking(row.publicCode);
       const localLiveStatus = customerStatusFromOperational(live?.status);
       if (localLiveStatus && localLiveStatus !== row.status) await updateOrderRecord(row.publicCode, { status: localLiveStatus as typeof row.status, riderName: live?.riderName ?? row.riderName, riderOpenId: live?.riderId ?? row.riderOpenId });
-      return { id: row.publicCode, status: localLiveStatus ?? row.status, paymentMethod: live?.paymentMethod ?? "cash", paymentState: live?.paymentState ?? row.paymentState, cashDueAtDelivery: live?.cashDueAtDelivery ?? (row.paymentState !== "paid"), totalCents: row.totalCents, restaurant: row.restaurantName, address: row.address, riderName: live?.riderName ?? row.riderName, riderPhotoUrl: live?.riderPhotoUrl ?? null, deliveryVerificationState: row.deliveryVerificationState, updatedAt: live?.updatedAt ?? row.updatedAt.getTime() };
+      return { id: row.publicCode, status: localLiveStatus ?? row.status, operationalStatus: live?.status ?? null, paymentMethod: live?.paymentMethod ?? "cash", paymentState: live?.paymentState ?? row.paymentState, cashDueAtDelivery: live?.cashDueAtDelivery ?? (row.paymentState !== "paid"), totalCents: row.totalCents, restaurant: row.restaurantName, address: row.address, riderName: live?.riderName ?? row.riderName, riderPhotoUrl: live?.riderPhotoUrl ?? null, deliveryVerificationState: row.deliveryVerificationState, updatedAt: live?.updatedAt ?? row.updatedAt.getTime() };
     }),
     deliveryCredentials: protectedProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input, ctx }) => {
       const row = await getOrderRecord(input.id);
