@@ -114,6 +114,53 @@ describe("public catalogue availability adapter", () => {
     );
   });
 
+  it("reads per-option prices, hides paused options and keeps the legacy text format", () => {
+    const catalogue = mapPublicCataloguePayload([
+      {
+        id: "alibaba",
+        name: "Alibaba Kebab Xàtiva",
+        menu: [
+          {
+            id: "kebab",
+            name: "Kebab",
+            price: 6,
+            modifiers: [
+              {
+                id: "carne",
+                name: "Elige tu carne",
+                required: true,
+                minSelections: 1,
+                maxSelections: 1,
+                options: ["Ternera", "Pollo", "Mixto"],
+                optionItems: [
+                  { id: "o1", name: "Ternera", price: 0, available: true },
+                  { id: "o2", name: "Pollo", price: 1, available: true },
+                  { id: "o3", name: "Mixto", price: 2.5, available: false },
+                ],
+              },
+              {
+                id: "salsa",
+                name: "Salsas",
+                price: 0.5,
+                options: ["yogur", "picante"],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    const groups = catalogue?.[0]?.menu[0]?.modifierGroups;
+    expect(groups?.[0]?.options).toEqual([
+      { id: "o1", name: "Ternera", price: 0 },
+      { id: "o2", name: "Pollo", price: 1 },
+    ]);
+    expect(groups?.[1]?.options).toEqual([
+      { id: "salsa-opt-1", name: "yogur", price: 0.5 },
+      { id: "salsa-opt-2", name: "picante", price: 0.5 },
+    ]);
+  });
+
   it("fails closed for a coming-soon restaurant even if a caller submits menu lines", () => {
     const catalogue = mapPublicCataloguePayload([
       {
