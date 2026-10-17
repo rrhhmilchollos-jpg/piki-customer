@@ -33,9 +33,7 @@ export async function syncOperationalOrder(
   try {
     requestedItems = JSON.parse(order.itemsJson) as CheckoutLine[];
   } catch {
-    console.warn(
-      `[OperationalSync] itemsJson inválido para ${order.publicCode}`
-    );
+    console.warn(`[OperationalSync] itemsJson inválido para ${order.publicCode}`);
     return false;
   }
 
@@ -43,16 +41,11 @@ export async function syncOperationalOrder(
   try {
     quoteResult = buildOrderQuote(order.restaurantId, requestedItems);
   } catch (error) {
-    console.warn(
-      `[OperationalSync] Opciones no válidas para ${order.publicCode}`,
-      error
-    );
+    console.warn(`[OperationalSync] Opciones no válidas para ${order.publicCode}`, error);
     return false;
   }
 
   const { restaurant, quote } = quoteResult;
-  // The central API already accepts itemId/name/quantity/unitPriceCents. The name carries the
-  // selected option labels, keeping the partner-facing order readable without a contract break.
   const items = quote.displayLines.map(line => ({
     itemId: line.itemId,
     name: line.name,
@@ -61,46 +54,35 @@ export async function syncOperationalOrder(
   }));
 
   try {
-    const response = await fetch(
-      `${apiUrl}/api/v1/internal/customer-orders/sync`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-piki-customer-sync-secret": secret,
-        },
-        body: JSON.stringify({
-          publicCode: order.publicCode,
-          restaurantSlug: restaurant.id,
-          customerId: order.customerOpenId ?? null,
-          customerName: order.customerName ?? null,
-          deliveryAddress: order.address,
-          deliveryNote: order.deliveryNote ?? "",
-          deliveryLocation: deliveryLocation ?? null,
-          items,
-          subtotalCents: quote.subtotalCents,
-          deliveryFeeCents: quote.deliveryCents,
-          serviceFeeCents: quote.serviceCents,
-          totalCents: quote.totalCents,
-          paymentMethod: order.paymentMethod ?? "stripe",
-          paymentState: order.paymentState,
-          stripeCheckoutSessionId: order.stripeCheckoutSessionId ?? null,
-          stripePaymentIntentId: order.stripePaymentIntentId ?? null,
-        }),
-      }
-    );
+    const response = await fetch(`${apiUrl}/api/v1/internal/customer-orders/sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-piki-customer-sync-secret": secret },
+      body: JSON.stringify({
+        publicCode: order.publicCode,
+        restaurantSlug: restaurant.id,
+        customerId: order.customerOpenId ?? null,
+        customerName: order.customerName ?? null,
+        deliveryAddress: order.address,
+        deliveryNote: order.deliveryNote ?? "",
+        deliveryLocation: deliveryLocation ?? null,
+        items,
+        subtotalCents: quote.subtotalCents,
+        deliveryFeeCents: quote.deliveryCents,
+        serviceFeeCents: quote.serviceCents,
+        totalCents: quote.totalCents,
+        paymentMethod: order.paymentMethod ?? "stripe",
+        paymentState: order.paymentState,
+        stripeCheckoutSessionId: order.stripeCheckoutSessionId ?? null,
+        stripePaymentIntentId: order.stripePaymentIntentId ?? null,
+      }),
+    });
     if (!response.ok) {
-      console.warn(
-        `[OperationalSync] API respondió ${response.status} para ${order.publicCode}: ${await response.text()}`
-      );
+      console.warn(`[OperationalSync] API respondió ${response.status} para ${order.publicCode}: ${await response.text()}`);
       return false;
     }
     return true;
   } catch (error) {
-    console.warn(
-      `[OperationalSync] Error sincronizando ${order.publicCode}`,
-      error
-    );
+    console.warn(`[OperationalSync] Error sincronizando ${order.publicCode}`, error);
     return false;
   }
 }
@@ -126,7 +108,29 @@ export async function listCustomerSupportTickets(input: { customerId: string; cu
     return response.ok ? (await response.json() as { tickets: CustomerSupportTicket[] }).tickets : [];
   } catch { return []; }
 }
+
+export type CustomerOperationalStatus = "placed" | "accepted" | "ready" | "picked_up" | "delivering" | "delivered" | "cancelled";
 export type OperationalTracking = { publicCode: string; status: string; assignmentState: string; paymentMethod?: "stripe" | "cash"; paymentState?: string; cashDueAtDelivery?: boolean; riderId: string | null; riderName: string | null; riderPhotoUrl: string | null; vehicle: string | null; chatAvailable: boolean; locationAvailable: boolean; latitude: number | null; longitude: number | null; updatedAt: number | null };
+
+/**
+ * Customer and the central operational API use deliberately different state
+ * vocabularies. Keep this adapter at the boundary so Customer never exposes
+ * raw kitchen states or mistakes them for "en ruta".
+ */
+export function customerStatusFromOperational(status?: string | null): CustomerOperationalStatus | null {
+  switch (status) {
+    case "pending": return "placed";
+    case "accepted": return "accepted";
+    case "preparing":
+    case "ready_for_pickup": return "ready";
+    case "picked_up": return "picked_up";
+    case "on_the_way": return "delivering";
+    case "delivered": return "delivered";
+    case "cancelled": return "cancelled";
+    default: return null;
+  }
+}
+
 export async function fetchOperationalTracking(publicCode: string): Promise<OperationalTracking | null> {
   const secret = syncSecret(); if (!secret) return null;
   try { const response = await fetch(`${apiUrl}/api/v1/internal/customer-orders/${encodeURIComponent(publicCode)}/tracking`, { headers: { "x-piki-customer-sync-secret": secret } }); return response.ok ? await response.json() as OperationalTracking : null; } catch { return null; }

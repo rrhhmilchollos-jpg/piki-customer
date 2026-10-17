@@ -63,7 +63,7 @@ import {
   upsertRiderPushSubscription,
   upsertRiderProfile,
 } from "./db";
-import { createCustomerSupportTicket, fetchOperationalMessages, fetchOperationalTracking, listCustomerSupportTickets, sendOperationalMessage, syncOperationalOrder, writeCanonicalOrder } from "./operationalSync";
+import { createCustomerSupportTicket, customerStatusFromOperational, fetchOperationalMessages, fetchOperationalTracking, listCustomerSupportTickets, sendOperationalMessage, syncOperationalOrder, writeCanonicalOrder } from "./operationalSync";
 import { sendPasswordResetEmail } from "./credentialEmail";
 import { storagePut } from "./storage";
 import { isFreshRiderLocation, mayShareRiderLocation } from "./deliveryTracking";
@@ -342,9 +342,9 @@ export const appRouter = router({
       const row = await getOrderRecord(input.id);
       if (!row) return null;
       const live = await fetchOperationalTracking(row.publicCode);
-      const localLiveStatus = live?.status === "on_the_way" ? "delivering" : live?.status;
-      if (localLiveStatus && localLiveStatus !== row.status && ["assigned", "picked_up", "delivering", "delivered", "cancelled"].includes(localLiveStatus)) await updateOrderRecord(row.publicCode, { status: localLiveStatus as typeof row.status, riderName: live?.riderName ?? row.riderName, riderOpenId: live?.riderId ?? row.riderOpenId });
-      return { id: row.publicCode, status: live?.status ?? row.status, paymentMethod: live?.paymentMethod ?? "cash", paymentState: live?.paymentState ?? row.paymentState, cashDueAtDelivery: live?.cashDueAtDelivery ?? (row.paymentState !== "paid"), totalCents: row.totalCents, restaurant: row.restaurantName, address: row.address, riderName: live?.riderName ?? row.riderName, riderPhotoUrl: live?.riderPhotoUrl ?? null, deliveryVerificationState: row.deliveryVerificationState, updatedAt: live?.updatedAt ?? row.updatedAt.getTime() };
+      const localLiveStatus = customerStatusFromOperational(live?.status);
+      if (localLiveStatus && localLiveStatus !== row.status) await updateOrderRecord(row.publicCode, { status: localLiveStatus as typeof row.status, riderName: live?.riderName ?? row.riderName, riderOpenId: live?.riderId ?? row.riderOpenId });
+      return { id: row.publicCode, status: localLiveStatus ?? row.status, paymentMethod: live?.paymentMethod ?? "cash", paymentState: live?.paymentState ?? row.paymentState, cashDueAtDelivery: live?.cashDueAtDelivery ?? (row.paymentState !== "paid"), totalCents: row.totalCents, restaurant: row.restaurantName, address: row.address, riderName: live?.riderName ?? row.riderName, riderPhotoUrl: live?.riderPhotoUrl ?? null, deliveryVerificationState: row.deliveryVerificationState, updatedAt: live?.updatedAt ?? row.updatedAt.getTime() };
     }),
     deliveryCredentials: protectedProcedure.input(z.object({ id: z.string().min(1) })).query(async ({ input, ctx }) => {
       const row = await getOrderRecord(input.id);
@@ -356,8 +356,8 @@ export const appRouter = router({
       const order = await getOrderRecord(input.id);
       if (!order || order.customerOpenId !== ctx.user.openId) throw new TRPCError({ code: "FORBIDDEN", message: "Solo la cuenta que realizó el pedido puede ver su seguimiento." });
       const live = await fetchOperationalTracking(order.publicCode);
-      const localLiveStatus = live?.status === "on_the_way" ? "delivering" : live?.status;
-      if (localLiveStatus && localLiveStatus !== order.status && ["assigned", "picked_up", "delivering", "delivered", "cancelled"].includes(localLiveStatus)) await updateOrderRecord(order.publicCode, { status: localLiveStatus as typeof order.status, riderName: live?.riderName ?? order.riderName, riderOpenId: live?.riderId ?? order.riderOpenId });
+      const localLiveStatus = customerStatusFromOperational(live?.status);
+      if (localLiveStatus && localLiveStatus !== order.status) await updateOrderRecord(order.publicCode, { status: localLiveStatus as typeof order.status, riderName: live?.riderName ?? order.riderName, riderOpenId: live?.riderId ?? order.riderOpenId });
       if (live) return { available: live.locationAvailable, riderName: live.riderName || "Tu rider", riderPhotoUrl: live.riderPhotoUrl, vehicle: live.vehicle, phase: live.status === "picked_up" || live.status === "on_the_way" ? "going_to_customer" : "going_to_restaurant", etaMinutes: null, latitude: live.latitude ?? undefined, longitude: live.longitude ?? undefined, accuracyMeters: null, updatedAt: live.updatedAt ?? undefined };
       if (!mayShareRiderLocation(order, ctx.user.openId)) return { available: false as const, reason: "not_in_delivery" as const };
       const location = await getLatestRiderLocation(order.riderOpenId!);
