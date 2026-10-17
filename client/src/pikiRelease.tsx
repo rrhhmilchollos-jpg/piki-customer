@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { PIKI_RELEASE } from "./release-meta";
 import {
@@ -23,7 +24,7 @@ function isInstalledAndroidApp(): boolean {
 }
 
 async function registerWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (!("serviceWorker" in navigator)) return null;
+  if (Capacitor.isNativePlatform() || !("serviceWorker" in navigator)) return null;
   try {
     const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
     try { await registration.update(); } catch { /* Un SW antiguo o una red móvil no debe bloquear la app. */ }
@@ -111,7 +112,7 @@ export function installPikiReleaseHeaders(): void {
     headers.set("X-PIKI-Surface", PIKI_RELEASE.surface);
     headers.set("X-PIKI-Client-Version", PIKI_RELEASE.version);
     headers.set("X-PIKI-Client-Build", PIKI_RELEASE.buildId);
-    if (isInstalledAndroidApp()) headers.set("X-PIKI-Native-Container", "capacitor");
+    if (Capacitor.isNativePlatform()) headers.set("X-PIKI-Native-Container", "capacitor");
     if (input instanceof Request) return nativeFetch(new Request(input, { ...init, headers }));
     return nativeFetch(input, { ...init, headers });
   };
@@ -273,6 +274,7 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
   }, [isSafeToReload]);
 
   const check = useCallback(async () => {
+    if (Capacitor.isNativePlatform()) { setState("ready"); return; }
     try {
       const registration = await registerWorker();
       requestWorkerActivation(registration);
@@ -334,7 +336,7 @@ export function PikiReleaseGate({ children }: { children: ReactNode }) {
     setUpdating(true);
     setDetail("");
     try {
-      if (isInstalledAndroidApp()) {
+      if (Capacitor.isNativePlatform()) {
         window.location.assign(customerPlayStoreUrl);
         return;
       }
