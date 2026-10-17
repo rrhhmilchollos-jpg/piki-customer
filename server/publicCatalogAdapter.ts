@@ -50,11 +50,21 @@ function enumValue<T extends readonly string[]>(
     : undefined;
 }
 
-function mapModifierOption(value: unknown): MenuModifierOption | null {
+function mapModifierOption(
+  value: unknown,
+  fallback?: { id: string; price: number }
+): MenuModifierOption | null {
+  // Formato antiguo del panel: la opción llega como texto y hereda el precio del grupo.
+  if (typeof value === "string") {
+    const name = stringValue(value, 160);
+    return name && fallback ? { id: fallback.id, name, price: fallback.price } : null;
+  }
   if (!isRecord(value)) return null;
-  const id = stringValue(value.id, 80);
+  // Una opción pausada en el panel no se ofrece al cliente.
+  if (booleanValue(value.available) === false) return null;
+  const id = stringValue(value.id, 80) ?? fallback?.id;
   const name = stringValue(value.name, 160);
-  const price = numberValue(value.price);
+  const price = numberValue(value.price) ?? fallback?.price;
   if (!id || !name || price === undefined || price < 0) return null;
   return {
     id,
@@ -70,11 +80,22 @@ function mapModifierGroup(value: unknown): MenuModifierGroup | null {
   if (!isRecord(value)) return null;
   const id = stringValue(value.id, 80);
   const name = stringValue(value.name, 160);
-  const optionRows = Array.isArray(value.options) ? value.options : [];
+  if (!id || !name) return null;
+  const groupPrice = numberValue(value.price);
+  const fallbackPrice = groupPrice !== undefined && groupPrice >= 0 ? groupPrice : 0;
+  // `optionItems` (opciones con precio propio) tiene prioridad sobre `options`.
+  const optionRows =
+    Array.isArray(value.optionItems) && value.optionItems.length
+      ? value.optionItems
+      : Array.isArray(value.options)
+        ? value.options
+        : [];
   const options = optionRows
-    .map(mapModifierOption)
+    .map((row, index) =>
+      mapModifierOption(row, { id: `${id}-opt-${index + 1}`, price: fallbackPrice })
+    )
     .filter((option): option is MenuModifierOption => option !== null);
-  if (!id || !name || !options.length) return null;
+  if (!options.length) return null;
   const suppliedMinimum = numberValue(value.minSelections);
   const defaultMinimum = booleanValue(value.required) ? 1 : 0;
   const minSelections = Math.min(
