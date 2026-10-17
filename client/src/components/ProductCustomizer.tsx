@@ -329,7 +329,7 @@ export function ProductCustomizer({
               <img
                 src={imageSource}
                 alt={`Imagen de ${item.name}`}
-                className="aspect-square w-full rounded-2xl object-cover shadow-sm"
+                className="aspect-[4/3] w-full rounded-2xl bg-white object-cover shadow-sm"
               />
             ) : (
               <div className="grid aspect-square w-full place-items-center rounded-2xl bg-[radial-gradient(circle_at_16%_15%,rgba(255,255,255,.9),transparent_26%),linear-gradient(135deg,#ffd72e,#f5a94b)] text-5xl font-black text-[#171715] shadow-sm">
