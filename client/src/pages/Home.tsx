@@ -420,7 +420,8 @@ export default function Home() {
     restaurant: Restaurant,
     item: MenuItem,
     selections: ModifierSelection[],
-    quantity = 1
+    quantity = 1,
+    silent = false
   ) => {
     if (!isRestaurantOrderable(restaurant)) {
       setCustomizing(null);
@@ -447,7 +448,7 @@ export default function Home() {
           );
         return [...current, newLine];
       });
-      toast.success(`${item.name} añadido`);
+      if (!silent) toast.success(`${item.name} añadido`);
     }
 
     setCustomizing(null);
@@ -705,6 +706,10 @@ export default function Home() {
                           .filter(line => line.item.id === item.id)
                           .reduce((sum, line) => sum + line.quantity, 0);
                         const hasCustomisation = Boolean(item.modifierGroups?.length);
+                        // Productos sin opciones (p. ej. bebidas): se añaden directamente con selector de unidades.
+                        const simpleLineKey = selectionKey(item.id, []);
+                        const simpleQuantity =
+                          cart.find(line => line.key === simpleLineKey)?.quantity ?? 0;
                         return (
                           <article
                             key={item.id}
@@ -721,17 +726,34 @@ export default function Home() {
                               </div>
                               <p className="mt-1 text-sm leading-relaxed text-[#68746a]">{item.description || "Preparado al momento con ingredientes seleccionados."}</p>
                               {item.allergens?.length ? <p className="mt-2 text-[11px] leading-relaxed text-[#8a5a35]"><strong>Alérgenos:</strong> {item.allergens.join(" · ")} · Puede contener trazas</p> : null}
-                              <p className="mt-2 text-sm font-extrabold text-[#263229]">Desde {money.format(item.price)}</p>
+                              <p className="mt-2 text-sm font-extrabold text-[#263229]">{hasCustomisation ? "Desde " : ""}{money.format(item.price)}</p>
                               {hasCustomisation && <p className="mt-1 text-xs font-semibold text-[#7a887b]">Personalizable · elige tus complementos</p>}
                               {quantity > 0 && <p className="mt-1 text-xs font-bold text-[#526952]">{quantity} en tu cesta</p>}
                             </div>
-                            <button
-                              onClick={() => setCustomizing({ restaurant: selectedRestaurant, item })}
-                              className="flex shrink-0 self-center items-center gap-1.5 rounded-xl bg-[#171715] px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-black active:scale-95"
-                              aria-label={`${hasCustomisation ? "Personalizar y añadir" : "Añadir"} ${item.name}`}
-                            >
-                              <Plus className="h-4 w-4" /> Añadir
-                            </button>
+                            {hasCustomisation ? (
+                              <button
+                                onClick={() => setCustomizing({ restaurant: selectedRestaurant, item })}
+                                className="flex shrink-0 self-center items-center gap-1.5 rounded-xl bg-[#171715] px-3 py-2.5 text-xs font-extrabold text-white transition hover:bg-black active:scale-95"
+                                aria-label={`Personalizar y añadir ${item.name}`}
+                              >
+                                <Plus className="h-4 w-4" /> Añadir
+                              </button>
+                            ) : simpleQuantity > 0 ? (
+                              <div className="shrink-0 self-center">
+                                <QuantityControl
+                                  quantity={simpleQuantity}
+                                  onChange={next => changeQuantity(simpleLineKey, Math.min(20, next))}
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => addItem(selectedRestaurant, item, [], 1, true)}
+                                className="grid h-9 w-9 shrink-0 self-center place-items-center rounded-full bg-[#FFD72E] text-[#171715] shadow-sm transition hover:bg-[#E8C600] active:scale-95"
+                                aria-label={`Añadir ${item.name}`}
+                              >
+                                <Plus className="h-5 w-5" />
+                              </button>
+                            )}
                           </article>
                         );
                       })}
